@@ -1,0 +1,52 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+*.tlog
+*.recipe
+*.merged
+*.lastbuildstate
+*.log
+
+# Precompiled Headers
+*.gch
+*.pch
+*.suo
+*.ipch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Others
+iconfig.json
+Browse.VC.db
+Browse.VC.db-shm
+Browse.VC.db-wal
+Browse.VC.opendb
+*.Build.CppClean.log
+*.FileListAbsolute.txt
+
+# Directories
+bin
+obj
