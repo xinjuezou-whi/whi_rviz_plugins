@@ -15,18 +15,18 @@ bool need_charge
 The base of the charge text will be at the frame listed in the header of the WhiBattery message, which let the charge info stick to robot and move with it. Besides under multiple robots senario, frame with namespace enable each robot bearing its own charge info.
 
 ## build
-Clone package `whi_interfaces` and `whi_rviz_plugins` to your workspace
+Clone package `whi_interfaces` and `whi_rviz_plugins` to your workspace:
 
 ```
 cd <your workspace>
 catkin build
 ```
 
-or catkin_make depends on your environment
+or `catkin_make` depends on your environment.
   
 ## use instruction
 1. Publish the WhiBattery message;
-  For a quick check, there is a test script, named `send_test_msgs.py` under folder `scripts` to publish simulated charge info interatively, just run
+  For a quick check, there is a test script, named `send_test_msgs.py` under folder `scripts` to publish simulated charge info interatively, just run:
 
   ```
   python src/whi_rviz_plugins/scripts/send_test_msgs.py 
