@@ -5,6 +5,7 @@ rviz plugins package for showing custom info. currently only Battery is implemen
 
 ## overview
 plugin Battery is a derived class from MessageFilterDisplay, and subscribes message "whi_interfaces::WhiBattery". Here is the definition of such message:
+
   `std_msgs/Header header
    uint16 percent
    bool need_charge`
