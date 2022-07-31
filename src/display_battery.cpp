@@ -11,8 +11,8 @@ GNU General Public License, check LICENSE for more information.
 All text above must be included in any redistribution.
 
 ******************************************************************/
-#include "display_battery.h"
-//#include "imu_visual.h"
+#include "whi_rviz_plugins/display_battery.h"
+#include "whi_rviz_plugins/battery_visual.h"
 
 #include <OGRE/OgreSceneNode.h>
 #include <OGRE/OgreSceneManager.h>
@@ -27,8 +27,8 @@ namespace whi_rviz_plugins
 {
     DisplayBat::DisplayBat()
     {
-        color_property_ = new rviz::ColorProperty("Color", QColor(204, 51, 204),
-            "Color to draw the acceleration arrows.",
+        color_property_ = new rviz::ColorProperty("Color", QColor(138, 226, 52),
+            "Color of battery info text.",
             this, SLOT(updateColorAndAlpha()));
 
         alpha_property_ = new rviz::FloatProperty("Alpha", 1.0,
@@ -40,6 +40,10 @@ namespace whi_rviz_plugins
             this, SLOT(updateHistoryLength()));
         history_length_property_->setMin(1);
         history_length_property_->setMax(100000);
+
+        size_property_ = new rviz::FloatProperty("Size", 1.0,
+            "Character size of battery info text.",
+            this, SLOT(updateSize()));
     }
 
     DisplayBat::~DisplayBat() {}
@@ -63,7 +67,7 @@ namespace whi_rviz_plugins
     void DisplayBat::reset()
     {
         MFDClass::reset();
-        //visuals_.clear();
+        visuals_.clear();
     }
 
     // set the current color and alpha values for each visual
@@ -72,60 +76,67 @@ namespace whi_rviz_plugins
         float alpha = alpha_property_->getFloat();
         Ogre::ColourValue color = color_property_->getOgreColor();
 
-        //for( size_t i = 0; i < visuals_.size(); i++ )
-        //{
-        //  visuals_[ i ]->setColor( color.r, color.g, color.b, alpha );
-        //}
+        for (size_t i = 0; i < visuals_.size(); ++i)
+        {
+            visuals_[i]->setColor(color.r, color.g, color.b, alpha);
+        }
     }
 
     // set the number of past visuals to show
     void DisplayBat::updateHistoryLength()
     {
-        //visuals_.rset_capacity(history_length_property_->getInt());
+        visuals_.rset_capacity(history_length_property_->getInt());
     }
 
-    // this is our callback to handle an incoming message
-    void DisplayBat::processMessage(const sensor_msgs::Imu::ConstPtr& msg)
+    void DisplayBat::updateSize()
     {
-        // here we call the rviz::FrameManager to get the transform from the
-        // fixed frame to the frame in the header of this Imu message
-        // If it fails, we can't do anything else so we return
+        float size = size_property_->getFloat();
+
+        for (size_t i = 0; i < visuals_.size(); ++i)
+        {
+            visuals_[i]->setSize(size);
+        }
+    }
+
+    void DisplayBat::processMessage(const whi_interfaces::WhiBattery::ConstPtr& Msg)
+    {
+        // call the rviz::FrameManager to get the transform from the
+        // fixed frame to the frame in the header of this battery message
+        // if it fails, we can't do anything else so we return
         Ogre::Quaternion orientation;
         Ogre::Vector3 position;
-        if (!context_->getFrameManager()->getTransform(msg->header.frame_id,
-            msg->header.stamp,
-            position, orientation))
+        if (!context_->getFrameManager()->getTransform(Msg->header.frame_id,
+            Msg->header.stamp, position, orientation))
         {
-            ROS_DEBUG("Error transforming from frame '%s' to frame '%s'",
-                msg->header.frame_id.c_str(), qPrintable(fixed_frame_));
+            ROS_DEBUG("error transforming from frame '%s' to frame '%s'",
+                Msg->header.frame_id.c_str(), qPrintable(fixed_frame_));
             return;
         }
 
-        // we are keeping a circular buffer of visual pointers.  This gets
-        // the next one, or creates and stores it if the buffer is not full
-        /*boost::shared_ptr<ImuVisual> visual;
-        if( visuals_.full() )
+        // keeping a circular buffer of visual pointers
+        // this gets the next one, or creates and stores it if the buffer is not full
+        boost::shared_ptr<BatteryVisual> visual;
+        if (visuals_.full())
         {
-          visual = visuals_.front();
+            visual = visuals_.front();
         }
         else
         {
-          visual.reset(new ImuVisual( context_->getSceneManager(), scene_node_ ));
+            visual.reset(new BatteryVisual(context_->getSceneManager(), scene_node_));
         }
 
-        // Now set or update the contents of the chosen visual.
-        visual->setMessage( msg );
-        visual->setFramePosition( position );
-        visual->setFrameOrientation( orientation );
+        // set or update the contents of the chosen visual
+        visual->setMessage(Msg);
+        visual->setFramePosition(position);
+        visual->setFrameOrientation(orientation);
 
         float alpha = alpha_property_->getFloat();
         Ogre::ColourValue color = color_property_->getOgreColor();
-        visual->setColor( color.r, color.g, color.b, alpha );
+        visual->setColor(color.r, color.g, color.b, alpha);
 
-        // And send it to the end of the circular buffer
-        visuals_.push_back(visual);*/
+        // send it to the end of the circular buffer
+        visuals_.push_back(visual);
     }
 
     PLUGINLIB_EXPORT_CLASS(whi_rviz_plugins::DisplayBat, rviz::Display)
-
 } // end namespace whi_rviz_plugins

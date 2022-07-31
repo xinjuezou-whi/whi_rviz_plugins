@@ -1,0 +1,11 @@
+<library path="lib/libwhi_rviz_plugins">
+  <class name="whi_rviz_plugins/Battery"
+         type="whi_rviz_plugins::DisplayBat"
+         base_class_type="rviz::Display">
+    <description>
+      display battery power information
+    </description>
+    <message_type>sensor_msgs/Imu</message_type>
+  </class>
+</library>
+
