@@ -27,17 +27,16 @@ namespace whi_rviz_plugins
 	{
 		scene_manager_ = SceneManager;
 
-		// Ogre::SceneNode form a tree, with each node storing the
-		// transform (position and orientation) of itself relative to its
-		// parent.  Ogre does the math of combining those transforms when it
-		// is time to render
+		// Ogre::SceneNode form a tree, 
+		// with each node storing the transform (position and orientation) of itself relative to its parent
+		// Ogre does the math of combining those transforms when it is time to render
 		//
 		// create a node to store the pose of the WhiBattery's header frame
 		// relative to the RViz fixed frame
 		frame_node_ = ParentNode->createChildSceneNode();
 
-		// create the movable_text object within the frame node so that we can
-		// set its position and direction relative to its header frame.
+		// create the movable_text object within the frame node,
+		// so that we can set its position and direction relative to its header frame
 		battery_info_.reset(new rviz::MovableText("?\%"));
 		battery_info_->setCharacterHeight(1.0);
 

@@ -50,14 +50,13 @@ namespace whi_rviz_plugins
     DisplayBat::~DisplayBat() {}
 
     // after the top-level rviz::Display::initialize() does its own setup,
-    // it calls the subclass's onInitialize() function.  This is where we
-    // instantiate all the workings of the class.  We make sure to also
-    // call our immediate super-class's onInitialize() function, since it
-    // does important stuff setting up the message filter
+    // it calls the subclass's onInitialize() function
+    // this is where all the workings of the class is instantiated
+    // make sure to also call the immediate super-class's onInitialize() function,
+    // since it does important stuff setting up the message filter
     //
-    //  note that "MFDClass" is a typedef of
-    // `MessageFilterDisplay<message type>`, to save typing that long
-    // templated class name every time you need to refer to the superclass
+    // note that "MFDClass" is a typedef of `MessageFilterDisplay<message type>`,
+    // to save typing that long templated class name every time the superclass needs to be refered
     void DisplayBat::onInitialize()
     {
         MFDClass::onInitialize();
@@ -101,9 +100,8 @@ namespace whi_rviz_plugins
 
     void DisplayBat::processMessage(const whi_interfaces::WhiBattery::ConstPtr& Msg)
     {
-        // call the rviz::FrameManager to get the transform from the
-        // fixed frame to the frame in the header of this battery message
-        // if it fails, we can't do anything else so we return
+        // call the rviz::FrameManager to get the transform from the fixed frame to the frame in the header of this battery message
+        // if it fails, do nothing and return
         Ogre::Quaternion orientation;
         Ogre::Vector3 position;
         if (!context_->getFrameManager()->getTransform(Msg->header.frame_id,
