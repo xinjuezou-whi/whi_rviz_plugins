@@ -26,6 +26,7 @@ Changelog:
 namespace Ogre
 {
 	class SceneNode;
+	class ColourValue;
 }
 
 namespace rviz
@@ -90,5 +91,8 @@ namespace whi_rviz_plugins
 		rviz::FloatProperty* alpha_property_;
 		rviz::IntProperty* history_length_property_;
 		rviz::FloatProperty* size_property_;
+
+		// properties
+		std::shared_ptr<Ogre::ColourValue> color_red_{ nullptr };
 	};
 } // end namespace whi_rviz_plugins

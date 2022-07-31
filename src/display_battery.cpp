@@ -27,6 +27,7 @@ namespace whi_rviz_plugins
 {
     DisplayBat::DisplayBat()
     {
+        color_red_ = std::make_shared<Ogre::ColourValue>(239.0 / 255.0, 41.0 / 255.0, 41.0 / 255.0);
         color_property_ = new rviz::ColorProperty("Color", QColor(138, 226, 52),
             "Color of battery info text.",
             this, SLOT(updateColorAndAlpha()));
@@ -131,7 +132,7 @@ namespace whi_rviz_plugins
         visual->setFrameOrientation(orientation);
 
         float alpha = alpha_property_->getFloat();
-        Ogre::ColourValue color = color_property_->getOgreColor();
+        Ogre::ColourValue color = Msg->need_charge ? *color_red_ : color_property_->getOgreColor();
         visual->setColor(color.r, color.g, color.b, alpha);
 
         // send it to the end of the circular buffer

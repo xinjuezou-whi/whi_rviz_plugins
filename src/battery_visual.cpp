@@ -39,6 +39,7 @@ namespace whi_rviz_plugins
 		// create the movable_text object within the frame node so that we can
 		// set its position and direction relative to its header frame.
 		battery_info_.reset(new rviz::MovableText("?\%"));
+		battery_info_->setCharacterHeight(1.0);
 
 		// attach the movable_text to scene node
 		frame_node_->attachObject(battery_info_.get());
@@ -56,7 +57,6 @@ namespace whi_rviz_plugins
 		battery_info_->setTextAlignment((rviz::MovableText::HorizontalAlignment)h, (rviz::MovableText::VerticalAlignment)v);
 		rviz::StringProperty text("text", (std::to_string(Msg->percent) + "\%").c_str());
 		battery_info_->setCaption(text.getStdString());
-		battery_info_->setCharacterHeight(size_);
 		battery_info_->setLineSpacing(1.0);
 	}
 
@@ -84,7 +84,6 @@ namespace whi_rviz_plugins
 
 	void BatteryVisual::setSize(float Size)
 	{
-		size_ = Size;
-		battery_info_->setCharacterHeight(size_);
+		battery_info_->setCharacterHeight(Size);
 	}
 } // end namespace whi_rviz_plugins

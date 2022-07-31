@@ -5,7 +5,7 @@
     <description>
       display battery power information
     </description>
-    <message_type>sensor_msgs/Imu</message_type>
+    <message_type>whi_interfaces/WhiBattery</message_type>
   </class>
 </library>
 

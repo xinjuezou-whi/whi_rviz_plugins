@@ -75,7 +75,5 @@ namespace whi_rviz_plugins
 		// the SceneManager, kept here only so the destructor can ask it to
 		// destroy the `frame_node_`
 		Ogre::SceneManager* scene_manager_{ nullptr };
-
-		float size_{ 1.0 };
 	};
 } // end namespace whi_rviz_plugins
