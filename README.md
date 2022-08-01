@@ -18,11 +18,14 @@ The base of the charge text will be at the frame listed in the header of the Whi
 Clone package `whi_interfaces` and `whi_rviz_plugins` to your workspace:
 
 ```
-cd <your workspace>
+cd <your_workspace>
 catkin build
 ```
 
-or `catkin_make` depends on your environment.
+or `catkin_make` depends on your environment. And don't forget to source the bash:
+```
+source <your_workspace>/devel/setup.bash
+```
   
 ## use instruction
 1. Publish the WhiBattery message;
