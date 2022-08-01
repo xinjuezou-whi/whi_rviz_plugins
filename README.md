@@ -1,7 +1,7 @@
 # whi_rviz_plugins
 Rviz plugins package for showing custom info. currently only Battery is implemented, which shows the battery's left charge in text.
 
-![battery](https://user-images.githubusercontent.com/72239958/182020786-78a7af35-bccf-49b4-b895-78f60df493f7.gif)
+![battery](https://user-images.githubusercontent.com/72239958/182051634-f7bd0b34-ea97-4944-b23d-494119465428.gif)
 
 ## overview
 Plugin Battery is a derived class from MessageFilterDisplay, and subscribes message "whi_interfaces::WhiBattery". Here is the definition of such message:
