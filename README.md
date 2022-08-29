@@ -47,3 +47,9 @@ source <your_workspace>/devel/setup.bash
 
 ![image](https://user-images.githubusercontent.com/72239958/187208878-81e3d48a-a54f-4eb4-af29-1ef49cd71409.png)
 
+### Local position
+
+Modify the Offsets to adjust the local position:
+
+![local](https://user-images.githubusercontent.com/72239958/187211993-2fa4fc94-10c3-432e-85df-b959d0695dc2.gif)
+
