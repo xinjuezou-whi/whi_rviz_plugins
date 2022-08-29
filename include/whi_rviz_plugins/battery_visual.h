@@ -29,6 +29,7 @@ namespace Ogre
 namespace rviz
 {
 	class MovableText;
+	class Shape;
 	class IntProperty;
 }
 
@@ -46,6 +47,7 @@ namespace whi_rviz_plugins
 
 		// configure the visual to show the data in the message
 		void setMessage(const whi_interfaces::WhiBattery::ConstPtr& Msg);
+		void createBatteryShape(double PowerRatio, const Ogre::ColourValue& Color);
 
 		// set the pose of the coordinate frame the message refers to these could be done inside setMessage(),
 		// but that would require calls to FrameManager and error handling inside setMessage(),
@@ -61,9 +63,16 @@ namespace whi_rviz_plugins
 		// set the size of text
 		void setSize(float Size);
 
+		// set the battery body offsets
+		void setOffsets(const Ogre::Vector3& Offsets);
+
 	private:
+		float size_{ 1.0 };
+		std::shared_ptr<Ogre::Vector3> offsets_{ nullptr };
 		// the object implementing the actual text
-		boost::shared_ptr<rviz::MovableText> battery_info_{ nullptr };
+		std::shared_ptr<rviz::MovableText> battery_info_{ nullptr };
+		// the object of battery shape
+		std::vector<std::shared_ptr<rviz::Shape>> battery_shape_;
 
 		// a SceneNode whose pose is set to match the coordinate frame of the WhiBattery message header
 		Ogre::SceneNode* frame_node_{ nullptr };

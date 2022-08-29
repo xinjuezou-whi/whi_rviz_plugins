@@ -1,4 +1,4 @@
-/******************************************************************
+﻿/******************************************************************
 rviz plugin for showing battery infomation
 
 Features:
@@ -21,12 +21,16 @@ All text above must be included in any redistribution.
 #include <rviz/properties/color_property.h>
 #include <rviz/properties/float_property.h>
 #include <rviz/properties/int_property.h>
+#include <rviz/properties/vector_property.h>
 #include <pluginlib/class_list_macros.h>
 
 namespace whi_rviz_plugins
 {
     DisplayBat::DisplayBat()
     {
+        std::cout << "\nWHI RViz plugin for battery VERSION 00.03" << std::endl;
+        std::cout << "Copyright © 2022-2023 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
+
         color_red_ = std::make_shared<Ogre::ColourValue>(239.0 / 255.0, 41.0 / 255.0, 41.0 / 255.0);
         color_property_ = new rviz::ColorProperty("Color", QColor(138, 226, 52),
             "Color of battery info text.",
@@ -45,6 +49,10 @@ namespace whi_rviz_plugins
         size_property_ = new rviz::FloatProperty("Size", 1.0,
             "Character size of battery info text.",
             this, SLOT(updateSize()));
+
+        offsets_property_ = new rviz::VectorProperty("Offsets", Ogre::Vector3::ZERO,
+            "Offsets to frame",
+            this, SLOT(updateOffsets()));
     }
 
     DisplayBat::~DisplayBat() {}
@@ -90,11 +98,17 @@ namespace whi_rviz_plugins
 
     void DisplayBat::updateSize()
     {
-        float size = size_property_->getFloat();
-
         for (size_t i = 0; i < visuals_.size(); ++i)
         {
-            visuals_[i]->setSize(size);
+            visuals_[i]->setSize(size_property_->getFloat());
+        }
+    }
+
+    void DisplayBat::updateOffsets()
+    {
+        for (size_t i = 0; i < visuals_.size(); ++i)
+        {
+            visuals_[i]->setOffsets(offsets_property_->getVector());
         }
     }
 
@@ -111,10 +125,19 @@ namespace whi_rviz_plugins
                 Msg->header.frame_id.c_str(), qPrintable(fixed_frame_));
             return;
         }
+#ifdef DEBUG
+        std::cout << "x " << position.x << " y " << position.y << " z " << position.z << std::endl;
+
+        Ogre::Matrix3 mat;
+        orientation.ToRotationMatrix(mat);
+        Ogre::Radian yaw, pitch, roll;
+        mat.ToEulerAnglesXYZ(yaw, pitch, roll);
+        std::cout << "yaw " << yaw.valueDegrees() << " pitch " << pitch.valueDegrees() << " roll " << roll.valueDegrees() << std::endl;
+#endif
 
         // keeping a circular buffer of visual pointers
         // this gets the next one, or creates and stores it if the buffer is not full
-        boost::shared_ptr<BatteryVisual> visual;
+        std::shared_ptr<BatteryVisual> visual;
         if (visuals_.full())
         {
             visual = visuals_.front();
@@ -125,13 +148,13 @@ namespace whi_rviz_plugins
         }
 
         // set or update the contents of the chosen visual
-        visual->setMessage(Msg);
-        visual->setFramePosition(position);
-        visual->setFrameOrientation(orientation);
-
         float alpha = alpha_property_->getFloat();
         Ogre::ColourValue color = Msg->need_charge ? *color_red_ : color_property_->getOgreColor();
         visual->setColor(color.r, color.g, color.b, alpha);
+        visual->createBatteryShape(Msg->percent / 100.0, Msg->need_charge ? *color_red_ : Ogre::ColourValue(0.0, 1.0, 0.0, 0.8));
+        visual->setMessage(Msg);
+        visual->setFramePosition(position);
+        visual->setFrameOrientation(orientation);
 
         // send it to the end of the circular buffer
         visuals_.push_back(visual);

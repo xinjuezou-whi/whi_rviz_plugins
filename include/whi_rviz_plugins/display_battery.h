@@ -34,6 +34,7 @@ namespace rviz
 	class ColorProperty;
 	class FloatProperty;
 	class IntProperty;
+	class VectorProperty;
 }
 
 namespace whi_rviz_plugins
@@ -73,6 +74,7 @@ namespace whi_rviz_plugins
 		void updateColorAndAlpha();
 		void updateHistoryLength();
 		void updateSize();
+		void updateOffsets();
 
 	private:
 		// function to handle an incoming ROS message
@@ -81,14 +83,14 @@ namespace whi_rviz_plugins
 	private:
 		// storage for the list of visuals. It is a circular buffer,
 		// where data gets popped from the front (oldest) and pushed to the back (newest)
-		boost::circular_buffer<boost::shared_ptr<BatteryVisual>> visuals_;
+		boost::circular_buffer<std::shared_ptr<BatteryVisual>> visuals_;
 
 		// user-editable property variables
 		rviz::ColorProperty* color_property_;
 		rviz::FloatProperty* alpha_property_;
 		rviz::IntProperty* history_length_property_;
 		rviz::FloatProperty* size_property_;
-
+		rviz::VectorProperty* offsets_property_;
 		// other properties
 		std::shared_ptr<Ogre::ColourValue> color_red_{ nullptr };
 	};
