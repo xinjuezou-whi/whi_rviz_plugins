@@ -49,7 +49,7 @@ source <your_workspace>/devel/setup.bash
 
 ### Local position
 
-Modify the Offsets to adjust the local position:
+Modify the offsets to the center of frame to adjust its local position:
 
 ![local](https://user-images.githubusercontent.com/72239958/187211993-2fa4fc94-10c3-432e-85df-b959d0695dc2.gif)
 
