@@ -53,3 +53,11 @@ Modify the offsets to the center of frame to adjust its local position:
 
 ![local](https://user-images.githubusercontent.com/72239958/187211993-2fa4fc94-10c3-432e-85df-b959d0695dc2.gif)
 
+### Local orientation
+
+Modify the orientation to the frame to adjust the direction of battery symbol, this is helpfull in navigation senario which is 2D view of XY plane:
+
+![orientaion](https://user-images.githubusercontent.com/72239958/187387702-172637b1-0e06-4356-9259-c1d16afceebc.gif)
+
+![image](https://user-images.githubusercontent.com/72239958/187388565-0340d940-fc04-4a1f-aca6-e193c1c8feaa.png)
+
