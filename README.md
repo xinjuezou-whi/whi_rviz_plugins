@@ -1,5 +1,5 @@
 # whi_rviz_plugins
-Rviz plugins package for showing custom info. currently only Battery is implemented, which shows the battery's left charge in text.
+Rviz plugins package for showing custom info. currently only Battery is implemented, which shows the battery's left charge in text and symbolizing battery.
 
 ![battery](https://user-images.githubusercontent.com/72239958/187207845-3ec2cd87-ec7e-437b-9cd5-7884a6faf08e.gif)
 
