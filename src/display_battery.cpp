@@ -28,7 +28,7 @@ namespace whi_rviz_plugins
 {
     DisplayBat::DisplayBat()
     {
-        std::cout << "\nWHI RViz plugin for battery VERSION 00.03" << std::endl;
+        std::cout << "\nWHI RViz plugin for battery VERSION 00.04" << std::endl;
         std::cout << "Copyright © 2022-2023 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         color_red_ = std::make_shared<Ogre::ColourValue>(239.0 / 255.0, 41.0 / 255.0, 41.0 / 255.0);
@@ -53,6 +53,10 @@ namespace whi_rviz_plugins
         offsets_property_ = new rviz::VectorProperty("Offsets", Ogre::Vector3::ZERO,
             "Offsets to frame",
             this, SLOT(updateOffsets()));
+
+        orientation_property_ = new rviz::VectorProperty("Orientation", Ogre::Vector3(float(90.0), float(0.0), float(0.0)),
+            "Orientation of battery symbol",
+            this, SLOT(updateOrientation()));
     }
 
     DisplayBat::~DisplayBat() {}
@@ -109,6 +113,14 @@ namespace whi_rviz_plugins
         for (size_t i = 0; i < visuals_.size(); ++i)
         {
             visuals_[i]->setOffsets(offsets_property_->getVector());
+        }
+    }
+
+    void DisplayBat::updateOrientation()
+    {
+        for (size_t i = 0; i < visuals_.size(); ++i)
+        {
+            visuals_[i]->setOrientation(orientation_property_->getVector());
         }
     }
 

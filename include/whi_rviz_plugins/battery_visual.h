@@ -63,12 +63,14 @@ namespace whi_rviz_plugins
 		// set the size of text
 		void setSize(float Size);
 
-		// set the battery body offsets
+		// set the battery body offsets and orientation
 		void setOffsets(const Ogre::Vector3& Offsets);
+		void setOrientation(const Ogre::Vector3& Orientation);
 
 	private:
 		float size_{ 1.0 };
 		std::shared_ptr<Ogre::Vector3> offsets_{ nullptr };
+		std::shared_ptr<Ogre::Vector3> orientation_{ nullptr };
 		// the object implementing the actual text
 		std::shared_ptr<rviz::MovableText> battery_info_{ nullptr };
 		// the object of battery shape

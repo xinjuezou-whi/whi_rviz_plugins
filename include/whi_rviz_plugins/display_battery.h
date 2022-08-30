@@ -75,6 +75,7 @@ namespace whi_rviz_plugins
 		void updateHistoryLength();
 		void updateSize();
 		void updateOffsets();
+		void updateOrientation();
 
 	private:
 		// function to handle an incoming ROS message
@@ -91,6 +92,7 @@ namespace whi_rviz_plugins
 		rviz::IntProperty* history_length_property_;
 		rviz::FloatProperty* size_property_;
 		rviz::VectorProperty* offsets_property_;
+		rviz::VectorProperty* orientation_property_;
 		// other properties
 		std::shared_ptr<Ogre::ColourValue> color_red_{ nullptr };
 	};
