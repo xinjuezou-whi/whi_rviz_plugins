@@ -29,14 +29,19 @@ source <your_workspace>/devel/setup.bash
 ```
   
 ## use instruction
-1. Publish the WhiBattery message;
-  For a quick check, there is a test script, named `send_test_msgs.py` under folder `scripts` to publish simulated charge info interatively, just run:
+1. Publish the WhiBattery message
 
+  For a quick check, there is a test script, named `send_test_msgs.py` under folder `scripts` to publish simulated charge info interatively. Before running it, please make sure roscore is active:
+  ```
+  roscore
+  ```
+  and open a new terminal and run:
   ```
   python src/whi_rviz_plugins/scripts/send_test_msgs.py 
   ```
 
-2. Run rviz to add the Battery plugin.
+2. Run rviz to add the Battery plugin
+
   Click the "Add" button at the bottom of the "Displays" panel, then scrolling down through the available displays until you see "Battery" under package name "whi_rviz_plugins"
 
 ![image](https://user-images.githubusercontent.com/72239958/182015665-fd271ba8-7fbb-4b4c-b479-73f90e24b48d.png)
