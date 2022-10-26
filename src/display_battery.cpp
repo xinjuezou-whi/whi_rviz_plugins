@@ -54,7 +54,7 @@ namespace whi_rviz_plugins
             "Offsets to frame",
             this, SLOT(updateOffsets()));
 
-        orientation_property_ = new rviz::VectorProperty("Orientation", Ogre::Vector3(float(90.0), float(0.0), float(0.0)),
+        orientation_property_ = new rviz::VectorProperty("Orientation", Ogre::Vector3(float(0.0), float(90.0), float(0.0)),
             "Orientation of battery symbol",
             this, SLOT(updateOrientation()));
     }

@@ -44,8 +44,9 @@ namespace whi_rviz_plugins
 		frame_node_->attachObject(battery_info_.get());
 
 		// create shapes of battery
+		base_pose_ = std::make_shared<Ogre::Vector3>(Ogre::Vector3::ZERO);
 		offsets_ = std::make_shared<Ogre::Vector3>(Ogre::Vector3::ZERO);
-		orientation_ = std::make_shared<Ogre::Vector3>(Ogre::Vector3(float(90.0), float(0.0), float(0.0)));
+		orientation_ = std::make_shared<Ogre::Vector3>(Ogre::Vector3(float(0.0), float(90.0), float(0.0)));
 		createBatteryShape(1.0, Ogre::ColourValue(float(0.0), float(1.0), float(0.0), float(0.8)));
 	}
 
@@ -67,6 +68,7 @@ namespace whi_rviz_plugins
 	// position and orientation are passed through to the SceneNode
 	void BatteryVisual::setFramePosition(const Ogre::Vector3& Position)
 	{
+		*base_pose_ = Position;
 		frame_node_->setPosition(Position);
 	}
 
@@ -128,9 +130,9 @@ namespace whi_rviz_plugins
 		Ogre::Vector3 polePoseRotated = orientation * polePose;
 		battery_shape_[0].reset(new rviz::Shape(rviz::Shape::Cylinder, scene_manager_));
 		battery_shape_[0]->setScale(Ogre::Vector3(float(0.25 * size_), poleHeight, float(0.25 * size_)));
-		battery_shape_[0]->setPosition(Ogre::Vector3(polePoseRotated.x + offsets_->x,
-			polePoseRotated.y + offsets_->y,
-			polePoseRotated.z + offsets_->z));
+		battery_shape_[0]->setPosition(Ogre::Vector3(base_pose_->x + polePoseRotated.x + offsets_->x,
+			base_pose_->y + polePoseRotated.y + offsets_->y,
+			base_pose_->z + polePoseRotated.z + offsets_->z));
 		battery_shape_[0]->setOrientation(orientation);
 
 		// up
@@ -141,9 +143,9 @@ namespace whi_rviz_plugins
 		Ogre::Vector3 upPoseRotated = orientation * upPose;
 		battery_shape_[1].reset(new rviz::Shape(rviz::Shape::Cylinder, scene_manager_));
 		battery_shape_[1]->setScale(Ogre::Vector3(float(0.5 * size_), upHeight, float(0.5 * size_)));
-		battery_shape_[1]->setPosition(Ogre::Vector3(upPoseRotated.x + offsets_->x,
-			upPoseRotated.y + offsets_->y,
-			upPoseRotated.z + offsets_->z));
+		battery_shape_[1]->setPosition(Ogre::Vector3(base_pose_->x + upPoseRotated.x + offsets_->x,
+			base_pose_->y + upPoseRotated.y + offsets_->y,
+			base_pose_->z + upPoseRotated.z + offsets_->z));
 		battery_shape_[1]->setOrientation(orientation);
 
 		// power
@@ -153,9 +155,9 @@ namespace whi_rviz_plugins
 		Ogre::Vector3 leftPowerPoseRotated = orientation * leftPowerPose;
 		battery_shape_[2].reset(new rviz::Shape(rviz::Shape::Cylinder, scene_manager_));
 		battery_shape_[2]->setScale(Ogre::Vector3(float(0.5 * size_), leftPowerHeight, float(0.5 * size_)));
-		battery_shape_[2]->setPosition(Ogre::Vector3(leftPowerPoseRotated.x + offsets_->x,
-			leftPowerPoseRotated.y + offsets_->y,
-			leftPowerPoseRotated.z + offsets_->z));
+		battery_shape_[2]->setPosition(Ogre::Vector3(base_pose_->x + leftPowerPoseRotated.x + offsets_->x,
+			base_pose_->y + leftPowerPoseRotated.y + offsets_->y,
+			base_pose_->z + leftPowerPoseRotated.z + offsets_->z));
 		battery_shape_[2]->setOrientation(orientation);
 		battery_shape_[2]->setColor(Color);
 
@@ -165,9 +167,9 @@ namespace whi_rviz_plugins
 		Ogre::Vector3 bottomPoseRotated = orientation * bottomPose;
 		battery_shape_[3].reset(new rviz::Shape(rviz::Shape::Cylinder, scene_manager_));
 		battery_shape_[3]->setScale(Ogre::Vector3(float(0.5 * size_), bottomHeight, float(0.5 * size_)));
-		battery_shape_[3]->setPosition(Ogre::Vector3(bottomPoseRotated.x + offsets_->x,
-			bottomPoseRotated.y + offsets_->y,
-			bottomPoseRotated.z + offsets_->z));
+		battery_shape_[3]->setPosition(Ogre::Vector3(base_pose_->x + bottomPoseRotated.x + offsets_->x,
+			base_pose_->y + bottomPoseRotated.y + offsets_->y,
+			base_pose_->z + bottomPoseRotated.z + offsets_->z));
 		battery_shape_[3]->setOrientation(orientation);
 	}
 } // end namespace whi_rviz_plugins

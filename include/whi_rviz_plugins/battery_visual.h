@@ -69,6 +69,7 @@ namespace whi_rviz_plugins
 
 	private:
 		float size_{ 1.0 };
+		std::shared_ptr<Ogre::Vector3> base_pose_{ nullptr };
 		std::shared_ptr<Ogre::Vector3> offsets_{ nullptr };
 		std::shared_ptr<Ogre::Vector3> orientation_{ nullptr };
 		// the object implementing the actual text
