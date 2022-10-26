@@ -21,7 +21,7 @@ step = 5
 while not rospy.is_shutdown():
 
     battery = WhiBattery()
-    battery.header.frame_id = "base_link"
+    battery.header.frame_id = "battery"
     battery.header.stamp = rospy.Time.now()
    
     battery.percent = step;
@@ -31,7 +31,7 @@ while not rospy.is_shutdown():
     br.sendTransform((0, 0, 0),
                      tf.transformations.quaternion_from_euler(roll, pitch, yaw),
                      rospy.Time.now(),
-                     "base_link",
+                     "battery",
                      "map")
     step = (step + 5) % 100;
     rate.sleep()
