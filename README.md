@@ -66,3 +66,6 @@ Modify the orientation to the frame to adjust the direction of battery symbol, t
 
 ![image](https://user-images.githubusercontent.com/72239958/187388565-0340d940-fc04-4a1f-aca6-e193c1c8feaa.png)
 
+> Navigation robot should have a static TF link that directs to map. The belowing gif shows the static TF in robot's URDF(battery->base_link->map)
+
+![bat](https://user-images.githubusercontent.com/72239958/197972731-3d453537-44c4-4a22-9038-617c21d2711d.gif)
