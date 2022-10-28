@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(whi_rviz_plugins)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++17)
+set(CMAKE_CXX_STANDARD 14)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -129,12 +129,31 @@ if(rviz_QT_VERSION VERSION_LESS "5")
   find_package(Qt4 ${rviz_QT_VERSION} EXACT REQUIRED QtCore QtGui)
   ## pull in all required include dirs, define QT_LIBRARIES, etc.
   include(${QT_USE_FILE})
+  macro(qt_wrap_ui)
+    qt4_wrap_ui(${ARGN})
+  endmacro()
 else()
   message(STATUS "Using Qt5 based on the rviz_QT_VERSION: ${rviz_QT_VERSION}")
   find_package(Qt5 ${rviz_QT_VERSION} EXACT REQUIRED Core Widgets)
   ## make target_link_libraries(${QT_LIBRARIES}) pull in all required dependencies
   set(QT_LIBRARIES Qt5::Widgets)
+  macro(qt_wrap_ui)
+    qt5_wrap_ui(${ARGN})
+  endmacro()
 endif()
+
+# Find includes in corresponding build directories
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+
+qt_wrap_ui(UIC_FILES
+  ui/navi_waypoints.ui
+)
+
+include_directories(
+  ${QT_INCLUDE_DIR}
+)
 
 ## I prefer the Qt signals and slots to avoid defining "emit", "slots",
 ## etc because they can conflict with boost signals, so define QT_NO_KEYWORDS here.
@@ -150,6 +169,7 @@ file(GLOB_RECURSE WHI_SDK_H
 add_library(${PROJECT_NAME}
   ${WHI_SDK_H}
   ${WHI_SDK_SRC}
+  ${UIC_FILES}
 )
 
 ## Add cmake target dependencies of the library
@@ -209,10 +229,10 @@ install(TARGETS ${PROJECT_NAME}
 
 ## Mark cpp header files for installation
 # install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+#  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 #   FILES_MATCHING PATTERN "*.h"
 #   PATTERN ".svn" EXCLUDE
-# )
+#)
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 install(FILES
@@ -238,3 +258,4 @@ catkin_install_python(PROGRAMS scripts/send_test_msgs.py
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+

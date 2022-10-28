@@ -1,0 +1,204 @@
+/******************************************************************
+rviz display for navigation waypoints
+
+Features:
+- waypoints
+- xxx
+
+Written by Xinjue Zou, xinjue.zou@outlook.com
+
+GNU General Public License, check LICENSE for more information.
+All text above must be included in any redistribution.
+
+******************************************************************/
+#include "whi_rviz_plugins/display_waypoints.h"
+
+#include <pluginlib/class_list_macros.h>
+#include <rviz/window_manager_interface.h>
+#include <rviz/display_context.h>
+#include <rviz/properties/float_property.h>
+#include <rviz/properties/color_property.h>
+#include <visualization_msgs/Marker.h>
+
+namespace whi_rviz_plugins
+{
+    WaypointsDisplay::WaypointsDisplay()
+        : Display()
+    {
+        std::cout << "\nWHI RViz plugin for battery VERSION 00.01" << std::endl;
+        std::cout << "Copyright @ 2022-2023 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
+
+        size_property_ = new rviz::FloatProperty("Size", 1.0, "Arrow size of waypoint mark.",
+            this, SLOT(updateMarks()));
+        height_property_ = new rviz::FloatProperty("Height", 1.0, "Height of waypoint mark for the accessability.",
+            this, SLOT(updateMarks()));
+        color_property_ = new rviz::ColorProperty("Color", QColor(0, 255, 0), "Color of waypoints arrow.",
+            this, SLOT(updateMarks()));
+    }
+
+    WaypointsDisplay::~WaypointsDisplay()
+    {
+        delete frame_dock_;
+    }
+
+    void WaypointsDisplay::onInitialize()
+    {
+        Display::onInitialize();
+
+        panel_ = new WaypointsPanel(std::bind(&WaypointsDisplay::visualizeWaypointsLocations,
+            this, std::placeholders::_1, std::placeholders::_2));
+        rviz::WindowManagerInterface* windowContext = context_->getWindowManager();
+        if (windowContext)
+        {
+            frame_dock_ = windowContext->addPane("Navi_waypoints", panel_); // getName() return "" ???
+            frame_dock_->setIcon(getIcon()); // set the image name as same as the name of plugin
+        }
+    }
+
+    void WaypointsDisplay::clearWaypointsLocationsDisplay()
+    {
+        for (auto& it : waypoints_marker_)
+        {
+            it.reset();
+        }
+        waypoints_marker_.clear();
+    }
+
+    void WaypointsDisplay::visualizeWaypointsLocations(int InteractiveIndex, const std::vector<geometry_msgs::PoseStamped>& WaypointsPose)
+    {
+        clearWaypointsLocationsDisplay();
+        waypoints_marker_.resize(WaypointsPose.size());
+
+        for (std::size_t i = 0; i < WaypointsPose.size(); ++i)
+        {
+            visualization_msgs::Marker wayPointMarker;
+            wayPointMarker.type = visualization_msgs::Marker::ARROW;
+            wayPointMarker.action = visualization_msgs::Marker::ADD;
+            wayPointMarker.scale.x = size_property_->getFloat();
+            wayPointMarker.scale.y = 0.2 * wayPointMarker.scale.x;
+            wayPointMarker.scale.z = 0.2 * wayPointMarker.scale.x;
+            Ogre::ColourValue color = color_property_->getOgreColor();
+            wayPointMarker.color.r = color.r;
+            wayPointMarker.color.g = color.g;
+            wayPointMarker.color.b = color.b;
+            wayPointMarker.color.a = 1.0; // don't forget to set the alpha
+
+            visualization_msgs::InteractiveMarkerControl controlMove3d;
+            controlMove3d.always_visible = true;
+            controlMove3d.interaction_mode = visualization_msgs::InteractiveMarkerControl::MOVE_ROTATE_3D;
+            controlMove3d.name = "move";
+            controlMove3d.markers.push_back(wayPointMarker);
+
+            visualization_msgs::InteractiveMarker imarker = i == InteractiveIndex ? make6DOFMarker("marker_scene_object", WaypointsPose[i], 2.1 * wayPointMarker.scale.x) :
+                makeEmptyInteractiveMarker("marker_scene_object", WaypointsPose[i], wayPointMarker.scale.x);
+            imarker.name = std::to_string(i + 1);
+            imarker.description = imarker.name;
+            imarker.controls.push_back(controlMove3d);
+            interactive_markers::autoComplete(imarker);
+
+            waypoints_marker_[i].reset(new rviz::InteractiveMarker(getSceneNode(), context_));
+            waypoints_marker_[i]->processMessage(imarker);
+            waypoints_marker_[i]->setShowAxes(false);
+
+            // connect signals
+            connect(waypoints_marker_[i].get(), SIGNAL(userFeedback(visualization_msgs::InteractiveMarkerFeedback&)), this,
+                SLOT(interactiveMarkerProcessFeedback(visualization_msgs::InteractiveMarkerFeedback&)));
+        }
+    }
+
+    void WaypointsDisplay::interactiveMarkerProcessFeedback(visualization_msgs::InteractiveMarkerFeedback& Feedback)
+    {
+        panel_->updateWaypoint(std::stoi(Feedback.marker_name) - 1, Feedback.pose);
+    }
+
+    void WaypointsDisplay::updateMarks()
+    {
+        panel_->updateHeight(height_property_->getFloat());
+    }
+
+    void WaypointsDisplay::addPositionControl(visualization_msgs::InteractiveMarker& IntMarker, bool OrientationFixed)
+    {
+        visualization_msgs::InteractiveMarkerControl control;
+
+        if (OrientationFixed)
+        {
+            control.orientation_mode = visualization_msgs::InteractiveMarkerControl::FIXED;
+        }
+
+        control.orientation.w = 1.0;
+        control.orientation.x = 1.0;
+        control.orientation.y = 0.0;
+        control.orientation.z = 0.0;
+        control.interaction_mode = visualization_msgs::InteractiveMarkerControl::MOVE_AXIS;
+        IntMarker.controls.push_back(control);
+
+        control.orientation.w = 1.0;
+        control.orientation.x = 0.0;
+        control.orientation.y = 1.0;
+        control.orientation.z = 0;
+        control.interaction_mode = visualization_msgs::InteractiveMarkerControl::MOVE_AXIS;
+        IntMarker.controls.push_back(control);
+
+        control.orientation.w = 1.0;
+        control.orientation.x = 0.0;
+        control.orientation.y = 0.0;
+        control.orientation.z = 1.0;
+        control.interaction_mode = visualization_msgs::InteractiveMarkerControl::MOVE_AXIS;
+        IntMarker.controls.push_back(control);
+    }
+
+    void WaypointsDisplay::addOrientationControl(visualization_msgs::InteractiveMarker& IntMarker, bool OrientationFixed)
+    {
+        visualization_msgs::InteractiveMarkerControl control;
+
+        if (OrientationFixed)
+        {
+            control.orientation_mode = visualization_msgs::InteractiveMarkerControl::FIXED;
+        }
+        
+        control.orientation.w = 1.0;
+        control.orientation.x = 1.0;
+        control.orientation.y = 0;
+        control.orientation.z = 0;
+        control.interaction_mode = visualization_msgs::InteractiveMarkerControl::ROTATE_AXIS;
+        IntMarker.controls.push_back(control);
+
+        control.orientation.w = 1.0;
+        control.orientation.x = 0.0;
+        control.orientation.y = 1.0;
+        control.orientation.z = 0.0;
+        control.interaction_mode = visualization_msgs::InteractiveMarkerControl::ROTATE_AXIS;
+        IntMarker.controls.push_back(control);
+
+        control.orientation.w = 1.0;
+        control.orientation.x = 0.0;
+        control.orientation.y = 0.0;
+        control.orientation.z = 1.0;
+        control.interaction_mode = visualization_msgs::InteractiveMarkerControl::ROTATE_AXIS;
+        IntMarker.controls.push_back(control);
+    }
+
+    visualization_msgs::InteractiveMarker WaypointsDisplay::make6DOFMarker(const std::string& Name,
+        const geometry_msgs::PoseStamped& Stamped, double Scale)
+    {
+        visualization_msgs::InteractiveMarker intMarker = makeEmptyInteractiveMarker(Name, Stamped, Scale);
+        addPositionControl(intMarker, false);
+        addOrientationControl(intMarker, false);
+
+        return intMarker;
+    }
+
+    visualization_msgs::InteractiveMarker WaypointsDisplay::makeEmptyInteractiveMarker(const std::string& Name,
+        const geometry_msgs::PoseStamped& Stamped, double Scale)
+    {
+        visualization_msgs::InteractiveMarker intMarker;
+        intMarker.header = Stamped.header;
+        intMarker.name = Name;
+        intMarker.scale = Scale;
+        intMarker.pose = Stamped.pose;
+
+        return intMarker;
+    }
+
+    PLUGINLIB_EXPORT_CLASS(whi_rviz_plugins::WaypointsDisplay, rviz::Display)
+} // end namespace whi_rviz_plugins

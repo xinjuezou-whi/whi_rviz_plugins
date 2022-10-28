@@ -7,4 +7,11 @@
     </description>
     <message_type>whi_interfaces/WhiBattery</message_type>
   </class>
+  <class name="whi_rviz_plugins/Navi_waypoints"
+         type="whi_rviz_plugins::WaypointsDisplay"
+         base_class_type="rviz::Display">
+    <description>
+      A panel widget to for waypoints of navigation
+    </description>
+  </class>
 </library>
