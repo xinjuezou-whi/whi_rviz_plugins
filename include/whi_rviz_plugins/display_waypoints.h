@@ -30,6 +30,8 @@ namespace rviz
 {
 	class FloatProperty;
     class ColorProperty;
+    class BoolProperty;
+    class MovableText;
 }
 
 namespace whi_rviz_plugins
@@ -45,12 +47,16 @@ namespace whi_rviz_plugins
         // overrides from Display
         void onInitialize() override;
         void clearWaypointsLocationsDisplay();
-        void visualizeWaypointsLocations(int InteractiveIndex, const std::vector<geometry_msgs::PoseStamped>& WaypointsPose);        
+        void visualizeWaypointsLocations(int InteractiveIndex, const std::vector<geometry_msgs::PoseStamped>& WaypointsPose); 
+        void visualEta(const geometry_msgs::Pose& Pose, double Eta);       
 
     private Q_SLOTS:
         void interactiveMarkerProcessFeedback(visualization_msgs::InteractiveMarkerFeedback& Feedback);
 		// these Qt slots get connected to signals indicating changes in the user-editable properties
 		void updateMarks();
+        void setVisibility(bool Visible);
+        void setSize(float Size);
+        void setColor(const Ogre::ColourValue& Color);
 
     private:
         static void addPositionControl(visualization_msgs::InteractiveMarker& IntMarker, bool OrientationFixed);
@@ -64,9 +70,14 @@ namespace whi_rviz_plugins
         rviz::PanelDockWidget* frame_dock_{ nullptr };
         WaypointsPanel* panel_{ nullptr };
         std::vector<std::shared_ptr<rviz::InteractiveMarker>> waypoints_marker_;
+        std::shared_ptr<rviz::MovableText> eta_text_{ nullptr };
         // user-editable property variables
-        rviz::FloatProperty* size_property_;
-        rviz::FloatProperty* height_property_;
-        rviz::ColorProperty* color_property_;
+        rviz::FloatProperty* marker_size_property_;
+        rviz::FloatProperty* marker_height_property_;
+        rviz::ColorProperty* marker_color_property_;
+        rviz::BoolProperty* font_bool_property_;
+        rviz::FloatProperty* font_size_property_;
+        rviz::ColorProperty* font_color_property_;
+        Ogre::SceneNode* frame_node_{ nullptr };
     };
 } // end namespace whi_rviz_plugins

@@ -38,7 +38,7 @@ namespace whi_rviz_plugins
 	{
 		Q_OBJECT
 	public:
-		WaypointsPanel(VisualizeWaypoints VisualizeFunc, QWidget* Parent = nullptr);
+		WaypointsPanel(VisualizeWaypoints FuncWaypoints, VisualizeEta FuncEta, QWidget* Parent = nullptr);
 		~WaypointsPanel() override;
 
 	public:
@@ -46,8 +46,7 @@ namespace whi_rviz_plugins
 		void updateHeight(double Height);
 
 	private:
-		void fillWaypoint(int RowIndex, bool WithCurrent = false);
-		void addWaypoint(int RowIndex, const std::vector<double>& Point);
+		void fillWaypoint(int RowIndex, bool WithCurrent = false, const std::vector<double>* Point = nullptr);
 		void retrieveWaypoints(std::vector<geometry_msgs::PoseStamped>& Waypoints) const;
 		void visualizeWaypoints(int Row) const;
 		void addButtonClicked();
@@ -56,11 +55,10 @@ namespace whi_rviz_plugins
 		bool loadWaypoints(std::string File);
 		void saveWaypoints(std::string File);
 
-	private Q_SLOTS:
-
 	private:
 		Ui::NaviWaypoints* ui_{ nullptr };
-		VisualizeWaypoints func_visualize_{ nullptr };
+		VisualizeWaypoints func_visualize_waypoints_{ nullptr };
+		VisualizeEta func_visualize_eta_{ nullptr };
 		std::unique_ptr<GoalsHandle> goals_{ nullptr };
 	};
 } // end namespace whi_rviz_plugins

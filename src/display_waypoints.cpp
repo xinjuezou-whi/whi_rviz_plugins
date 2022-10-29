@@ -18,22 +18,32 @@ All text above must be included in any redistribution.
 #include <rviz/display_context.h>
 #include <rviz/properties/float_property.h>
 #include <rviz/properties/color_property.h>
+#include <rviz/properties/bool_property.h>
+#include <rviz/ogre_helpers/movable_text.h>
 #include <visualization_msgs/Marker.h>
+
+#include <sstream>
 
 namespace whi_rviz_plugins
 {
     WaypointsDisplay::WaypointsDisplay()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for battery VERSION 00.01" << std::endl;
+        std::cout << "\nWHI RViz plugin for battery VERSION 00.02" << std::endl;
         std::cout << "Copyright @ 2022-2023 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
-        size_property_ = new rviz::FloatProperty("Size", 1.0, "Arrow size of waypoint mark.",
+        marker_size_property_ = new rviz::FloatProperty("Marker Size", 1.0, "Arrow size of waypoint mark.",
             this, SLOT(updateMarks()));
-        height_property_ = new rviz::FloatProperty("Height", 1.0, "Height of waypoint mark for the accessability.",
+        marker_height_property_ = new rviz::FloatProperty("Marker Height", 1.0, "Height of waypoint mark for the accessability.",
             this, SLOT(updateMarks()));
-        color_property_ = new rviz::ColorProperty("Color", QColor(0, 255, 0), "Color of waypoints arrow.",
+        marker_color_property_ = new rviz::ColorProperty("Marker Color", QColor(0, 255, 0), "Color of waypoints arrow.",
             this, SLOT(updateMarks()));
+        font_bool_property_ = new rviz::BoolProperty("Show ETA", true, "Toggle the visibility of ETA info.",
+            this, SLOT(setVisibility()));
+        font_size_property_ = new rviz::FloatProperty("ETA Font Size", 1.0, "Characters size of ETA info.",
+            this, SLOT(setSize()));
+        font_color_property_ = new rviz::ColorProperty("ETA Font Color", QColor(255, 255, 255), "Characters color of ETA info.",
+            this, SLOT(setColor()));
     }
 
     WaypointsDisplay::~WaypointsDisplay()
@@ -45,14 +55,22 @@ namespace whi_rviz_plugins
     {
         Display::onInitialize();
 
-        panel_ = new WaypointsPanel(std::bind(&WaypointsDisplay::visualizeWaypointsLocations,
-            this, std::placeholders::_1, std::placeholders::_2));
+        panel_ = new WaypointsPanel(
+            std::bind(&WaypointsDisplay::visualizeWaypointsLocations, this, std::placeholders::_1, std::placeholders::_2),
+            std::bind(&WaypointsDisplay::visualEta, this, std::placeholders::_1, std::placeholders::_2));
         rviz::WindowManagerInterface* windowContext = context_->getWindowManager();
         if (windowContext)
         {
             frame_dock_ = windowContext->addPane("Navi_waypoints", panel_); // getName() return "" ???
             frame_dock_->setIcon(getIcon()); // set the image name as same as the name of plugin
         }
+
+        eta_text_.reset(new rviz::MovableText("."));
+        eta_text_->setCharacterHeight(font_size_property_->getFloat());
+        eta_text_->setLineSpacing(1.0);
+        eta_text_->setColor(font_color_property_->getOgreColor());
+        frame_node_ = getSceneNode()->createChildSceneNode();
+        frame_node_->attachObject(eta_text_.get());
     }
 
     void WaypointsDisplay::clearWaypointsLocationsDisplay()
@@ -74,10 +92,10 @@ namespace whi_rviz_plugins
             visualization_msgs::Marker wayPointMarker;
             wayPointMarker.type = visualization_msgs::Marker::ARROW;
             wayPointMarker.action = visualization_msgs::Marker::ADD;
-            wayPointMarker.scale.x = size_property_->getFloat();
+            wayPointMarker.scale.x = marker_size_property_->getFloat();
             wayPointMarker.scale.y = 0.2 * wayPointMarker.scale.x;
             wayPointMarker.scale.z = 0.2 * wayPointMarker.scale.x;
-            Ogre::ColourValue color = color_property_->getOgreColor();
+            Ogre::ColourValue color = marker_color_property_->getOgreColor();
             wayPointMarker.color.r = color.r;
             wayPointMarker.color.g = color.g;
             wayPointMarker.color.b = color.b;
@@ -106,6 +124,24 @@ namespace whi_rviz_plugins
         }
     }
 
+    template <typename T>
+    std::string to_string_with_precision(const T Value, const int Num = 6)
+    {
+        std::ostringstream out;
+        out.precision(Num);
+        out << std::fixed << Value;
+        return out.str();
+    }
+
+    void WaypointsDisplay::visualEta(const geometry_msgs::Pose& Pose, double Eta)
+    {
+        std::string info = font_bool_property_->getBool() ? "ETA in " + to_string_with_precision(Eta, 2) + "s" : ".";
+        eta_text_->setCaption(info);
+        eta_text_->setCharacterHeight(font_size_property_->getFloat());
+        eta_text_->setColor(font_color_property_->getOgreColor());
+        eta_text_->setLocalTranslation(Ogre::Vector3(-Pose.position.y, Pose.position.x, 0.0));
+    }
+
     void WaypointsDisplay::interactiveMarkerProcessFeedback(visualization_msgs::InteractiveMarkerFeedback& Feedback)
     {
         panel_->updateWaypoint(std::stoi(Feedback.marker_name) - 1, Feedback.pose);
@@ -113,8 +149,23 @@ namespace whi_rviz_plugins
 
     void WaypointsDisplay::updateMarks()
     {
-        panel_->updateHeight(height_property_->getFloat());
+        panel_->updateHeight(marker_height_property_->getFloat());
     }
+
+    void WaypointsDisplay::setVisibility(bool Visible)
+    {
+        // do nothing
+    }
+
+	void WaypointsDisplay::setSize(float Size)
+	{
+		eta_text_->setCharacterHeight(Size);
+	}
+
+    void WaypointsDisplay::setColor(const Ogre::ColourValue& Color)
+	{
+		eta_text_->setColor(Color);
+	}
 
     void WaypointsDisplay::addPositionControl(visualization_msgs::InteractiveMarker& IntMarker, bool OrientationFixed)
     {

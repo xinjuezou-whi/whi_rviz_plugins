@@ -19,6 +19,13 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_2">
        <item>
+        <widget class="QLabel" name="label_state">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item>
         <spacer name="horizontalSpacer_3">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -54,6 +61,13 @@
              <widget class="QPushButton" name="pushButton_execute">
               <property name="text">
                <string>Execute</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButton_abort">
+              <property name="text">
+               <string>Abort</string>
               </property>
              </widget>
             </item>
