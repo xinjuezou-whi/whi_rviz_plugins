@@ -31,9 +31,22 @@ GoalsHandle::GoalsHandle()
 void GoalsHandle::execute(std::vector<geometry_msgs::Pose> Waypoints, double PointSpan, double StopSpan, bool Loop/* = false*/)
 {
 	goals_list_.clear();
-	for (const auto& it : Waypoints)
+	std::size_t metIndex = 0;
+	for (std::size_t i = 0; i < Waypoints.size(); ++i)
 	{
-		goals_list_.push_back(it);
+		if (metDistance(active_goal_, Waypoints[i], 1e-3))
+		{
+			metIndex = i;
+			break;
+		}
+	}
+	for (std::size_t i = metIndex; ; i = (i + 1) % Waypoints.size())
+	{
+		goals_list_.push_back(Waypoints[i]);
+		if (goals_list_.size() == Waypoints.size())
+		{
+			break;
+		}
 	}
 	point_span_ = PointSpan;
 	stop_span_ = StopSpan;
