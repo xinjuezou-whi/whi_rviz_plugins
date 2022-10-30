@@ -94,3 +94,19 @@ Click the "Add" button at the bottom of the "Displays" panel, then scrolling dow
 3. Click "Execute" to start the multiple goal's navigation
 ![waypoints_execute](https://user-images.githubusercontent.com/72239958/198869441-af36d932-8744-413e-907e-957bf3ac91ec.gif)
 
+### Marker Height Properties
+
+Since the view orientation is top-down in navigation, multiple info are projected on map and overlay each other. If the interactive marker is happen to be overlaid by other info, it could not be accessed by user. Therefore the property marker height is introduced to make sure it is on the top of other info, so to be accessible.
+
+It is suggested to set its height over the max of your robot, default is 1 meter
+
+### Point/Stop Span params
+
+These two params on Navi_waypoints panel are used to set the duration between two navigation goals. If the execution is set as loop mode, the stop span stands for the duration between the last goal and the first goal.
+
+The duration is measured as time, so these two's unit are second. Both are within range -10800 to 10800. Negative duration means there is no stop between goals, and the current goal will be preempted x seconds ahead its arrival by the next goal. The positive means the stop duration between goals.
+
+### Save and Load
+
+For the convenience, you can save the waypoints by clicking save button, and re-use them by button load. The waypoints file is saved as yaml format.
+
