@@ -38,6 +38,8 @@ public:
 	void execute(std::vector<geometry_msgs::Pose> Waypoints, double PointSpan, double StopSpan, bool Loop = false);
 	void cancel();
 	void setLooping(bool Looping);
+	void setPointSpan(double Span);
+	void setStopSpan(double Span);
 	geometry_msgs::Pose getMapOrigin() const;
 	geometry_msgs::Pose getCurrentPose();
 	void registerEatUpdater(VisualizeEta Func);

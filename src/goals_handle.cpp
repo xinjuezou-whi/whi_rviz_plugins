@@ -57,6 +57,16 @@ void GoalsHandle::setLooping(bool Looping)
 	looping_ = Looping;
 }
 
+void GoalsHandle::setPointSpan(double Span)
+{
+	point_span_ = Span;
+}
+
+void GoalsHandle::setStopSpan(double Span)
+{
+	stop_span_ = Span;
+}
+
 geometry_msgs::Pose GoalsHandle::getMapOrigin() const
 {
 	return map_origin_;

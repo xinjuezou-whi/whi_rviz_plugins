@@ -126,6 +126,10 @@ namespace whi_rviz_plugins
 			}
 		});
 		connect(ui_->checkBox_loop, &QCheckBox::stateChanged, this, [=](int State) { goals_->setLooping(State); });
+		connect(ui_->doubleSpinBox_point_span, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
+			[=](double Value) { goals_->setPointSpan(Value); });
+		connect(ui_->doubleSpinBox_stop_span, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
+			[=](double Value) { goals_->setStopSpan(Value); });
 
 		// multiple goals
 		goals_ = std::make_unique<GoalsHandle>();
