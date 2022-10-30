@@ -1,11 +1,18 @@
 # whi_rviz_plugins
-Rviz plugins package for showing custom info. currently only Battery is implemented, which shows the battery's left charge in text and symbolizing battery.
+Rviz plugins package for showing custom info. currently there are two plugins: one is the Battery which shows the battery's left charge in text and symbolizing battery, and another is Navi_waypoints which allows user add multiple navigation targets with interactive markers.
+
+- [Battery](#battery)
+- [Navi_waypoints](#navi_waypoints)
+- [build](#build)
+- [use Battery](#use-battery)
+- [use Navi_waypoints](#use-navi_waypoints)
+
+## Battery
+Plugin Battery is a derived class from MessageFilterDisplay:
 
 ![battery](https://user-images.githubusercontent.com/72239958/187207845-3ec2cd87-ec7e-437b-9cd5-7884a6faf08e.gif)
 
-
-## overview
-Plugin Battery is a derived class from MessageFilterDisplay, and subscribes message "whi_interfaces::WhiBattery". Here is the definition of such message:
+It subscribes message "whi_interfaces::WhiBattery". Here is the definition of such message:
 
 ```
 std_msgs/Header header
@@ -14,6 +21,12 @@ bool need_charge
 ```
 
 The base of the charge text will be at the frame listed in the header of the WhiBattery message, which let the charge info stick to robot and move with it. Besides under multiple robots senario, frame with namespace enable each robot bearing its own charge info.
+
+## Navi_waypoints
+Plugin Navi_waypoints derives from class rviz::Display, and creates a panel for waypoints interaction logic:
+
+![waypoints_add](https://user-images.githubusercontent.com/72239958/198868281-a7e562d9-c85d-4ec5-ab89-87e6f34de6eb.gif)
+
 
 ## build
 Clone package `whi_interfaces` and `whi_rviz_plugins` to your workspace:
@@ -27,8 +40,8 @@ or `catkin_make` depends on your environment. And don't forget to source the bas
 ```
 source <your_workspace>/devel/setup.bash
 ```
-  
-## use instruction
+
+## use battery
 1. Publish the WhiBattery message
 
   For a quick check, there is a test script, named `send_test_msgs.py` under folder `scripts` to publish simulated charge info interatively. Before running it, please make sure roscore is active:
@@ -69,3 +82,15 @@ Modify the orientation to the frame to adjust the direction of battery symbol, t
 > Navigation robot should have a static TF link that directs to map. The belowing gif shows the static TF in robot's URDF(battery->base_link->map)
 
 ![bat](https://user-images.githubusercontent.com/72239958/197972731-3d453537-44c4-4a22-9038-617c21d2711d.gif)
+
+## use Navi_waypoints
+1. Add the Navi_waypoints plugin to RViz
+Click the "Add" button at the bottom of the "Displays" panel, then scrolling down through the available displays until you see "Navi_waypoints" under package name "whi_rviz_plugins":
+![image](https://user-images.githubusercontent.com/72239958/198869331-34ce45d3-8879-4535-a3ff-5046b597dca4.png)
+
+2. Add waypoints and adjust its position and orientation through interfactive marker
+![waypoints_add](https://user-images.githubusercontent.com/72239958/198868281-a7e562d9-c85d-4ec5-ab89-87e6f34de6eb.gif)
+
+3. Click "Execute" to start the multiple goal's navigation
+![waypoints_execute](https://user-images.githubusercontent.com/72239958/198869441-af36d932-8744-413e-907e-957bf3ac91ec.gif)
+
