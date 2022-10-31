@@ -25,7 +25,7 @@ The base of the charge text will be at the frame listed in the header of the Whi
 ## Navi_waypoints
 Plugin Navi_waypoints derives from class rviz::Display, and creates a panel for waypoints interaction logic:
 
-![waypoints_add](https://user-images.githubusercontent.com/72239958/198868281-a7e562d9-c85d-4ec5-ab89-87e6f34de6eb.gif)
+![waypoints_im](https://user-images.githubusercontent.com/72239958/198922851-85c9cbee-87e3-4eca-871b-9a39282a0e05.gif)
 
 
 ## build
@@ -96,6 +96,7 @@ Click the "Add" button at the bottom of the "Displays" panel, then scrolling dow
 
 3. Click "Execute" to start the multiple goal's navigation
 ![waypoints_execute](https://user-images.githubusercontent.com/72239958/198869441-af36d932-8744-413e-907e-957bf3ac91ec.gif)
+
 
 ### Marker Height Properties
 
