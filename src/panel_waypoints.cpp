@@ -28,7 +28,8 @@ All text above must be included in any redistribution.
 
 namespace whi_rviz_plugins
 {
-	WaypointsPanel::WaypointsPanel(VisualizeWaypoints FuncWaypoints, VisualizeEta FuncEta, QWidget* Parent/* = nullptr*/)
+	WaypointsPanel::WaypointsPanel(VisualizeWaypoints FuncWaypoints, VisualizeEta FuncEta,
+		QWidget* Parent/* = nullptr*/)
 		: QWidget(Parent), ui_(new Ui::NaviWaypoints())
 		, func_visualize_waypoints_(FuncWaypoints), func_visualize_eta_(FuncEta)
 	{
@@ -134,6 +135,7 @@ namespace whi_rviz_plugins
 		// multiple goals
 		goals_ = std::make_unique<GoalsHandle>();
 		goals_->registerEatUpdater(func_visualize_eta_);
+		goals_->registerExecutionUpdater(std::bind(&WaypointsPanel::executionState, this, std::placeholders::_1));
 	}
 
 	WaypointsPanel::~WaypointsPanel()
@@ -269,6 +271,15 @@ namespace whi_rviz_plugins
 		if (ui_->tableWidget_waypoints->rowCount() == 0)
 		{
 			ui_->pushButton_execute->setEnabled(false);
+		}
+	}
+
+	void WaypointsPanel::executionState(int State)
+	{
+		if (State == GoalsHandle::STA_DONE)
+		{
+			ui_->pushButton_execute->setEnabled(true);
+			ui_->label_state->setText("Standby");
 		}
 	}
 

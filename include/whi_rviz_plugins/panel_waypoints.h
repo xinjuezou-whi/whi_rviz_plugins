@@ -38,7 +38,8 @@ namespace whi_rviz_plugins
 	{
 		Q_OBJECT
 	public:
-		WaypointsPanel(VisualizeWaypoints FuncWaypoints, VisualizeEta FuncEta, QWidget* Parent = nullptr);
+		WaypointsPanel(VisualizeWaypoints FuncWaypoints, VisualizeEta FuncEta,
+			QWidget* Parent = nullptr);
 		~WaypointsPanel() override;
 
 	public:
@@ -52,6 +53,7 @@ namespace whi_rviz_plugins
 		void addButtonClicked();
 		void insertButtonClicked();
 		void removeButtonClicked();
+		void executionState(int State);
 		bool loadWaypoints(std::string File);
 		void saveWaypoints(std::string File);
 

@@ -27,9 +27,13 @@ Changelog:
 #include <mutex>
 
 using VisualizeEta = std::function<void(const geometry_msgs::Pose&, double)>;
+using ExecutionState = std::function<void(int)>;
 
 class GoalsHandle
 {
+public:
+	enum State { STA_STANDBY = 0, STA_DONE };
+
 public:
     GoalsHandle();
     ~GoalsHandle() = default;
@@ -43,6 +47,7 @@ public:
 	geometry_msgs::Pose getMapOrigin() const;
 	geometry_msgs::Pose getCurrentPose();
 	void registerEatUpdater(VisualizeEta Func);
+	void registerExecutionUpdater(ExecutionState Func);
 
 private:
 	void setGoal(const geometry_msgs::Pose& Goal);
@@ -83,4 +88,5 @@ private:
 	std::unique_ptr<ros::Subscriber> sub_cmd_vel_{ nullptr };
 	// updater
 	VisualizeEta func_eta_{ nullptr };
+	ExecutionState func_execution_state_{ nullptr };
 };

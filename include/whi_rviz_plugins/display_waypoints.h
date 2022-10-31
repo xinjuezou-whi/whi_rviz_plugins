@@ -48,7 +48,7 @@ namespace whi_rviz_plugins
         void onInitialize() override;
         void clearWaypointsLocationsDisplay();
         void visualizeWaypointsLocations(int InteractiveIndex, const std::vector<geometry_msgs::PoseStamped>& WaypointsPose); 
-        void visualEta(const geometry_msgs::Pose& Pose, double Eta);       
+        void visualEta(const geometry_msgs::Pose& Pose, double Eta);
 
     private Q_SLOTS:
         void interactiveMarkerProcessFeedback(visualization_msgs::InteractiveMarkerFeedback& Feedback);

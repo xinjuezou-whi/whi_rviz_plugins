@@ -99,6 +99,11 @@ void GoalsHandle::registerEatUpdater(VisualizeEta Func)
 	func_eta_ = Func;
 }
 
+void GoalsHandle::registerExecutionUpdater(ExecutionState Func)
+{
+	func_execution_state_ = Func;
+}
+
 void GoalsHandle::setGoal(const geometry_msgs::Pose& Goal)
 {
 	static size_t waitingCount = 0;
@@ -177,7 +182,7 @@ void GoalsHandle::subCallbackCmdVel(const geometry_msgs::Twist::ConstPtr& CmdVel
 void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State, const move_base_msgs::MoveBaseResultConstPtr& Result)
 {
 #ifdef DEBUG
-	std::cout << "goal state " << std::to_string(State.state_) << std::endl;
+	std::cout << "goal state " << std::to_string(State.state_) << " goal left " << goals_list_.size() << std::endl;
 #endif
 	if (!goals_list_.empty() && (point_span_ > 0.0 || stop_span_ > 0.0))
 	{
@@ -185,6 +190,13 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 		ros::Duration duration = isFinalOne ? ros::Duration(stop_span_) : ros::Duration(point_span_);
 		non_realtime_loop_ = std::make_unique<ros::Timer>(
 			node_handle_->createTimer(duration, std::bind(&GoalsHandle::callbackTimer, this, std::placeholders::_1)));
+	}
+	else if (goals_list_.empty())
+	{
+		if (func_execution_state_)
+		{
+			func_execution_state_(STA_DONE);
+		}
 	}
 }
 
@@ -217,12 +229,28 @@ void GoalsHandle::callbackGoalFeedback(const move_base_msgs::MoveBaseFeedbackCon
 	if (dist < tolerance && !goals_list_.empty())
 	{
 		setGoal(goals_list_.front());
-		printf("tolerace reached, proceeding the next\n");	
+		std::cout << "tolerace reached, proceeding the next. remained goals " << goals_list_.size() << std::endl;
 	}
-	if (func_eta_ && current_linear_ > 0.0 && dist > 0.2)
+	if (current_linear_ > 0.0 && dist > 0.2)
 	{
-		func_eta_(active_goal_, dist / current_linear_);
+		if (func_eta_)
+		{
+			func_eta_(active_goal_, dist / current_linear_);
+		}
 	}
+	if (goals_list_.empty() && dist < 0.2)
+	{
+		if (func_execution_state_)
+		{
+			func_execution_state_(STA_DONE);
+		}
+		if (func_eta_)
+		{
+			func_eta_(active_goal_, -1.0);
+		}
+		std::cout << "all goals traversed. remained goals " << goals_list_.size() << std::endl;
+	}
+
 #ifdef DEBUG
 	std::cout << "distance " << dist << " tolerance " << tolerance <<
 		" left point count " << std::to_string(goals_list_.size()) << std::endl;
