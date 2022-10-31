@@ -86,15 +86,18 @@ Modify the orientation to the frame to adjust the direction of battery symbol, t
 ## use Navi_waypoints
 1. Add the Navi_waypoints plugin to RViz
 Click the "Add" button at the bottom of the "Displays" panel, then scrolling down through the available displays until you see "Navi_waypoints" under package name "whi_rviz_plugins":
+
 ![image](https://user-images.githubusercontent.com/72239958/198869331-34ce45d3-8879-4535-a3ff-5046b597dca4.png)
 
 2. Add waypoints and adjust its position and orientation through interfactive marker
+
 ![waypoints_add](https://user-images.githubusercontent.com/72239958/198868281-a7e562d9-c85d-4ec5-ab89-87e6f34de6eb.gif)
 
 > Remember to switch the mode from "Move Camera" to "Interact" to grand the accessiblity of waypoint marker
 
 
 3. Click "Execute" to start the multiple goal's navigation
+
 ![waypoints_execute](https://user-images.githubusercontent.com/72239958/198869441-af36d932-8744-413e-907e-957bf3ac91ec.gif)
 
 
