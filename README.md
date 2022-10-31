@@ -91,6 +91,9 @@ Click the "Add" button at the bottom of the "Displays" panel, then scrolling dow
 2. Add waypoints and adjust its position and orientation through interfactive marker
 ![waypoints_add](https://user-images.githubusercontent.com/72239958/198868281-a7e562d9-c85d-4ec5-ab89-87e6f34de6eb.gif)
 
+> Remember to switch the mode from "Move Camera" to "Interact" to grand the accessiblity of waypoint marker
+
+
 3. Click "Execute" to start the multiple goal's navigation
 ![waypoints_execute](https://user-images.githubusercontent.com/72239958/198869441-af36d932-8744-413e-907e-957bf3ac91ec.gif)
 
@@ -102,7 +105,7 @@ It is suggested to set its height over the max of your robot, default is 1 meter
 
 ### Point/Stop Span params
 
-These two params on Navi_waypoints panel are used to set the duration between two navigation goals. If the execution is set as loop mode, the stop span stands for the duration between the last goal and the first goal.
+These two params on Navi_waypoints panel are used to set the duration between two adjacent goals. If the execution is set as loop mode, the stop span stands for the duration between the last goal and the first goal.
 
 The duration is measured as time, so these two's unit are second. Both are within range -10800 to 10800. Negative duration means there is no stop between goals, and the current goal will be preempted x seconds ahead its arrival by the next goal. The positive means the stop duration between goals.
 
