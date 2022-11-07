@@ -18,6 +18,9 @@ All text above must be included in any redistribution.
 GoalsHandle::GoalsHandle()
 	: node_handle_(std::make_unique<ros::NodeHandle>())
 {
+	std::string model;
+	with_ux_ = node_handle_->getParam("/whi_navigation_ux/robot_model", model);
+
     sub_planned_path_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<nav_msgs::Path>(
 		"/move_base/NavfnROS/plan", 10, std::bind(&GoalsHandle::subCallbackPlanPath, this, std::placeholders::_1)));
 	sub_map_data_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<nav_msgs::MapMetaData>(
@@ -153,6 +156,37 @@ void GoalsHandle::cancelGoal() const
 	pubCancel->publish(cancelID);
 }
 
+void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Goal)
+{
+	bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
+	double tolerance = isFinalOne ? -stop_span_ * current_linear_ : -point_span_ * current_linear_;
+	double dist = distance(Goal, active_goal_);
+	if (dist < tolerance && !goals_list_.empty())
+	{
+		setGoal(goals_list_.front());
+		std::cout << "tolerace reached, proceeding the next. remained goals " << goals_list_.size() << std::endl;
+	}
+	if (current_linear_ > 0.0 && dist > 0.2)
+	{
+		if (func_eta_)
+		{
+			func_eta_(active_goal_, dist / current_linear_);
+		}
+	}
+	if (goals_list_.empty() && dist < 0.2)
+	{
+		if (func_execution_state_)
+		{
+			func_execution_state_(STA_DONE);
+		}
+		if (func_eta_)
+		{
+			func_eta_(active_goal_, -1.0);
+		}
+		std::cout << "all goals traversed. remained goals " << goals_list_.size() << std::endl;
+	}
+}
+
 void GoalsHandle::subCallbackPlanPath(const nav_msgs::Path::ConstPtr& PlanPath)
 {
 	traj_poses_ = PlanPath->poses;
@@ -172,6 +206,11 @@ void GoalsHandle::subCallbackEstimated(const geometry_msgs::PoseWithCovarianceSt
 	tf::Quaternion quat(estimated_.orientation.x, estimated_.orientation.y, estimated_.orientation.z, estimated_.orientation.w);
   	double roll = 0.0, pitch = 0.0, yaw = 0.0;
   	tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+
+	if (with_ux_)
+	{
+		handleGoalAndState(estimated_);
+	}
 }
 
 void GoalsHandle::subCallbackCmdVel(const geometry_msgs::Twist::ConstPtr& CmdVel)
@@ -223,40 +262,10 @@ void GoalsHandle::callbackGoalActive()
 
 void GoalsHandle::callbackGoalFeedback(const move_base_msgs::MoveBaseFeedbackConstPtr& Feedback)
 {
-	bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
-	double tolerance = isFinalOne ? -stop_span_ * current_linear_ : -point_span_ * current_linear_;
-	double dist = distance(Feedback->base_position.pose, active_goal_);
-	if (dist < tolerance && !goals_list_.empty())
+	if (!with_ux_)
 	{
-		setGoal(goals_list_.front());
-		std::cout << "tolerace reached, proceeding the next. remained goals " << goals_list_.size() << std::endl;
+		handleGoalAndState(Feedback->base_position.pose);
 	}
-	if (current_linear_ > 0.0 && dist > 0.2)
-	{
-		if (func_eta_)
-		{
-			func_eta_(active_goal_, dist / current_linear_);
-		}
-	}
-	if (goals_list_.empty() && dist < 0.2)
-	{
-		if (func_execution_state_)
-		{
-			func_execution_state_(STA_DONE);
-		}
-		if (func_eta_)
-		{
-			func_eta_(active_goal_, -1.0);
-		}
-		std::cout << "all goals traversed. remained goals " << goals_list_.size() << std::endl;
-	}
-
-#ifdef DEBUG
-	std::cout << "distance " << dist << " tolerance " << tolerance <<
-		" left point count " << std::to_string(goals_list_.size()) << std::endl;
-	std::cout << "goal feedback " << Feedback->base_position.pose.position.x << " " << Feedback->base_position.pose.position.y <<
-		" active goal " << active_goal_.position.x << " " << active_goal_.position.y << std::endl;
-#endif
 }
 
 void GoalsHandle::callbackTimer(const ros::TimerEvent& Event)
