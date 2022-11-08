@@ -52,7 +52,7 @@ public:
 private:
 	void setGoal(const geometry_msgs::Pose& Goal);
 	void cancelGoal() const;
-	void handleGoalAndState(const geometry_msgs::Pose& Goal);
+	void handleGoalAndState(const geometry_msgs::Pose& Pose);
 	void subCallbackPlanPath(const nav_msgs::Path::ConstPtr& PlanPath);
 	void subCallbackMapData(const nav_msgs::MapMetaData::ConstPtr& MapData);
 	void subCallbackEstimated(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& Estimated);
@@ -79,7 +79,7 @@ private:
 	bool looping_{ false };
 	double point_span_{ 0.3 };
 	double stop_span_{ 0.3 };
-	double current_linear_{ 1.0 };
+	double current_linear_{ 0.0001 };
 	std::mutex mtx_estimated_;
 	std::unique_ptr<ros::Timer> non_realtime_loop_{ nullptr };
 	bool with_ux_{ true };

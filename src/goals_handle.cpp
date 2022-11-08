@@ -117,7 +117,7 @@ void GoalsHandle::setGoal(const geometry_msgs::Pose& Goal)
 	// wait for the action server to come up
 	while (!movebase_client_->waitForServer(ros::Duration(5.0)))
 	{
-	if (++waitingCount > 3)
+		if (++waitingCount > 3)
 		{
 			printf("can't set the goal, please check if the action server is on\n");
 			break;
@@ -156,17 +156,30 @@ void GoalsHandle::cancelGoal() const
 	pubCancel->publish(cancelID);
 }
 
-void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Goal)
+void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 {
 	bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
 	double tolerance = isFinalOne ? -stop_span_ * current_linear_ : -point_span_ * current_linear_;
-	double dist = distance(Goal, active_goal_);
-	if (dist < tolerance && !goals_list_.empty())
+	double dist = distance(Pose, active_goal_);
+	if (tolerance > 0.0)
 	{
-		setGoal(goals_list_.front());
-		std::cout << "tolerace reached, proceeding the next. remained goals " << goals_list_.size() << std::endl;
+		if (dist < tolerance && !goals_list_.empty())
+		{
+			setGoal(goals_list_.front());
+			std::cout << "tolerace reached, proceeding the next. remained goals " << goals_list_.size() << "  " << tolerance << std::endl;
+		}
 	}
-	if (current_linear_ > 0.0 && dist > 0.2)
+	else
+	{
+		if (with_ux_ && !goals_list_.empty())
+		{
+			bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
+			ros::Duration duration = isFinalOne ? ros::Duration(stop_span_) : ros::Duration(point_span_);
+			non_realtime_loop_ = std::make_unique<ros::Timer>(
+				node_handle_->createTimer(duration, std::bind(&GoalsHandle::callbackTimer, this, std::placeholders::_1)));
+		}
+	}
+	if (current_linear_ > 1e-3 && dist > 0.2)
 	{
 		if (func_eta_)
 		{
@@ -181,7 +194,8 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Goal)
 		}
 		if (func_eta_)
 		{
-			func_eta_(active_goal_, -1.0);
+			double eta = with_ux_ ? -2.0 : -1.0;
+			func_eta_(active_goal_, eta);
 		}
 		std::cout << "all goals traversed. remained goals " << goals_list_.size() << std::endl;
 	}
@@ -225,10 +239,13 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 #endif
 	if (!goals_list_.empty() && (point_span_ > 0.0 || stop_span_ > 0.0))
 	{
-		bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
-		ros::Duration duration = isFinalOne ? ros::Duration(stop_span_) : ros::Duration(point_span_);
-		non_realtime_loop_ = std::make_unique<ros::Timer>(
-			node_handle_->createTimer(duration, std::bind(&GoalsHandle::callbackTimer, this, std::placeholders::_1)));
+		if (!with_ux_)
+		{
+			bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
+			ros::Duration duration = isFinalOne ? ros::Duration(stop_span_) : ros::Duration(point_span_);
+			non_realtime_loop_ = std::make_unique<ros::Timer>(
+				node_handle_->createTimer(duration, std::bind(&GoalsHandle::callbackTimer, this, std::placeholders::_1)));
+		}
 	}
 	else if (goals_list_.empty())
 	{
@@ -271,7 +288,7 @@ void GoalsHandle::callbackGoalFeedback(const move_base_msgs::MoveBaseFeedbackCon
 void GoalsHandle::callbackTimer(const ros::TimerEvent& Event)
 {
 	setGoal(goals_list_.front());
-	printf("tolerace reached, proceeding the next\n");	
+	std::cout << "span timeout, proceeding the next" << std::endl;	
 
 	non_realtime_loop_->stop();
 	non_realtime_loop_ = nullptr;
