@@ -32,7 +32,7 @@ using ExecutionState = std::function<void(int)>;
 class GoalsHandle
 {
 public:
-	enum State { STA_STANDBY = 0, STA_DONE };
+	enum State { STA_STANDBY = 0, STA_DONE, STA_ABORTED };
 
 public:
     GoalsHandle();
@@ -53,6 +53,7 @@ private:
 	void setGoal(const geometry_msgs::Pose& Goal);
 	void cancelGoal() const;
 	void handleGoalAndState(const geometry_msgs::Pose& Pose);
+	void handleGoalAndStateUx(const geometry_msgs::Pose& Pose);
 	void subCallbackPlanPath(const nav_msgs::Path::ConstPtr& PlanPath);
 	void subCallbackMapData(const nav_msgs::MapMetaData::ConstPtr& MapData);
 	void subCallbackEstimated(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& Estimated);

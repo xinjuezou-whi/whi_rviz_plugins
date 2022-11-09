@@ -37,9 +37,19 @@ void GoalsHandle::execute(std::vector<geometry_msgs::Pose> Waypoints, double Poi
 	std::size_t metIndex = 0;
 	for (std::size_t i = 0; i < Waypoints.size(); ++i)
 	{
-		if (metDistance(active_goal_, Waypoints[i], 1e-3))
+		if (distance(estimated_, Waypoints[i]) > 1.0)
 		{
-			metIndex = i;
+			// otherwise check the aborted goal if there is
+			if (metDistance(active_goal_, Waypoints[i], 1e-3))
+			{
+				metIndex = i;
+				break;
+			}
+		}
+		else
+		{
+			// choose the next one if current pose overlays the waypoint
+			metIndex = (i + 1) % Waypoints.size();
 			break;
 		}
 	}
@@ -154,50 +164,95 @@ void GoalsHandle::cancelGoal() const
 	actionlib_msgs::GoalID cancelID; // must be an empty goal msg
 
 	pubCancel->publish(cancelID);
+
+	if (func_eta_)
+	{
+		func_eta_(active_goal_, -2.0);
+	}
 }
 
 void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 {
-	bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
-	double tolerance = isFinalOne ? -stop_span_ * current_linear_ : -point_span_ * current_linear_;
 	double dist = distance(Pose, active_goal_);
-	if (tolerance > 0.0)
+	if (goals_list_.empty())
 	{
-		if (dist < tolerance && !goals_list_.empty())
+		if (dist < 0.2)
+		{
+			if (func_execution_state_)
+			{
+				func_execution_state_(STA_DONE);
+			}
+			if (func_eta_)
+			{
+				func_eta_(active_goal_, -1.0);
+			}
+			std::cout << "all goals traversed. remained goals " << goals_list_.size() << std::endl;
+		}
+	}
+	else
+	{
+		bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
+		double tolerance = isFinalOne ? -stop_span_ * current_linear_ : -point_span_ * current_linear_;
+		if (dist < tolerance)
 		{
 			setGoal(goals_list_.front());
 			std::cout << "tolerace reached, proceeding the next. remained goals " << goals_list_.size() << "  " << tolerance << std::endl;
 		}
 	}
-	else
-	{
-		if (with_ux_ && !goals_list_.empty())
-		{
-			bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
-			ros::Duration duration = isFinalOne ? ros::Duration(stop_span_) : ros::Duration(point_span_);
-			non_realtime_loop_ = std::make_unique<ros::Timer>(
-				node_handle_->createTimer(duration, std::bind(&GoalsHandle::callbackTimer, this, std::placeholders::_1)));
-		}
-	}
-	if (current_linear_ > 1e-3 && dist > 0.2)
+
+	// eta info shows during running state
+	if (current_linear_ > 1e-2 && dist > 0.2)
 	{
 		if (func_eta_)
 		{
 			func_eta_(active_goal_, dist / current_linear_);
 		}
 	}
-	if (goals_list_.empty() && dist < 0.2)
+
+}
+
+void GoalsHandle::handleGoalAndStateUx(const geometry_msgs::Pose& Pose)
+{
+	double dist = distance(Pose, active_goal_);
+	if (goals_list_.empty())
 	{
-		if (func_execution_state_)
+		if (dist < 0.5) // the last one
 		{
-			func_execution_state_(STA_DONE);
+			if (func_execution_state_)
+			{
+				func_execution_state_(STA_DONE);
+			}
+			if (func_eta_)
+			{
+				func_eta_(active_goal_, -1.0);
+			}
+			std::cout << "all goals traversed. remained goals " << goals_list_.size() << std::endl;
 		}
+	}
+	else
+	{
+		bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
+		double tolerance = isFinalOne ? -stop_span_ * current_linear_ : -point_span_ * current_linear_;
+		if (dist < tolerance)
+		{
+			setGoal(goals_list_.front());
+			std::cout << "tolerace reached, proceeding the next. remained goals " << goals_list_.size() << "  " << tolerance << std::endl;
+		}
+		else if (tolerance < 0.0)
+		{
+			ros::Duration duration = isFinalOne ? ros::Duration(stop_span_) : ros::Duration(point_span_);
+			non_realtime_loop_ = std::make_unique<ros::Timer>(
+				node_handle_->createTimer(duration, std::bind(&GoalsHandle::callbackTimer, this, std::placeholders::_1)));
+		}
+	}
+
+	// eta info shows during running state
+	if (current_linear_ > 1e-2 && dist > 0.2)
+	{
 		if (func_eta_)
 		{
-			double eta = with_ux_ ? -2.0 : -1.0;
-			func_eta_(active_goal_, eta);
+			func_eta_(active_goal_, dist / current_linear_);
 		}
-		std::cout << "all goals traversed. remained goals " << goals_list_.size() << std::endl;
 	}
 }
 
@@ -223,7 +278,7 @@ void GoalsHandle::subCallbackEstimated(const geometry_msgs::PoseWithCovarianceSt
 
 	if (with_ux_)
 	{
-		handleGoalAndState(estimated_);
+		handleGoalAndStateUx(estimated_);
 	}
 }
 
@@ -237,21 +292,24 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 #ifdef DEBUG
 	std::cout << "goal state " << std::to_string(State.state_) << " goal left " << goals_list_.size() << std::endl;
 #endif
-	if (!goals_list_.empty() && (point_span_ > 0.0 || stop_span_ > 0.0))
+	if (!with_ux_)
 	{
-		if (!with_ux_)
+		if (goals_list_.empty())
 		{
-			bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
-			ros::Duration duration = isFinalOne ? ros::Duration(stop_span_) : ros::Duration(point_span_);
-			non_realtime_loop_ = std::make_unique<ros::Timer>(
-				node_handle_->createTimer(duration, std::bind(&GoalsHandle::callbackTimer, this, std::placeholders::_1)));
+			if (func_execution_state_)
+			{
+				func_execution_state_(STA_DONE);
+			}
 		}
-	}
-	else if (goals_list_.empty())
-	{
-		if (func_execution_state_)
+		else
 		{
-			func_execution_state_(STA_DONE);
+			if (point_span_ > 0.0 || stop_span_ > 0.0)
+			{
+				bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
+				ros::Duration duration = isFinalOne ? ros::Duration(stop_span_) : ros::Duration(point_span_);
+				non_realtime_loop_ = std::make_unique<ros::Timer>(
+					node_handle_->createTimer(duration, std::bind(&GoalsHandle::callbackTimer, this, std::placeholders::_1)));
+			}
 		}
 	}
 }

@@ -29,7 +29,7 @@ namespace whi_rviz_plugins
     WaypointsDisplay::WaypointsDisplay()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for battery VERSION 00.06" << std::endl;
+        std::cout << "\nWHI RViz plugin for battery VERSION 00.07" << std::endl;
         std::cout << "Copyright @ 2022-2023 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         marker_size_property_ = new rviz::FloatProperty("Marker Size", 1.0, "Arrow size of waypoint mark.",
@@ -142,13 +142,17 @@ namespace whi_rviz_plugins
             {
                 info = "ETA in " + to_string_with_precision(Eta, 2) + "s";
             }
-            else if (Eta < -1.0)
+            else if (fabs(Eta + 1.0) < 1e-5)
             {
-                info = ".";
+                info = "Arrived";
+            }
+            else if (fabs(Eta + 2.0) < 1e-5)
+            {
+                info = "Aborted";
             }
             else
             {
-                info = "Arrived";
+                info = ".";
             }
         }
 
