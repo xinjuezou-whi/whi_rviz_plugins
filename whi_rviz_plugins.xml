@@ -14,4 +14,11 @@
       A panel widget to for waypoints of navigation
     </description>
   </class>
+  <class name="whi_rviz_plugins/Map_saver"
+         type="whi_rviz_plugins::MapSaverPanel"
+         base_class_type="rviz::Panel">
+    <description>
+      A panel widget for save map with map_server
+    </description>
+  </class>
 </library>
