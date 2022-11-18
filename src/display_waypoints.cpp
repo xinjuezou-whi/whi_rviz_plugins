@@ -125,10 +125,10 @@ namespace whi_rviz_plugins
     }
 
     template <typename T>
-    std::string to_string_with_precision(const T Value, const int Num = 6)
+    std::string to_string_with_precision(const T Value, const int Digits = 6)
     {
         std::ostringstream out;
-        out.precision(Num);
+        out.precision(Digits);
         out << std::fixed << Value;
         return out.str();
     }
