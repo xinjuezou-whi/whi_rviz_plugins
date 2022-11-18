@@ -21,4 +21,11 @@
       A panel widget for save map with map_server
     </description>
   </class>
+  <class name="whi_rviz_plugins/Teleop"
+         type="whi_rviz_plugins::DisplayTeleop"
+         base_class_type="rviz::Display">
+    <description>
+      Generic keyboard teleop
+    </description>
+  </class>
 </library>
