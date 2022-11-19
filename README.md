@@ -5,7 +5,7 @@ Rviz plugins package for showing custom info. currently there are four plugins: 
 - [Navi_waypoints](#navi_waypoints)
 - [Teleop](#teleop)
 - [Map_saver](#map_saver)
-- [build](#build)
+- [Build](#build)
 - [Use Battery](#use-battery)
 - [Use Navi_waypoints](#use-navi_waypoints)
 - [Use Teleop](#use-teleop)
@@ -39,7 +39,7 @@ Map_saver is a panel type plugin. It can help user to save map directly through 
 ![mapsaver](https://user-images.githubusercontent.com/72239958/202850327-21740d9a-5339-45bb-a772-2a1c1e2f22fc.gif)
 
 
-## build
+## Build
 Clone package `whi_interfaces` and `whi_rviz_plugins` to your workspace:
 
 ```
