@@ -73,8 +73,10 @@ namespace whi_rviz_plugins
         updateAngularMin();
         updateAngularMax();
         updateAngularStep();
-        updateEnable();
+        // these three are order critical
+        updatePubTopic();
         updatePubFrequency();
+        updateEnable();
     }
 
     void DisplayTeleop::updateEnable()
@@ -89,7 +91,7 @@ namespace whi_rviz_plugins
 
 	void DisplayTeleop::updatePubTopic()
     {
-
+        panel_->setPubTopic(pub_topic_property_->getString().toStdString());
     }
 
     void DisplayTeleop::updateLinearMin()

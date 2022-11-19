@@ -15,6 +15,7 @@ All text above must be included in any redistribution.
 #include "whi_rviz_plugins/widget_twist.h"
 #include "ui_navi_teleop.h"
 
+#include <geometry_msgs/Twist.h>
 #include <iostream>
 #include <sstream>
 #include <math.h>
@@ -36,6 +37,7 @@ namespace whi_rviz_plugins
 
     TeleopPanel::TeleopPanel(QWidget* Parent/* = nullptr*/)
 		: QWidget(Parent), ui_(new Ui::NaviTeleop())
+        , node_handle_(std::make_unique<ros::NodeHandle>())
 	{
 		// set up the GUI
 		ui_->setupUi(this);
@@ -116,10 +118,27 @@ namespace whi_rviz_plugins
         twist_widget_->setAngularStep(Step);
     }
 
+    void TeleopPanel::setPubTopic(const std::string& Topic)
+    {
+        if (topic_ != Topic)
+        {
+            topic_ = Topic;
+            // check if the timer is running
+            if (timer_pub_ && timer_pub_->isActive())
+            {
+                timer_pub_->stop();
+                pub_ = std::make_unique<ros::Publisher>(node_handle_->advertise<geometry_msgs::Twist>(topic_, 50));
+                timer_pub_->start(interval_pub_);
+            }
+        }
+    }
+
     void TeleopPanel::setPubFunctionality(bool Active)
     {
         if (Active)
         {
+            pub_ = std::make_unique<ros::Publisher>(node_handle_->advertise<geometry_msgs::Twist>(topic_, 50));
+            
             if (timer_pub_)
             {
                 if (!timer_pub_->isActive())
@@ -135,6 +154,11 @@ namespace whi_rviz_plugins
                 {
                     twist_widget_->toggleIndicator(toggle_publishing_, true);
                     toggle_publishing_ = !toggle_publishing_;
+
+                    geometry_msgs::Twist msgTwist;
+                    msgTwist.linear.x = linear_;
+                    msgTwist.angular.z = angular_;
+                    pub_->publish(std::move(msgTwist));
                 });
                 timer_pub_->start(interval_pub_);
             }
@@ -160,34 +184,32 @@ namespace whi_rviz_plugins
 
     void TeleopPanel::moveLinear(int Dir)
     {
-        float linear = fabs(twist_widget_->getLinear()) < 1e-3 ? Dir * twist_widget_->getLinearMin() :
+        linear_ = fabs(twist_widget_->getLinear()) < 1e-3 ? Dir * twist_widget_->getLinearMin() :
             twist_widget_->getLinear() + Dir * twist_widget_->getLinearStep();
-        linear = fabs(linear) < twist_widget_->getLinearMin() ? 0.0 : linear;
-        if (fabs(linear) < twist_widget_->getLinearMax() + 1e-3)
-        {
-            twist_widget_->setLinear(linear);
+        linear_ = fabs(linear_) < twist_widget_->getLinearMin() ? 0.0 : linear_;
+        linear_ = fabs(linear_) > twist_widget_->getLinearMax() ? twist_widget_->getLinearMax() : linear_;
 
-            ui_->label_linear->setText(to_string_with_precision(linear, 2).c_str());
-        }
+        twist_widget_->setLinear(linear_);
+        ui_->label_linear->setText(to_string_with_precision(linear_, 2).c_str());
     }
 
 	void TeleopPanel::moveAngular(int Dir)
     {
-        float angular = fabs(twist_widget_->getAngular()) < 1e-3 ? Dir * twist_widget_->getAngularStep() :
+        angular_ = fabs(twist_widget_->getAngular()) < 1e-3 ? Dir * twist_widget_->getAngularStep() :
             twist_widget_->getAngular() + Dir * twist_widget_->getAngularStep();
-        angular = fabs(angular) < twist_widget_->getAngularMin() ? 0.0 : angular;
-        if (fabs(angular) < twist_widget_->getAngularMax() + 1e-3)
-        {
-            twist_widget_->setAngular(angular);
+        angular_ = fabs(angular_) < twist_widget_->getAngularMin() ? 0.0 : angular_;
+        angular_ = fabs(angular_) > twist_widget_->getAngularMax() ? twist_widget_->getAngularMax() : angular_;
 
-            ui_->label_angular->setText(to_string_with_precision(angular, 2).c_str());
-        }
+        twist_widget_->setAngular(angular_);
+        ui_->label_angular->setText(to_string_with_precision(angular_, 2).c_str());
     }
 
     void TeleopPanel::halt()
     {
-        twist_widget_->setLinear(0.0);
-        twist_widget_->setAngular(0.0);
+        linear_ = 0.0;
+        angular_ = 0.0;
+        twist_widget_->setLinear(linear_);
+        twist_widget_->setAngular(angular_);
 
         ui_->label_linear->setText("0.0");
         ui_->label_angular->setText("0.0");

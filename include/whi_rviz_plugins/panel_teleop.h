@@ -15,7 +15,9 @@ Changelog:
 2022-xx-xx: xxx
 ******************************************************************/
 #pragma once
+#include <ros/ros.h>
 #include <rviz/panel.h>
+#include <memory>
 
 namespace Ui
 {
@@ -40,6 +42,7 @@ namespace whi_rviz_plugins
 		void setAngularMin(float Min);
 		void setAngularMax(float Max);
 		void setAngularStep(float Step);
+		void setPubTopic(const std::string& Topic);
 		void setPubFunctionality(bool Active);
 		void setPubFrequency(float Frequency);
 		void moveLinear(int Dir);
@@ -57,5 +60,10 @@ namespace whi_rviz_plugins
 		QTimer* timer_pub_{ nullptr };
 		int interval_pub_{ 200 };
 		bool toggle_publishing_{ true };
+		std::unique_ptr<ros::NodeHandle> node_handle_{ nullptr };
+		std::unique_ptr<ros::Publisher> pub_{ nullptr };
+		std::string topic_;
+		float linear_{ 0.0 };
+		float angular_{ 0.0 };
 	};
 } // end namespace whi_rviz_plugins
