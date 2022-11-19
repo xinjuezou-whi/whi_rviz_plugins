@@ -1,8 +1,10 @@
 # whi_rviz_plugins
-Rviz plugins package for showing custom info. currently there are two plugins: one is the Battery which shows the battery's left charge in text and symbolizing battery, and another is Navi_waypoints which allows user add multiple navigation targets with interactive markers.
+Rviz plugins package for showing custom info. currently there are four plugins: the Battery which shows the battery's left charge in text and symbolizing battery; the Navi_waypoints which allows user add multiple navigation targets with interactive markers; the Teleop which publishes the twist message through GUI; and the panel Map_saver which helps user to save map directly by RViz without typing command in terminal.
 
 - [Battery](#battery)
 - [Navi_waypoints](#navi_waypoints)
+- [Teleop](#teleop)
+- [Map_saver](#map_saver)
 - [build](#build)
 - [use Battery](#use-battery)
 - [use Navi_waypoints](#use-navi_waypoints)
@@ -26,6 +28,14 @@ The base of the charge text will be at the frame listed in the header of the Whi
 Plugin Navi_waypoints derives from class rviz::Display, and creates a panel for waypoints interaction logic:
 
 ![waypoints_im](https://user-images.githubusercontent.com/72239958/198922851-85c9cbee-87e3-4eca-871b-9a39282a0e05.gif)
+
+## Teleop
+Teleop's function is same as the one operated through terminal but with graphic interaction which can be more convenient in senario like mapping. User can navigate the robot directly through the mapping's RViz window without opening another terminal:
+![teleop](https://user-images.githubusercontent.com/72239958/202849722-3b94f105-314e-4de9-b6fb-4c0973ace9c4.gif)
+
+## Map_saver
+Map_saver is a panel type plugin. It can help user to save map directly through the mapping's RViz window without typing save commands in another terminal:
+![mapsaver](https://user-images.githubusercontent.com/72239958/202850327-21740d9a-5339-45bb-a772-2a1c1e2f22fc.gif)
 
 
 ## build
@@ -85,6 +95,7 @@ Modify the orientation to the frame to adjust the direction of battery symbol, t
 
 ## use Navi_waypoints
 1. Add the Navi_waypoints plugin to RViz
+
 Click the "Add" button at the bottom of the "Displays" panel, then scrolling down through the available displays until you see "Navi_waypoints" under package name "whi_rviz_plugins":
 
 ![image](https://user-images.githubusercontent.com/72239958/198869331-34ce45d3-8879-4535-a3ff-5046b597dca4.png)
@@ -117,3 +128,21 @@ The duration is measured as time, so these two's unit are second. Both are withi
 
 For the convenience, you can save the waypoints by clicking save button, and re-use them by button load. The waypoints file is saved as yaml format.
 
+## Use Teleop
+1. Add the Navi_waypoints plugin to RViz
+
+Click the "Add" button at the bottom of the "Displays" panel, then scrolling down through the available displays until you see "Teleop" under package name "whi_rviz_plugins":
+
+![image](https://user-images.githubusercontent.com/72239958/202850781-d94e9f6d-91d2-4520-a68a-a1fc409d4675.png)
+
+2. click direction buttons or press keys to navigate the robot
+
+keys definition
+
+![Untitled Diagram drawio](https://user-images.githubusercontent.com/72239958/202851886-e404eafc-dae1-488b-bbb4-356eb4cca441.png)
+
+> Keys are functional while the "Key" indicator is light on in green. If it is gray click the anywhere of the teleop panel to activate it.
+> ![activate](https://user-images.githubusercontent.com/72239958/202852068-e9f2c921-3cc8-46ae-880f-5bece0c381a1.gif)
+
+### Enable Teleop property
+This property toggles the publish of twist message. It is helpfull to avoid the collsion of cmd_vel while the plugin is added in navigation's configuration.
