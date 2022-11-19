@@ -147,3 +147,13 @@ keys definition
 
 ### Enable Teleop property
 This property toggles the publish of twist message. It is helpfull to avoid the collsion of cmd_vel while the plugin is added in navigation's configuration.
+
+## Use Map_saver
+Add the Teleop panel by opening the "Panels" menu and then "Add New Panel" within that. This should bring up a Panel class chooser dialog, and select the "Map_saver" within whi_rviz_plugins":
+
+![image](https://user-images.githubusercontent.com/72239958/202853152-601e29cf-00cf-4d0b-8c8f-170ad75a8948.png)
+
+Once the map is satified to you, just click the "Save" button to save it:
+
+![image](https://user-images.githubusercontent.com/72239958/202853295-8db92ae3-2eec-4a9a-bad7-8a09b027c21c.png)
+
