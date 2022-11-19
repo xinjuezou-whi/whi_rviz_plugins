@@ -32,6 +32,7 @@ namespace whi_rviz_plugins
             this, SLOT(updateEnable()));
         pub_frequency_property_ = new rviz::FloatProperty("Publish frequency(Hz)", 5.0, "Frequency of publishing the twist message",
             this, SLOT(updatePubFrequency()));
+        pub_frequency_property_->setMin(0.1);
         pub_topic_property_ = new rviz::StringProperty("Twist message topic", "cmd_vel", "Topic of twist message",
             this, SLOT(updatePubTopic()));
         linear_min_ = new rviz::FloatProperty("Min linear", 0.08, "Min limit of linear velocity",
@@ -40,12 +41,14 @@ namespace whi_rviz_plugins
             this, SLOT(updateLinearMax()));
         linear_step_ = new rviz::FloatProperty("Linear step", 0.01, "Delta of linear per jog",
             this, SLOT(updateLinearStep()));
+        linear_step_->setMin(0.01);
         angular_min_ = new rviz::FloatProperty("Min angular", 0.0, "Min limit of angular velocity",
             this, SLOT(updateAngularMin()));
         angular_max_ = new rviz::FloatProperty("Max angular", 1.57, "Max limit of angular velocity",
             this, SLOT(updateAngularMax()));
         angular_step_ = new rviz::FloatProperty("Angular step", 0.1, "Delta of angular per jog",
             this, SLOT(updateAngularStep()));
+        angular_step_->setMin(0.01);
     }
 
     DisplayTeleop::~DisplayTeleop()
@@ -70,16 +73,18 @@ namespace whi_rviz_plugins
         updateAngularMin();
         updateAngularMax();
         updateAngularStep();
+        updateEnable();
+        updatePubFrequency();
     }
 
     void DisplayTeleop::updateEnable()
     {
-
+        panel_->setPubFunctionality(enable_property_->getBool());
     }
 
 	void DisplayTeleop::updatePubFrequency()
     {
-
+        panel_->setPubFrequency(pub_frequency_property_->getFloat());
     }
 
 	void DisplayTeleop::updatePubTopic()

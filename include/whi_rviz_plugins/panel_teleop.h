@@ -40,9 +40,22 @@ namespace whi_rviz_plugins
 		void setAngularMin(float Min);
 		void setAngularMax(float Max);
 		void setAngularStep(float Step);
+		void setPubFunctionality(bool Active);
+		void setPubFrequency(float Frequency);
+		void moveLinear(int Dir);
+		void moveAngular(int Dir);
+		void halt();
+
+	private:
+		void keyPressEvent(QKeyEvent* Event) override;
+		void focusOutEvent(QFocusEvent* Event) override;
+		void focusInEvent(QFocusEvent* Event) override;
 
 	private:
 		Ui::NaviTeleop* ui_{ nullptr };
         TwistWidget* twist_widget_{ nullptr };
+		QTimer* timer_pub_{ nullptr };
+		int interval_pub_{ 200 };
+		bool toggle_publishing_{ true };
 	};
 } // end namespace whi_rviz_plugins

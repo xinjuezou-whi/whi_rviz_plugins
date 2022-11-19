@@ -46,6 +46,7 @@ namespace whi_rviz_plugins
 		float getAngularMin();
 		float getAngularMax();
 		float getAngularStep();
+		void toggleIndicator(bool Toggle, bool State);
 
     protected:
         void paintEvent(QPaintEvent* Event) override;
@@ -59,5 +60,7 @@ namespace whi_rviz_plugins
 		float angular_min_{ 0.0 };
 		float angular_scale_{ 1.57 };
 		float angular_step_{ 0.1 };
+		bool toggle_indicator_{ true };
+		bool state_active_{ true };
 	};
 } // end namespace whi_rviz_plugins

@@ -20,7 +20,8 @@ All text above must be included in any redistribution.
 #include <math.h>
 #include <boost/filesystem.hpp>
 #include <ros/package.h>
-#include <QPainter>
+#include <QKeyEvent>
+#include <QTimer>
 
 namespace whi_rviz_plugins
 {
@@ -38,6 +39,9 @@ namespace whi_rviz_plugins
 	{
 		// set up the GUI
 		ui_->setupUi(this);
+        ui_->label_key_active->setStyleSheet("background-color: rgb(217, 217, 217);");
+        // a widget normally must setFocusPolicy() to something other than Qt::NoFocus in order to receive focus events
+        setFocusPolicy(Qt::StrongFocus);
 
         // create the twist widget
         twist_widget_ = new TwistWidget;
@@ -69,62 +73,16 @@ namespace whi_rviz_plugins
         ui_->pushButton_halt->setIcon(iconHalt);
 
         // signals
-        connect(ui_->pushButton_forward, &QPushButton::clicked, this, [=]()
-        {
-            float linear = fabs(twist_widget_->getLinear()) < 1e-3 ? twist_widget_->getLinearMin() :
-                twist_widget_->getLinear() + twist_widget_->getLinearStep();
-            linear = fabs(linear) < twist_widget_->getLinearMin() ? 0.0 : linear;
-            if (fabs(linear) < twist_widget_->getLinearMax() + 1e-3)
-            {
-                twist_widget_->setLinear(linear);
-
-                ui_->label_linear->setText(to_string_with_precision(linear, 2).c_str());
-            }
-        });
-        connect(ui_->pushButton_backward, &QPushButton::clicked, this, [=]()
-        {
-            float linear = fabs(twist_widget_->getLinear()) < 1e-3 ? -twist_widget_->getLinearMin() :
-                twist_widget_->getLinear() - twist_widget_->getLinearStep();
-            linear = fabs(linear) < twist_widget_->getLinearMin() ? 0.0 : linear;
-            if (fabs(linear) < twist_widget_->getLinearMax() + 1e-3)
-            {
-                twist_widget_->setLinear(linear);
-
-                ui_->label_linear->setText(to_string_with_precision(linear, 2).c_str());
-            }
-        });
-        connect(ui_->pushButton_left, &QPushButton::clicked, this, [=]()
-        {
-            float angular = twist_widget_->getAngular() + twist_widget_->getAngularStep();
-            if (fabs(angular) < twist_widget_->getAngularMax() + 1e-3)
-            {
-                twist_widget_->setAngular(angular);
-
-                ui_->label_angular->setText(to_string_with_precision(angular, 2).c_str());
-            }
-        });
-        connect(ui_->pushButton_right, &QPushButton::clicked, this, [=]()
-        {
-            float angular = twist_widget_->getAngular() - twist_widget_->getAngularStep();
-            if (fabs(angular) < twist_widget_->getAngularMax() + 1e-3)
-            {
-                twist_widget_->setAngular(angular);
-
-                ui_->label_angular->setText(to_string_with_precision(angular, 2).c_str());
-            }
-        });
-        connect(ui_->pushButton_halt, &QPushButton::clicked, this, [=]()
-        {
-            twist_widget_->setLinear(0.0);
-            twist_widget_->setAngular(0.0);
-
-            ui_->label_linear->setText("0.0");
-            ui_->label_angular->setText("0.0");
-        });
+        connect(ui_->pushButton_forward, &QPushButton::clicked, this, [=]() { moveLinear(1); });
+        connect(ui_->pushButton_backward, &QPushButton::clicked, this, [=]() { moveLinear(-1); });
+        connect(ui_->pushButton_left, &QPushButton::clicked, this, [=]() { moveAngular(1); });
+        connect(ui_->pushButton_right, &QPushButton::clicked, this, [=]() { moveAngular(-1); });
+        connect(ui_->pushButton_halt, &QPushButton::clicked, this, [=]() { halt(); });
     }
 
     TeleopPanel::~TeleopPanel()
 	{
+        timer_pub_->stop();
 		delete ui_;
 	}
 
@@ -156,5 +114,117 @@ namespace whi_rviz_plugins
 	void TeleopPanel::setAngularStep(float Step)
     {
         twist_widget_->setAngularStep(Step);
+    }
+
+    void TeleopPanel::setPubFunctionality(bool Active)
+    {
+        if (Active)
+        {
+            if (timer_pub_)
+            {
+                if (!timer_pub_->isActive())
+                {
+                    timer_pub_->start(interval_pub_);
+                }
+            }
+            else
+            {
+                // publish timer
+                timer_pub_ = new QTimer(this);
+                connect(timer_pub_, &QTimer::timeout, this, [=]()
+                {
+                    twist_widget_->toggleIndicator(toggle_publishing_, true);
+                    toggle_publishing_ = !toggle_publishing_;
+                });
+                timer_pub_->start(interval_pub_);
+            }
+        }
+        else
+        {
+            if (timer_pub_)
+            {
+                timer_pub_->stop();
+            }
+            twist_widget_->toggleIndicator(true, false);
+        }
+    }
+
+    void TeleopPanel::setPubFrequency(float Frequency)
+    {
+        interval_pub_ = int(1000.0 / Frequency);
+        if (timer_pub_)
+        {
+            timer_pub_->setInterval(interval_pub_);
+        }
+    }
+
+    void TeleopPanel::moveLinear(int Dir)
+    {
+        float linear = fabs(twist_widget_->getLinear()) < 1e-3 ? Dir * twist_widget_->getLinearMin() :
+            twist_widget_->getLinear() + Dir * twist_widget_->getLinearStep();
+        linear = fabs(linear) < twist_widget_->getLinearMin() ? 0.0 : linear;
+        if (fabs(linear) < twist_widget_->getLinearMax() + 1e-3)
+        {
+            twist_widget_->setLinear(linear);
+
+            ui_->label_linear->setText(to_string_with_precision(linear, 2).c_str());
+        }
+    }
+
+	void TeleopPanel::moveAngular(int Dir)
+    {
+        float angular = fabs(twist_widget_->getAngular()) < 1e-3 ? Dir * twist_widget_->getAngularStep() :
+            twist_widget_->getAngular() + Dir * twist_widget_->getAngularStep();
+        angular = fabs(angular) < twist_widget_->getAngularMin() ? 0.0 : angular;
+        if (fabs(angular) < twist_widget_->getAngularMax() + 1e-3)
+        {
+            twist_widget_->setAngular(angular);
+
+            ui_->label_angular->setText(to_string_with_precision(angular, 2).c_str());
+        }
+    }
+
+    void TeleopPanel::halt()
+    {
+        twist_widget_->setLinear(0.0);
+        twist_widget_->setAngular(0.0);
+
+        ui_->label_linear->setText("0.0");
+        ui_->label_angular->setText("0.0");
+    }
+
+    void TeleopPanel::keyPressEvent(QKeyEvent* Event)
+    {
+        switch (Event->key())
+        {
+        case Qt::Key_W:
+            moveLinear(1);
+            break;
+        case Qt::Key_X:
+            moveLinear(-1);
+            break;
+        case Qt::Key_A:
+            moveAngular(1);
+            break;
+        case Qt::Key_D:
+            moveAngular(-1);
+            break;
+        case Qt::Key_S:
+        case Qt::Key_Space:
+            halt();
+            break;
+        default:
+            break;
+        }
+    }
+
+    void TeleopPanel::focusOutEvent(QFocusEvent* Event)
+    {
+        ui_->label_key_active->setStyleSheet("background-color: rgb(217, 217, 217);");
+    }
+
+    void TeleopPanel::focusInEvent(QFocusEvent* Event)
+    {
+        ui_->label_key_active->setStyleSheet("background-color: rgb(146, 208, 80);");
     }
 } // end namespace whi_rviz_plugins

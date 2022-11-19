@@ -115,6 +115,13 @@
          </property>
         </widget>
        </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_key_active">
+         <property name="text">
+          <string>Key</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
      <item>

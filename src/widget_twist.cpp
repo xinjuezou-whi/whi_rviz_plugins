@@ -13,6 +13,7 @@ All text above must be included in any redistribution.
 ******************************************************************/
 #include "whi_rviz_plugins/widget_twist.h"
 
+#include <iostream>
 #include <QPainter>
 #include <math.h>
 
@@ -114,6 +115,13 @@ namespace whi_rviz_plugins
         return angular_step_;
     }
 
+    void TwistWidget::toggleIndicator(bool Toggle, bool State)
+    {
+        toggle_indicator_ = Toggle;
+        state_active_ = State;
+        update();
+    }
+
     void TwistWidget::paintEvent(QPaintEvent* Event)
     {
         int areaWidth = width() - 5;
@@ -149,6 +157,23 @@ namespace whi_rviz_plugins
         frameZ.setColor(Qt::blue);
         painter.setPen(frameZ);
         painter.drawPoint(areaWidth - 10, areaHeight - 10);
+
+        /// publishing indicator
+        if (toggle_indicator_)
+        {
+            QPen circle;
+            circle.setWidth(6);
+            if (state_active_)
+            {
+                circle.setColor(Qt::green);
+            }
+            else
+            {
+                circle.setColor(Qt::gray);
+            }
+            painter.setPen(circle);
+            painter.drawEllipse(10, 10, 10, 6);
+        }
 
         /// twist visulaization
         if (fabs(angular_velocity_) > 1e-3 || fabs(linear_velocity_) > 1e-3)
