@@ -6,8 +6,9 @@ Rviz plugins package for showing custom info. currently there are four plugins: 
 - [Teleop](#teleop)
 - [Map_saver](#map_saver)
 - [build](#build)
-- [use Battery](#use-battery)
-- [use Navi_waypoints](#use-navi_waypoints)
+- [Use Battery](#use-battery)
+- [Use Navi_waypoints](#use-navi_waypoints)
+- [Use Teleop](#use-teleop)
 
 ## Battery
 Plugin Battery is a derived class from MessageFilterDisplay:
@@ -51,7 +52,7 @@ or `catkin_make` depends on your environment. And don't forget to source the bas
 source <your_workspace>/devel/setup.bash
 ```
 
-## use battery
+## Use battery
 1. Publish the WhiBattery message
 
   For a quick check, there is a test script, named `send_test_msgs.py` under folder `scripts` to publish simulated charge info interatively. Before running it, please make sure roscore is active:
@@ -93,7 +94,7 @@ Modify the orientation to the frame to adjust the direction of battery symbol, t
 
 ![bat](https://user-images.githubusercontent.com/72239958/197972731-3d453537-44c4-4a22-9038-617c21d2711d.gif)
 
-## use Navi_waypoints
+## Use Navi_waypoints
 1. Add the Navi_waypoints plugin to RViz
 
 Click the "Add" button at the bottom of the "Displays" panel, then scrolling down through the available displays until you see "Navi_waypoints" under package name "whi_rviz_plugins":
@@ -112,7 +113,7 @@ Click the "Add" button at the bottom of the "Displays" panel, then scrolling dow
 ![waypoints_execute](https://user-images.githubusercontent.com/72239958/198869441-af36d932-8744-413e-907e-957bf3ac91ec.gif)
 
 
-### Marker Height Properties
+### Marker Height property
 
 Since the view orientation is top-down in navigation, multiple info are projected on map and overlay each other. If the interactive marker is happen to be overlaid by other info, it could not be accessed by user. Therefore the property marker height is introduced to make sure it is on the top of other info, so to be accessible.
 
