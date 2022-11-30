@@ -152,8 +152,11 @@ qt_wrap_ui(UIC_FILES
   ui/navi_teleop.ui
 )
 
+find_package(OpenCV)
+
 include_directories(
   ${QT_INCLUDE_DIR}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 ## I prefer the Qt signals and slots to avoid defining "emit", "slots",
@@ -198,6 +201,7 @@ add_dependencies(${PROJECT_NAME} whi_interfaces_generate_messages_cpp)
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${QT_LIBRARIES}
+  ${OpenCV_LIBRARIES}
 )
 
 #############
