@@ -54,7 +54,7 @@ namespace whi_rviz_plugins
             stream_source_->addOption(sourceList[i], i);
         }
         stream_device_ = new rviz::IntProperty("Device address", 0,
-            "Camera device address, just input 0 for /dev/video0",
+            "Camera device address, just input 0 for /dev/video0 for an example",
             this, SLOT(updateStreamDevice()));
         stream_device_->setMin(0);
         stream_url_ = new rviz::StringProperty("Url stream address", "",
