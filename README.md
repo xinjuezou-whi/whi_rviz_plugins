@@ -1,5 +1,5 @@
 # whi_rviz_plugins
-Rviz plugins package for showing custom info. currently there are four plugins: the Battery which shows the battery's left charge in text and symbolizing battery; the Navi_waypoints which allows user add multiple navigation targets with interactive markers; the Teleop which publishes the twist message through GUI; and the panel Map_saver which helps user to save map directly by RViz without typing command in terminal.
+Rviz plugins package for showing custom info. currently there are five plugins: the Battery which shows the battery's left charge in text and symbolizing battery; the Navi_waypoints which allows user add multiple navigation targets with interactive markers; the Teleop which publishes the twist message through GUI; and the panel Map_saver which helps user to save map directly by RViz without typing command in terminal; the Video_stream which derived from default image plugin with extended stream sources like webcam, IP stream, and video file.
 
 - [Battery](#battery)
 - [Navi_waypoints](#navi_waypoints)
