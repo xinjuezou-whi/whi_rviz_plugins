@@ -143,25 +143,25 @@ namespace whi_rviz_plugins
             texture_.update();
 
             // make sure the aspect ratio of the image is preserved
-            float win_width = render_panel_->width();
-            float win_height = render_panel_->height();
+            float winWidth = render_panel_->width();
+            float winHeight = render_panel_->height();
 
-            float img_width = texture_.getWidth();
-            float img_height = texture_.getHeight();
+            float imgWidth = texture_.getWidth();
+            float imgHeight = texture_.getHeight();
 
-            if (img_width != 0 && img_height != 0 && win_width != 0 && win_height != 0)
+            if (imgWidth != 0 && imgHeight != 0 && winWidth != 0 && winHeight != 0)
             {
-                float img_aspect = img_width / img_height;
-                float win_aspect = win_width / win_height;
+                float imgAspect = imgWidth / imgHeight;
+                float winAspect = winWidth / winHeight;
 
-                if (img_aspect > win_aspect)
+                if (imgAspect > winAspect)
                 {
-                    screen_rect_->setCorners(-1.0f, 1.0f * win_aspect / img_aspect, 1.0f,
-                        -1.0f * win_aspect / img_aspect, false);
+                    screen_rect_->setCorners(-1.0f, 1.0f * winAspect / imgAspect, 1.0f,
+                        -1.0f * winAspect / imgAspect, false);
                 }
                 else
                 {
-                    screen_rect_->setCorners(-1.0f * img_aspect / win_aspect, 1.0f, 1.0f * img_aspect / win_aspect,
+                    screen_rect_->setCorners(-1.0f * imgAspect / winAspect, 1.0f, 1.0f * imgAspect / winAspect,
                         -1.0f, false);
                 }
             }
