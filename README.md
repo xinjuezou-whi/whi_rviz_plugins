@@ -5,11 +5,13 @@ Rviz plugins package for showing custom info. currently there are four plugins: 
 - [Navi_waypoints](#navi_waypoints)
 - [Teleop](#teleop)
 - [Map_saver](#map_saver)
+- [Video_stream](#video_stream)
 - [Build](#build)
 - [Use Battery](#use-battery)
 - [Use Navi_waypoints](#use-navi_waypoints)
 - [Use Teleop](#use-teleop)
 - [Use Map_saver](#use-map_saver)
+- [Use Video_stream](#use_video_stream)
 
 ## Battery
 Plugin Battery is a derived class from MessageFilterDisplay:
@@ -38,6 +40,10 @@ Teleop's function is same as the one operated through terminal but with graphic 
 ## Map_saver
 Map_saver is a panel type plugin. It can help user to save map directly through the mapping's RViz window without typing save commands in another terminal:
 ![mapsaver](https://user-images.githubusercontent.com/72239958/202850327-21740d9a-5339-45bb-a772-2a1c1e2f22fc.gif)
+
+## Video_stream
+This plugin derived from the default image plugin with extended stream sources including webcam, IP stream, and video file:
+![stream](https://user-images.githubusercontent.com/72239958/204996337-f5bc2fae-bb17-4306-b71b-8beb10904a62.gif)
 
 
 ## Build
@@ -158,3 +164,17 @@ Once the map is satified to you, just click the "Save" button to save it:
 
 ![image](https://user-images.githubusercontent.com/72239958/202853295-8db92ae3-2eec-4a9a-bad7-8a09b027c21c.png)
 
+## Use Video_stream
+1. Add the Video_stream plugin to RViz
+
+Click the "Add" button at the bottom of the "Displays" panel, then scrolling down through the available displays until you see "Video_stream" under package name "whi_rviz_plugins":
+
+![image](https://user-images.githubusercontent.com/72239958/204996785-4818279d-578f-4d36-83e2-96a58c5bc580.png)
+
+2. Specify the stream source
+
+| Source  | Type                          | Example                                                                                   |
+|---------|-------------------------------|-------------------------------------------------------------------------------------------|
+| Message | sensor_msgs::Image            | ROS default image message                                                                 |
+| Device  | webcam                        | /dev/video1, just input the index of video device, like 1 in this example                 |
+| URL     | IP video stream or video file | rtsp://xxxx or http://xxxx or https://xxxx and even a video file like /home/user/xxxx.mp4 |
