@@ -61,9 +61,9 @@ namespace whi_rviz_plugins
         void processMessage(const sensor_msgs::Image::ConstPtr& Msg) override;
         bool resetTexture();
         void stopSubscribe();
-        void startCapture();
+        void startCapture(const std::string& Stream);
         void stopCapture();
-        void threadCapture(std::unique_ptr<cv::VideoCapture> Capture, std::unique_ptr<cv::Mat> Mat);
+        void threadCapture(std::unique_ptr<cv::VideoCapture> Capture);
 
     protected Q_SLOTS:
         void updateNormalizeOptions();

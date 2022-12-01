@@ -31,7 +31,7 @@ namespace whi_rviz_plugins
     VideoStreamDisplay::VideoStreamDisplay()
         : ImageDisplayBase(), texture_()
     {
-        std::cout << "\nWHI RViz plugin for video stream VERSION 00.01" << std::endl;
+        std::cout << "\nWHI RViz plugin for video stream VERSION 00.02" << std::endl;
         std::cout << "Copyright @ 2022-2023 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         normalize_property_ = new rviz::BoolProperty("Normalize Range", true,
@@ -234,7 +234,7 @@ namespace whi_rviz_plugins
         reset();
     }
 
-    void VideoStreamDisplay::startCapture()
+    void VideoStreamDisplay::startCapture(const std::string& Stream)
     {
         // spawn the capture thread
         terminated_.store(false);
@@ -242,11 +242,10 @@ namespace whi_rviz_plugins
         auto cap = std::make_unique<cv::VideoCapture>();
         // up to version 4.1.2, the open will be blocked if the device is occupied already
         // issue reference: https://github.com/opencv/opencv/issues/15782
-        if (cap->open(stream_device_->getInt()))
+        if (cap->open(Stream))
         {
             th_capture_ = std::thread(std::bind(&VideoStreamDisplay::threadCapture,
-                this, std::placeholders::_1, std::placeholders::_2),
-                std::move(cap), std::make_unique<cv::Mat>());
+                this, std::placeholders::_1), std::move(cap));
         }
     }
 
@@ -261,19 +260,22 @@ namespace whi_rviz_plugins
         reset();
     }
 
-    void VideoStreamDisplay::threadCapture(std::unique_ptr<cv::VideoCapture> Capture, std::unique_ptr<cv::Mat> Mat)
+    void VideoStreamDisplay::threadCapture(std::unique_ptr<cv::VideoCapture> Capture)
     {
+        cv::Mat mat;
         while (!terminated_.load())
         {
             if (Capture->isOpened())
             {
-                *Capture >> *Mat;
-                if (!Mat->empty())
+                *Capture >> mat;
+                if (!mat.empty())
                 {
-                    processMessage(cv_bridge::CvImage(std_msgs::Header(), "bgr8", *Mat).toImageMsg());
+                    processMessage(cv_bridge::CvImage(std_msgs::Header(), "bgr8", mat).toImageMsg());
                 }
             }
         }
+
+        Capture->release();
     }
 
     void VideoStreamDisplay::updateNormalizeOptions()
@@ -301,21 +303,22 @@ namespace whi_rviz_plugins
 
     void VideoStreamDisplay::updateStreamSource()
     {
+        stopSubscribe();
+        stopCapture();
+
         if (stream_source_->getOptionInt() == 0)
         {
-            stopCapture();
             ImageDisplayBase::subscribe();
         }
         else
         {
-            stopSubscribe();
             if (stream_source_->getOptionInt() == 1)
             {
-                startCapture();
+                startCapture("/dev/video" + std::to_string(stream_device_->getInt()));
             }
             else
             {
-
+                startCapture(stream_url_->getStdString());
             }
         }
     }
@@ -325,13 +328,17 @@ namespace whi_rviz_plugins
         if (stream_source_->getOptionInt() == 1)
         {
             stopCapture();
-            startCapture();
+            startCapture("/dev/video" + std::to_string(stream_device_->getInt()));
         }
     }
 
     void VideoStreamDisplay::updateStreamUrl()
     {
-
+        if (stream_source_->getOptionInt() == 2)
+        {
+            stopCapture();
+            startCapture(stream_url_->getStdString());
+        }
     }
 
     PLUGINLIB_EXPORT_CLASS(whi_rviz_plugins::VideoStreamDisplay, rviz::Display)
