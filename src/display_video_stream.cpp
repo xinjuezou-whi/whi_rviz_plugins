@@ -31,7 +31,7 @@ namespace whi_rviz_plugins
     VideoStreamDisplay::VideoStreamDisplay()
         : ImageDisplayBase(), texture_()
     {
-        std::cout << "\nWHI RViz plugin for video stream VERSION 00.02" << std::endl;
+        std::cout << "\nWHI RViz plugin for video stream VERSION 00.03" << std::endl;
         std::cout << "Copyright @ 2022-2023 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         normalize_property_ = new rviz::BoolProperty("Normalize Range", true,
@@ -80,7 +80,7 @@ namespace whi_rviz_plugins
         {
             static uint32_t count = 0;
             std::stringstream ss;
-            ss << "ImageDisplay" << count++;
+            ss << "VideoStreamDisplay" << count++;
             img_scene_manager_ = Ogre::Root::getSingleton().createSceneManager(Ogre::ST_GENERIC, ss.str());
         }
 
@@ -89,7 +89,7 @@ namespace whi_rviz_plugins
         {
             static int count = 0;
             std::stringstream ss;
-            ss << "ImageDisplayObject" << count++;
+            ss << "VideoStreamDisplayObject" << count++;
 
             screen_rect_ = new Ogre::Rectangle2D(true);
             screen_rect_->setRenderQueueGroup(Ogre::RENDER_QUEUE_OVERLAY - 1);
