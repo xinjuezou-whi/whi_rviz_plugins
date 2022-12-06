@@ -64,6 +64,8 @@ void GoalsHandle::execute(std::vector<geometry_msgs::Pose> Waypoints, double Poi
 	point_span_ = PointSpan;
 	stop_span_ = StopSpan;
 	looping_ = Loop;
+	waypoints_num_ = goals_list_.size();
+	loop_count_ = 0;
 
 	if (!goals_list_.empty())
 	{
@@ -180,7 +182,7 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 		{
 			if (func_execution_state_)
 			{
-				func_execution_state_(STA_DONE);
+				func_execution_state_(STA_DONE, nullptr);
 			}
 			if (func_eta_)
 			{
@@ -196,6 +198,8 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 		if (dist < tolerance)
 		{
 			setGoal(goals_list_.front());
+			updateStateInfo(isFinalOne);
+
 			std::cout << "tolerace reached, proceeding the next. remained goals " << goals_list_.size() << "  " << tolerance << std::endl;
 		}
 	}
@@ -208,7 +212,6 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 			func_eta_(active_goal_, dist / current_linear_);
 		}
 	}
-
 }
 
 void GoalsHandle::handleGoalAndStateUx(const geometry_msgs::Pose& Pose)
@@ -220,7 +223,7 @@ void GoalsHandle::handleGoalAndStateUx(const geometry_msgs::Pose& Pose)
 		{
 			if (func_execution_state_)
 			{
-				func_execution_state_(STA_DONE);
+				func_execution_state_(STA_DONE, nullptr);
 			}
 			if (func_eta_)
 			{
@@ -236,6 +239,8 @@ void GoalsHandle::handleGoalAndStateUx(const geometry_msgs::Pose& Pose)
 		if (dist < tolerance)
 		{
 			setGoal(goals_list_.front());
+			updateStateInfo(isFinalOne);
+
 			std::cout << "tolerace reached, proceeding the next. remained goals " << goals_list_.size() << "  " << tolerance << std::endl;
 		}
 		else if (tolerance < 0.0)
@@ -252,6 +257,29 @@ void GoalsHandle::handleGoalAndStateUx(const geometry_msgs::Pose& Pose)
 		if (func_eta_)
 		{
 			func_eta_(active_goal_, dist / current_linear_);
+		}
+	}
+}
+
+void GoalsHandle::updateStateInfo(bool IsFinalOne)
+{
+	if (func_execution_state_)
+	{
+		if (looping_)
+		{
+			if (IsFinalOne)
+			{
+				std::shared_ptr<std::string> info = std::make_shared<std::string>(
+					std::to_string(++loop_count_) + (loop_count_ > 1 ? " loops proceed" : " loop proceed"));
+				func_execution_state_(STA_POINT_APPROACHED, info);
+			}
+		}
+		else
+		{
+			std::shared_ptr<std::string> info = std::make_shared<std::string>(
+				std::to_string(waypoints_num_ - goals_list_.size()) + " approached " +
+				std::to_string(goals_list_.size()) + " left");
+			func_execution_state_(STA_POINT_APPROACHED, info);
 		}
 	}
 }
@@ -298,7 +326,7 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 		{
 			if (func_execution_state_)
 			{
-				func_execution_state_(STA_DONE);
+				func_execution_state_(STA_DONE, nullptr);
 			}
 		}
 		else

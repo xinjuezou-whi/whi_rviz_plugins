@@ -27,12 +27,12 @@ Changelog:
 #include <mutex>
 
 using VisualizeEta = std::function<void(const geometry_msgs::Pose&, double)>;
-using ExecutionState = std::function<void(int)>;
+using ExecutionState = std::function<void(int, std::shared_ptr<std::string> Info)>;
 
 class GoalsHandle
 {
 public:
-	enum State { STA_STANDBY = 0, STA_DONE, STA_ABORTED };
+	enum State { STA_STANDBY = 0, STA_POINT_APPROACHED, STA_DONE, STA_ABORTED };
 
 public:
     GoalsHandle();
@@ -54,6 +54,7 @@ private:
 	void cancelGoal() const;
 	void handleGoalAndState(const geometry_msgs::Pose& Pose);
 	void handleGoalAndStateUx(const geometry_msgs::Pose& Pose);
+	void updateStateInfo(bool IsFinalOne);
 	void subCallbackPlanPath(const nav_msgs::Path::ConstPtr& PlanPath);
 	void subCallbackMapData(const nav_msgs::MapMetaData::ConstPtr& MapData);
 	void subCallbackEstimated(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& Estimated);
@@ -92,4 +93,6 @@ private:
 	// updater
 	VisualizeEta func_eta_{ nullptr };
 	ExecutionState func_execution_state_{ nullptr };
+	int waypoints_num_{ 0 };
+	int loop_count_{ 0 };
 };

@@ -135,7 +135,8 @@ namespace whi_rviz_plugins
 		// multiple goals
 		goals_ = std::make_unique<GoalsHandle>();
 		goals_->registerEatUpdater(func_visualize_eta_);
-		goals_->registerExecutionUpdater(std::bind(&WaypointsPanel::executionState, this, std::placeholders::_1));
+		goals_->registerExecutionUpdater(std::bind(&WaypointsPanel::executionState,
+			this, std::placeholders::_1, std::placeholders::_2));
 	}
 
 	WaypointsPanel::~WaypointsPanel()
@@ -274,12 +275,16 @@ namespace whi_rviz_plugins
 		}
 	}
 
-	void WaypointsPanel::executionState(int State)
+	void WaypointsPanel::executionState(int State, std::shared_ptr<std::string> Info)
 	{
 		if (State == GoalsHandle::STA_DONE)
 		{
 			ui_->pushButton_execute->setEnabled(true);
 			ui_->label_state->setText("Standby");
+		}
+		else if (State == GoalsHandle::STA_POINT_APPROACHED)
+		{
+			ui_->label_state->setText("Executing..." + QString(Info != nullptr ? Info->c_str() : ""));
 		}
 	}
 

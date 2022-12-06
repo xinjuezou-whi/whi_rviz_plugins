@@ -53,7 +53,7 @@ namespace whi_rviz_plugins
 		void addButtonClicked();
 		void insertButtonClicked();
 		void removeButtonClicked();
-		void executionState(int State);
+		void executionState(int State, std::shared_ptr<std::string> Info);
 		bool loadWaypoints(std::string File);
 		void saveWaypoints(std::string File);
 
