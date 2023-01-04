@@ -11,7 +11,7 @@ Rviz plugins package for showing custom info. currently there are five plugins: 
 - [Use Navi_waypoints](#use-navi_waypoints)
 - [Use Teleop](#use-teleop)
 - [Use Map_saver](#use-map_saver)
-- [Use Video_stream](#use_video_stream)
+- [Use Video_stream](#use-video_stream)
 
 ## Battery
 Plugin Battery is a derived class from MessageFilterDisplay:
