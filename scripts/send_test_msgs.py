@@ -26,8 +26,8 @@ while not rospy.is_shutdown():
   battery.header.frame_id = "battery"
   battery.header.stamp = rospy.Time.now()
    
-  battery.percent = step;
-  battery.need_charge = True if step < 30 else False
+  battery.soc = step;
+  battery.state = WhiBattery.STA_NEED_CHARGING if step < 30 else WhiBattery.STA_NORMAL
   publisher.publish(battery)
 
   if withTransform:

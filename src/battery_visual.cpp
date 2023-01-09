@@ -60,7 +60,7 @@ namespace whi_rviz_plugins
 		int h = 0;
 		int v = 0;
 		battery_info_->setTextAlignment((rviz::MovableText::HorizontalAlignment)h, (rviz::MovableText::VerticalAlignment)v);
-		rviz::StringProperty text("text", (std::to_string(Msg->percent) + "\%").c_str());
+		rviz::StringProperty text("text", (std::to_string(Msg->soc) + "\%").c_str());
 		battery_info_->setCaption(text.getStdString());
 		battery_info_->setLineSpacing(1.0);
 	}

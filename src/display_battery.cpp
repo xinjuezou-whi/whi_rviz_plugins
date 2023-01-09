@@ -28,7 +28,7 @@ namespace whi_rviz_plugins
 {
     DisplayBat::DisplayBat()
     {
-        std::cout << "\nWHI RViz plugin for battery VERSION 00.04" << std::endl;
+        std::cout << "\nWHI RViz plugin for battery VERSION 00.05" << std::endl;
         std::cout << "Copyright © 2022-2023 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         color_red_ = std::make_shared<Ogre::ColourValue>(239.0 / 255.0, 41.0 / 255.0, 41.0 / 255.0);
@@ -161,9 +161,11 @@ namespace whi_rviz_plugins
 
         // set or update the contents of the chosen visual
         float alpha = alpha_property_->getFloat();
-        Ogre::ColourValue color = Msg->need_charge ? *color_red_ : color_property_->getOgreColor();
+        Ogre::ColourValue color = Msg->state == whi_interfaces::WhiBattery::STA_NEED_CHARGING ?
+            *color_red_ : color_property_->getOgreColor();
         visual->setColor(color.r, color.g, color.b, alpha);
-        visual->createBatteryShape(Msg->percent / 100.0, Msg->need_charge ? *color_red_ : Ogre::ColourValue(0.0, 1.0, 0.0, 0.8));
+        visual->createBatteryShape(Msg->soc / 100.0, Msg->state == whi_interfaces::WhiBattery::STA_NEED_CHARGING ?
+            *color_red_ : Ogre::ColourValue(0.0, 1.0, 0.0, 0.8));
         visual->setMessage(Msg);
         visual->setFramePosition(position);
         visual->setFrameOrientation(orientation);
