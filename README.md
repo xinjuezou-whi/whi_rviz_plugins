@@ -22,8 +22,11 @@ It subscribes message "whi_interfaces::WhiBattery". Here is the definition of su
 
 ```
 std_msgs/Header header
-uint16 percent
-bool need_charge
+uint16 soc
+uint8 STA_NORMAL=0
+uint8 STA_CHARGING=1
+uint8 STA_NEED_CHARGING=2
+int8 state
 ```
 
 The base of the charge text will be at the frame listed in the header of the WhiBattery message, which let the charge info stick to robot and move with it. Besides under multiple robots senario, frame with namespace enable each robot bearing its own charge info.
