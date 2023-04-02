@@ -29,8 +29,8 @@ namespace whi_rviz_plugins
     WaypointsDisplay::WaypointsDisplay()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for battery VERSION 00.08" << std::endl;
-        std::cout << "Copyright @ 2022-2023 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
+        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.09" << std::endl;
+        std::cout << "Copyright @ 2022-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         marker_size_property_ = new rviz::FloatProperty("Marker Size", 1.0, "Arrow size of waypoint mark.",
             this, SLOT(updateMarks()));
@@ -125,7 +125,7 @@ namespace whi_rviz_plugins
     }
 
     template <typename T>
-    std::string to_string_with_precision(const T Value, const int Digits = 6)
+    std::string toStringWithPrecision(const T Value, const int Digits = 6)
     {
         std::ostringstream out;
         out.precision(Digits);
@@ -140,7 +140,7 @@ namespace whi_rviz_plugins
         {
             if (Eta > 0.0)
             {
-                info = "ETA in " + to_string_with_precision(Eta, 2) + "s";
+                info = "ETA in " + toStringWithPrecision(Eta, 2) + "s";
             }
             else if (fabs(Eta + 1.0) < 1e-5)
             {

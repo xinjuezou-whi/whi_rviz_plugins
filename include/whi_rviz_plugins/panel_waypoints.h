@@ -49,6 +49,7 @@ namespace whi_rviz_plugins
 	private:
 		void fillWaypoint(int RowIndex, bool WithCurrent = false, const std::vector<double>* Point = nullptr);
 		void retrieveWaypoints(std::vector<geometry_msgs::PoseStamped>& Waypoints) const;
+		void retrieveWaypoint(int Index, geometry_msgs::PoseStamped& Waypoint) const;
 		void visualizeWaypoints(int Row) const;
 		void addButtonClicked();
 		void insertButtonClicked();
@@ -56,11 +57,24 @@ namespace whi_rviz_plugins
 		void executionState(int State, std::shared_ptr<std::string> Info);
 		bool loadWaypoints(std::string File);
 		void saveWaypoints(std::string File);
+		bool loadWaypointsNs(std::string File);
+		void storeItem2Map(int RowIndex, bool Insert = true);
+		void storeAll2Map(const std::string& Namespace);
+		void addWaypoint();
+		void insertWaypoint();
+		void mapTrigger();
+		double getYawFromPose(const geometry_msgs::Pose& Pose) const;
+		void enableUi(bool Flag);
 
 	private:
+		enum TriggerState { TRIGGER_LOAD = 0, TRIGGER_ADD, TRIGGER_INSERT, TRIGGER_NA };
+		int trigger_state_{ TRIGGER_NA };
 		Ui::NaviWaypoints* ui_{ nullptr };
 		VisualizeWaypoints func_visualize_waypoints_{ nullptr };
 		VisualizeEta func_visualize_eta_{ nullptr };
 		std::unique_ptr<GoalsHandle> goals_{ nullptr };
+		std::string waypoints_file_;
+		std::map<std::string, std::vector<geometry_msgs::Pose>> waypoints_map_;
+		std::string ns_from_load_;
 	};
 } // end namespace whi_rviz_plugins

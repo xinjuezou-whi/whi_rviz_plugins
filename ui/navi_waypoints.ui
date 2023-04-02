@@ -7,13 +7,13 @@
     <x>0</x>
     <y>0</y>
     <width>587</width>
-    <height>300</height>
+    <height>326</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_11">
+  <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <layout class="QVBoxLayout" name="verticalLayout_3">
      <item>
@@ -57,6 +57,24 @@
             <string>Commands</string>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_8">
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout">
+              <item>
+               <widget class="QComboBox" name="comboBox_ns">
+                <property name="editable">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pushButton_add_ns">
+                <property name="text">
+                 <string>Add ns</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
             <item>
              <widget class="QPushButton" name="pushButton_execute">
               <property name="text">

@@ -39,4 +39,3 @@ while not rospy.is_shutdown():
 
   step = (step + 5) % 100;
   rate.sleep()
-

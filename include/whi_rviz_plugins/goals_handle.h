@@ -28,6 +28,7 @@ Changelog:
 
 using VisualizeEta = std::function<void(const geometry_msgs::Pose&, double)>;
 using ExecutionState = std::function<void(int, std::shared_ptr<std::string> Info)>;
+using MapReceived = std::function<void()>;
 
 class GoalsHandle
 {
@@ -39,7 +40,8 @@ public:
     ~GoalsHandle() = default;
 
 public:
-	void execute(std::vector<geometry_msgs::Pose> Waypoints, double PointSpan, double StopSpan, bool Loop = false);
+	void setNamespace(const std::string& Namespace);
+	bool execute(std::vector<geometry_msgs::Pose> Waypoints, double PointSpan, double StopSpan, bool Loop = false);
 	void cancel();
 	void setLooping(bool Looping);
 	void setPointSpan(double Span);
@@ -48,9 +50,11 @@ public:
 	geometry_msgs::Pose getCurrentPose();
 	void registerEatUpdater(VisualizeEta Func);
 	void registerExecutionUpdater(ExecutionState Func);
+	void registerMapReceived(MapReceived Func);
 
 private:
-	void setGoal(const geometry_msgs::Pose& Goal);
+	void init();
+	bool setGoal(const geometry_msgs::Pose& Goal);
 	void cancelGoal() const;
 	void handleGoalAndState(const geometry_msgs::Pose& Pose);
 	void handleGoalAndStateUx(const geometry_msgs::Pose& Pose);
@@ -69,6 +73,7 @@ private:
 	static double distance(const geometry_msgs::Pose& Pose1, const geometry_msgs::Pose& Pose2);
 
 private:
+	std::string namespace_;
     std::unique_ptr<ros::NodeHandle> node_handle_{ nullptr };
 	using MoveBaseClient = actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>;
 	std::unique_ptr<MoveBaseClient> movebase_client_{ nullptr };
@@ -93,6 +98,7 @@ private:
 	// updater
 	VisualizeEta func_eta_{ nullptr };
 	ExecutionState func_execution_state_{ nullptr };
+	MapReceived func_map_received_{ nullptr };
 	int waypoints_num_{ 0 };
 	int loop_count_{ 0 };
 };

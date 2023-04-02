@@ -18,20 +18,23 @@ All text above must be included in any redistribution.
 GoalsHandle::GoalsHandle()
 	: node_handle_(std::make_unique<ros::NodeHandle>())
 {
-	std::string model;
-	with_ux_ = node_handle_->getParam("/whi_navigation_ux/robot_model", model);
-
-    sub_planned_path_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<nav_msgs::Path>(
-		"/move_base/NavfnROS/plan", 10, std::bind(&GoalsHandle::subCallbackPlanPath, this, std::placeholders::_1)));
-	sub_map_data_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<nav_msgs::MapMetaData>(
-		"map_metadata", 10, std::bind(&GoalsHandle::subCallbackMapData, this, std::placeholders::_1)));
-	sub_estimate_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<geometry_msgs::PoseWithCovarianceStamped>(
-			"/amcl_pose", 10, std::bind(&GoalsHandle::subCallbackEstimated, this, std::placeholders::_1)));
-	sub_cmd_vel_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<geometry_msgs::Twist>(
-			"/cmd_vel", 10, std::bind(&GoalsHandle::subCallbackCmdVel, this, std::placeholders::_1)));
+	init();
 }
 
-void GoalsHandle::execute(std::vector<geometry_msgs::Pose> Waypoints, double PointSpan, double StopSpan, bool Loop/* = false*/)
+void GoalsHandle::setNamespace(const std::string& Namespace)
+{
+	if (!Namespace.empty())
+	{
+		namespace_ = "/" + Namespace + "/";
+	}
+	else
+	{
+		namespace_ = Namespace;
+	}
+	init();
+}
+
+bool GoalsHandle::execute(std::vector<geometry_msgs::Pose> Waypoints, double PointSpan, double StopSpan, bool Loop/* = false*/)
 {
 	goals_list_.clear();
 	std::size_t metIndex = 0;
@@ -70,7 +73,11 @@ void GoalsHandle::execute(std::vector<geometry_msgs::Pose> Waypoints, double Poi
 	if (!goals_list_.empty())
 	{
 		final_goal_ = goals_list_.back();
-		setGoal(goals_list_.front());
+		return setGoal(goals_list_.front());
+	}
+	else
+	{
+		return false;
 	}
 }
 
@@ -119,20 +126,38 @@ void GoalsHandle::registerExecutionUpdater(ExecutionState Func)
 	func_execution_state_ = Func;
 }
 
-void GoalsHandle::setGoal(const geometry_msgs::Pose& Goal)
+void GoalsHandle::registerMapReceived(MapReceived Func)
 {
-	static size_t waitingCount = 0;
-	if (movebase_client_ == nullptr)
-	{
-		movebase_client_ = std::make_unique<MoveBaseClient>("move_base", true);
-	}
+	func_map_received_ = Func;
+}
+
+void GoalsHandle::init()
+{
+	std::string model;
+	with_ux_ = node_handle_->getParam(namespace_ + "whi_navigation_ux/robot_model", model);
+
+	sub_planned_path_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<nav_msgs::Path>(
+		namespace_ + "move_base/NavfnROS/plan", 10, std::bind(&GoalsHandle::subCallbackPlanPath, this, std::placeholders::_1)));
+	sub_map_data_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<nav_msgs::MapMetaData>(
+		namespace_ + "map_metadata", 10, std::bind(&GoalsHandle::subCallbackMapData, this, std::placeholders::_1)));
+	sub_estimate_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<geometry_msgs::PoseWithCovarianceStamped>(
+		namespace_ + "amcl_pose", 10, std::bind(&GoalsHandle::subCallbackEstimated, this, std::placeholders::_1)));
+	sub_cmd_vel_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<geometry_msgs::Twist>(
+		namespace_ + "cmd_vel", 10, std::bind(&GoalsHandle::subCallbackCmdVel, this, std::placeholders::_1)));
+
+	movebase_client_ = std::make_unique<MoveBaseClient>(namespace_ + "move_base", true);
+}
+
+bool GoalsHandle::setGoal(const geometry_msgs::Pose& Goal)
+{
 	// wait for the action server to come up
+	static size_t waitingCount = 0;
 	while (!movebase_client_->waitForServer(ros::Duration(5.0)))
 	{
 		if (++waitingCount > 3)
 		{
 			printf("can't set the goal, please check if the action server is on\n");
-			break;
+			return false;
 		}
 		ROS_INFO("Waiting for the move_base action server to come up");
 	}
@@ -158,11 +183,14 @@ void GoalsHandle::setGoal(const geometry_msgs::Pose& Goal)
 	//{
 	//	ROS_INFO("The base failed to move forward 1 meter for some reason");
 	//}
+
+	return true;
 }
 
 void GoalsHandle::cancelGoal() const
 {
-	auto pubCancel = std::make_unique<ros::Publisher>(node_handle_->advertise<actionlib_msgs::GoalID>("move_base/cancel", 10));
+	auto pubCancel = std::make_unique<ros::Publisher>(
+		node_handle_->advertise<actionlib_msgs::GoalID>(namespace_ + "move_base/cancel", 10));
 	actionlib_msgs::GoalID cancelID; // must be an empty goal msg
 
 	pubCancel->publish(cancelID);
@@ -292,6 +320,10 @@ void GoalsHandle::subCallbackPlanPath(const nav_msgs::Path::ConstPtr& PlanPath)
 void GoalsHandle::subCallbackMapData(const nav_msgs::MapMetaData::ConstPtr& MapData)
 {
 	map_origin_ = MapData->origin;
+	if (func_map_received_)
+	{
+		func_map_received_();
+	}
 }
 
 void GoalsHandle::subCallbackEstimated(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& Estimated)
