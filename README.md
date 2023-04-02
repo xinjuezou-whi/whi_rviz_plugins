@@ -53,7 +53,10 @@ This plugin derived from the default image plugin with extended stream sources i
 Clone package `whi_interfaces` and `whi_rviz_plugins` to your workspace:
 
 ```
-cd <your_workspace>
+cd <your_workspace>/src
+git clone https://github.com/xinjuezou-whi/whi_interfaces.git
+git clone https://github.com/xinjuezou-whi/whi_rviz_plugins.git
+cd ..
 catkin build
 ```
 
