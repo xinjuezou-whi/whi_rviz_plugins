@@ -32,7 +32,7 @@ int8 state
 The base of the charge text will be at the frame listed in the header of the WhiBattery message, which let the charge info stick to robot and move with it. Besides under multiple robots senario, frame with namespace enable each robot bearing its own charge info.
 
 ## Navi_waypoints
-Plugin Navi_waypoints derives from class rviz::Display, and creates a panel for waypoints interaction logic:
+Plugin Navi_waypoints derives from class rviz::Display, and creates a panel for waypoints interaction logic. From version 00.09 it supports the namespace for manipulating multiple robots:
 
 ![waypoints_im](https://user-images.githubusercontent.com/72239958/198922851-85c9cbee-87e3-4eca-871b-9a39282a0e05.gif)
 
@@ -141,6 +141,10 @@ The duration is measured as time, so these two's unit are second. Both are withi
 ### Save and Load
 
 For the convenience, you can save the waypoints by clicking save button, and re-use them by button load. The waypoints file is saved as yaml format.
+
+### Namespace
+
+Under multiple robots senario, using the namespace drop list to set the namespace for specified robot.
 
 ## Use Teleop
 1. Add the Navi_waypoints plugin to RViz
