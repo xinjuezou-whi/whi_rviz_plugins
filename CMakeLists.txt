@@ -150,6 +150,7 @@ set(CMAKE_AUTORCC ON)
 qt_wrap_ui(UIC_FILES
   ui/navi_waypoints.ui
   ui/navi_teleop.ui
+  ui/navi_multiple_ns.ui
 )
 
 find_package(OpenCV)
