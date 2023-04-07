@@ -264,4 +264,3 @@ catkin_install_python(PROGRAMS scripts/send_test_msgs.py
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
-

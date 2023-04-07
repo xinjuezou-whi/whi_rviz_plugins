@@ -36,10 +36,10 @@
     </description>
   </class>
   <class name="whi_rviz_plugins/Navi_namespace"
-         type="whi_rviz_plugins::NavNs"
-         base_class_type="rviz::Panel">
+         type="whi_rviz_plugins::NaviNsTool"
+         base_class_type="rviz::Tool">
     <description>
-      2D Navigation operation with namespace
+      2D Navigation initial pose and goal operation with namespace
     </description>
   </class>
 </library>

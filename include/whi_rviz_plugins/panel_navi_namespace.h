@@ -17,8 +17,8 @@ Changelog:
 2023-xx-xx: xxx
 ******************************************************************/
 #pragma once
-#include <ros/ros.h>
 
+#include <ros/ros.h>
 #include <rviz/panel.h>
 
 namespace Ui
@@ -28,18 +28,19 @@ class NaviMultipleNs;
 
 namespace whi_rviz_plugins
 {
-    class NavNs : public rviz::Panel 
+    class NaviNsPanel : public rviz::Panel 
     {
         Q_OBJECT
     public:
-        NavNs(QWidget* Parent = nullptr);
-        ~NavNs() = default;
+        NaviNsPanel(QWidget* Parent = nullptr);
+        ~NaviNsPanel() = default;
 
-    private:
+    public:
+        virtual void load(const rviz::Config& Config) override;
         virtual void save(rviz::Config Config) const override;
 
     private:
         Ui::NaviMultipleNs* ui_{ nullptr };
-        std::unique_ptr<ros::NodeHandle> node_handle_{ nullptr };
+        std::shared_ptr<ros::NodeHandle> node_handle_{ nullptr };
     };
 } // end namespace whi_rviz_plugins

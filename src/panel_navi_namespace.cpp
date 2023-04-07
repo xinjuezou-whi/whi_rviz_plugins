@@ -13,31 +13,27 @@ GNU General Public License, check LICENSE for more information.
 All text above must be included in any redistribution.
 
 ******************************************************************/
-#include "whi_rviz_plugins/panel_nav_namespace.h"
+#include "whi_rviz_plugins/panel_navi_namespace.h"
 #include "ui_navi_multiple_ns.h"
 
 #include <ros/package.h>
-#include <ros/service.h>
 #include <iostream>
 #include <memory>
 #include <boost/filesystem.hpp>
 
 #include <QButtonGroup>
 #include <QIcon>
-
-#include <pluginlib/class_list_macros.h>
+#include <QMessageBox>
 
 namespace whi_rviz_plugins
 {
-    NavNs::NavNs(QWidget* Parent/* = nullptr*/)
+    NaviNsPanel::NaviNsPanel(QWidget* Parent/* = nullptr*/)
         : rviz::Panel(Parent), ui_(new Ui::NaviMultipleNs())
-        , node_handle_(std::make_unique<ros::NodeHandle>())
+        , node_handle_(std::make_shared<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for navigation goal with namespace VERSION 00.01.ing" << std::endl;
-        std::cout << "Copyright @ 2023-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
-
         /// set up the GUI
 		ui_->setupUi(this);
+        ui_->comboBox_ns->setInsertPolicy(QComboBox::NoInsert);
         // exclusive toggling behavior
         QButtonGroup* buttonGroup = new QButtonGroup;
         buttonGroup->addButton(ui_->pushButton_initial, 0);
@@ -59,14 +55,53 @@ namespace whi_rviz_plugins
         icon.addFile(QString(packagePath.string().c_str()) + "/icons/classes/SetGoal.png",
             QSize(), QIcon::Normal, QIcon::Off);
         ui_->pushButton_goal->setIcon(icon);
+
+        // signals
+        connect(ui_->pushButton_add_ns, &QPushButton::clicked, this, [=]()
+		{
+			if (ui_->comboBox_ns->findText(ui_->comboBox_ns->currentText()) < 0)
+			{
+                ui_->comboBox_ns->addItem(ui_->comboBox_ns->currentText());
+			}
+			else
+			{
+				QMessageBox::information(this, tr("Info"), tr("namespace is present already"));
+			}
+		});
+        connect(buttonGroup, QOverload<QAbstractButton *>::of(&QButtonGroup::buttonClicked), this,
+            [=](QAbstractButton* Button)
+            {
+                if (ui_->pushButton_initial->isChecked())
+                {
+                    std::cout << "iiiiiiiiiiiiiiiiiinitial button " << std::endl;
+                }
+                else if (ui_->pushButton_goal->isChecked())
+                {
+                    std::cout << "ggggggggggggggggggoal button " << std::endl;
+                }
+            });
     }
 
-    void NavNs::save(rviz::Config Config) const
+    void NaviNsPanel::load(const rviz::Config& Config)
     {
-        rviz::Panel::save(Config);
-        QStringList ns = { "testwhi01", "testwhi02" };
-        Config.mapSetValue("whi_navi_ns", ns);
+        //Panel::load(Config);
+
+        auto ns = Config.mapGetChild("whi_navi_ns");
+        int countNs = ns.listLength();
+        for (int i = 0; i < countNs; ++i)
+        {
+            ui_->comboBox_ns->addItem(ns.listChildAt(i).getValue().toString());
+        }
     }
 
-    PLUGINLIB_EXPORT_CLASS(whi_rviz_plugins::NavNs, rviz::Panel)
+    void NaviNsPanel::save(rviz::Config Config) const
+    {
+        //rviz::Panel::save(Config);
+
+        auto child = Config.mapMakeChild("whi_navi_ns");
+        for (int i = 0; i < ui_->comboBox_ns->count(); ++i)
+        {
+            child.listAppendNew().setValue(ui_->comboBox_ns->itemText(i));
+        }
+    }
 } // end namespace whi_rviz_plugins
