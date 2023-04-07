@@ -36,8 +36,8 @@ namespace whi_rviz_plugins
         ~NaviNsPanel() = default;
 
     public:
-        virtual void load(const rviz::Config& Config) override;
-        virtual void save(rviz::Config Config) const override;
+        void load(const rviz::Config& Config); // override;
+        void save(rviz::Config Config) const; // override;
 
     private:
         Ui::NaviMultipleNs* ui_{ nullptr };

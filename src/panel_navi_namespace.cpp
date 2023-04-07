@@ -62,6 +62,7 @@ namespace whi_rviz_plugins
 			if (ui_->comboBox_ns->findText(ui_->comboBox_ns->currentText()) < 0)
 			{
                 ui_->comboBox_ns->addItem(ui_->comboBox_ns->currentText());
+                ui_->label_count->setText("ns count: " + QString::number(ui_->comboBox_ns->count()));
 			}
 			else
 			{
@@ -84,7 +85,8 @@ namespace whi_rviz_plugins
 
     void NaviNsPanel::load(const rviz::Config& Config)
     {
-        //Panel::load(Config);
+        // not an override from rviz::Panel
+        //rviz::Panel::load(Config);
 
         auto ns = Config.mapGetChild("whi_navi_ns");
         int countNs = ns.listLength();
@@ -92,10 +94,12 @@ namespace whi_rviz_plugins
         {
             ui_->comboBox_ns->addItem(ns.listChildAt(i).getValue().toString());
         }
+        ui_->label_count->setText("ns count: " + QString::number(ui_->comboBox_ns->count()));
     }
 
     void NaviNsPanel::save(rviz::Config Config) const
     {
+        // not an override from rviz::Panel
         //rviz::Panel::save(Config);
 
         auto child = Config.mapMakeChild("whi_navi_ns");
