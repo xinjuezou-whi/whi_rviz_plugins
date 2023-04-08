@@ -39,6 +39,7 @@ namespace whi_rviz_plugins
         buttonGroup->addButton(ui_->pushButton_initial, 0);
         buttonGroup->addButton(ui_->pushButton_goal, 1);
         buttonGroup->setExclusive(true);
+        ui_->pushButton_initial->setChecked(true);
         // WHI logo
 		boost::filesystem::path packagePath(ros::package::getPath("whi_rviz_plugins"));
 		QImage logo;
@@ -62,6 +63,7 @@ namespace whi_rviz_plugins
 			if (ui_->comboBox_ns->findText(ui_->comboBox_ns->currentText()) < 0)
 			{
                 ui_->comboBox_ns->addItem(ui_->comboBox_ns->currentText());
+                ui_->comboBox_ns->setCurrentIndex(ui_->comboBox_ns->count() - 1);
                 ui_->label_count->setText("ns count: " + QString::number(ui_->comboBox_ns->count()));
 			}
 			else
@@ -70,17 +72,40 @@ namespace whi_rviz_plugins
 			}
 		});
         connect(buttonGroup, QOverload<QAbstractButton *>::of(&QButtonGroup::buttonClicked), this,
-            [=](QAbstractButton* Button)
+        [=](QAbstractButton* Button)
             {
                 if (ui_->pushButton_initial->isChecked())
                 {
-                    std::cout << "iiiiiiiiiiiiiiiiiinitial button " << std::endl;
+                    if (type_setting_)
+                    {
+                        type_setting_(TYPE_INITIAL_POSE);
+                    }
                 }
                 else if (ui_->pushButton_goal->isChecked())
                 {
-                    std::cout << "ggggggggggggggggggoal button " << std::endl;
+                    if (type_setting_)
+                    {
+                        type_setting_(TYPE_GOAL);
+                    }
                 }
             });
+        connect(ui_->comboBox_ns, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [=](int Index)
+		{
+            if (ns_setting_)
+            {
+                ns_setting_(ui_->comboBox_ns->currentText().toStdString());
+            }
+		});
+    }
+
+    void NaviNsPanel::registerTypeSetting(TypeSetting Func)
+    {
+        type_setting_ = Func;
+    }
+
+    void NaviNsPanel::registerNsSetting(NsSetting Func)
+    {
+        ns_setting_ = Func;
     }
 
     void NaviNsPanel::load(const rviz::Config& Config)

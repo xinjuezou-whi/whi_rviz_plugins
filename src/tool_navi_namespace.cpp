@@ -14,9 +14,13 @@ All text above must be included in any redistribution.
 ******************************************************************/
 #include "whi_rviz_plugins/tool_navi_namespace.h"
 
+#include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2/LinearMath/Quaternion.h>
 #include <rviz/window_manager_interface.h>
 #include <rviz/display_context.h>
+#include <rviz/ogre_helpers/arrow.h>
 
 #include <pluginlib/class_list_macros.h>
 
@@ -25,7 +29,7 @@ namespace whi_rviz_plugins
     NaviNsTool::NaviNsTool()
         : node_handle_(std::make_unique<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for navigation goal with namespace VERSION 00.01.ing" << std::endl;
+        std::cout << "\nWHI RViz plugin for navigation goal with namespace VERSION 00.01" << std::endl;
         std::cout << "Copyright @ 2023-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         shortcut_key_ = 'n';
@@ -34,10 +38,11 @@ namespace whi_rviz_plugins
     void NaviNsTool::onInitialize()
     {
         PoseTool::onInitialize();
-        setName("2D Pose Estimate");
-        updateTopic();
+        setToolType(type_);
 
         panel_ = new NaviNsPanel();
+        panel_->registerTypeSetting(std::bind(&NaviNsTool::setToolType, this, std::placeholders::_1));
+        panel_->registerNsSetting(std::bind(&NaviNsTool::setNs, this, std::placeholders::_1));
         rviz::WindowManagerInterface* windowContext = context_->getWindowManager();
         if (windowContext)
         {
@@ -48,22 +53,59 @@ namespace whi_rviz_plugins
 
     void NaviNsTool::onPoseSet(double X, double Y, double Theta)
     {
-        // std::string fixed_frame = context_->getFixedFrame().toStdString();
-        // geometry_msgs::PoseWithCovarianceStamped pose;
-        // pose.header.frame_id = fixed_frame;
-        // pose.header.stamp = ros::Time::now();
-        // pose.pose.pose.position.x = x;
-        // pose.pose.pose.position.y = y;
+        std::string fixedFrame = context_->getFixedFrame().toStdString();
+        if (type_ == TYPE_INITIAL_POSE)
+        {
+            geometry_msgs::PoseWithCovarianceStamped pose;
+            pose.header.frame_id = fixedFrame;
+            pose.header.stamp = ros::Time::now();
+            pose.pose.pose.position.x = X;
+            pose.pose.pose.position.y = Y;
 
-        // geometry_msgs::Quaternion quat_msg;
-        // tf2::Quaternion quat;
-        // quat.setRPY(0.0, 0.0, theta);
-        // pose.pose.pose.orientation = tf2::toMsg(quat);
-        // pose.pose.covariance[6 * 0 + 0] = std::pow(std_dev_x_->getFloat(), 2);
-        // pose.pose.covariance[6 * 1 + 1] = std::pow(std_dev_y_->getFloat(), 2);
-        // pose.pose.covariance[6 * 5 + 5] = std::pow(std_dev_theta_->getFloat(), 2);
-        // ROS_INFO("Setting pose: %.3f %.3f %.3f [frame=%s]", x, y, theta, fixed_frame.c_str());
-        // pub_.publish(pose);
+            geometry_msgs::Quaternion quat_msg;
+            tf2::Quaternion quat;
+            quat.setRPY(0.0, 0.0, Theta);
+            pose.pose.pose.orientation = tf2::toMsg(quat);
+            pose.pose.covariance[6 * 0 + 0] = std::pow(0.5, 2); // TODO
+            pose.pose.covariance[6 * 1 + 1] = std::pow(0.5, 2); // TODO
+            pose.pose.covariance[6 * 5 + 5] = std::pow(M_PI / 12.0, 2); // TODO
+            ROS_INFO("Setting pose: %.3f %.3f %.3f [frame=%s]", X, Y, Theta, fixedFrame.c_str());
+            pub_->publish(pose);
+        }
+        else if (type_ == TYPE_GOAL)
+        {
+            tf2::Quaternion quat;
+            quat.setRPY(0.0, 0.0, Theta);
+            geometry_msgs::PoseStamped goal;
+            goal.pose.orientation = tf2::toMsg(quat);
+            goal.pose.position.x = X;
+            goal.pose.position.y = Y;
+            goal.header.frame_id = fixedFrame;
+            goal.header.stamp = ros::Time::now();
+            ROS_INFO("Setting goal: Frame:%s, Position(%.3f, %.3f, %.3f), Orientation(%.3f, %.3f, %.3f, %.3f) = "
+                "Angle: %.3f\n",fixedFrame.c_str(), goal.pose.position.x, goal.pose.position.y, goal.pose.position.z,
+                goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z, goal.pose.orientation.w, Theta);
+            pub_->publish(goal);
+        }
+    }
+
+    void NaviNsTool::setToolType(int Type)
+    {
+        type_ = Type;
+        QString toolName = "2D Pose Estimate";
+        if (type_ == TYPE_GOAL)
+        {
+            toolName = "2D Nav Goal";
+            arrow_->setColor(1.0f, 0.0f, 1.0f, 1.0f);
+        }
+        setName(toolName);
+        updateTopic();
+    }
+
+    void NaviNsTool::setNs(const std::string& Namespace)
+    {
+        namespace_ = Namespace;
+        updateTopic();
     }
 
     void NaviNsTool::load(const rviz::Config& Config)
@@ -84,12 +126,20 @@ namespace whi_rviz_plugins
     {
         try
         {
-            pub_ = std::make_unique<ros::Publisher>(
-                node_handle_->advertise<geometry_msgs::PoseWithCovarianceStamped>("test", 10));
+            if (type_ == TYPE_INITIAL_POSE)
+            {
+                pub_ = std::make_unique<ros::Publisher>(
+                    node_handle_->advertise<geometry_msgs::PoseWithCovarianceStamped>(namespace_ + "/initialpose", 10));
+            }
+            else if (type_ == TYPE_GOAL)
+            {
+                pub_ = std::make_unique<ros::Publisher>(
+                    node_handle_->advertise<geometry_msgs::PoseStamped>(namespace_ + "/move_base_simple/goal", 10));
+            }
         }
         catch (const ros::Exception& e)
         {
-            ROS_ERROR_STREAM_NAMED("InitialPoseTool", e.what());
+            ROS_ERROR_STREAM_NAMED("WHI Navi tool with ns", e.what());
         }
     }
 

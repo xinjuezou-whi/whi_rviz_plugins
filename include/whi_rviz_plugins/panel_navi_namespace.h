@@ -21,6 +21,8 @@ Changelog:
 #include <ros/ros.h>
 #include <rviz/panel.h>
 
+#include <functional>
+
 namespace Ui
 {
 class NaviMultipleNs;
@@ -28,6 +30,10 @@ class NaviMultipleNs;
 
 namespace whi_rviz_plugins
 {
+    using TypeSetting = std::function<void(int)>;
+    using NsSetting = std::function<void(const std::string&)>;
+    enum ToolType { TYPE_INITIAL_POSE = 0, TYPE_GOAL };
+
     class NaviNsPanel : public rviz::Panel 
     {
         Q_OBJECT
@@ -36,11 +42,15 @@ namespace whi_rviz_plugins
         ~NaviNsPanel() = default;
 
     public:
+        void registerTypeSetting(TypeSetting Func);
+        void registerNsSetting(NsSetting Func);
         void load(const rviz::Config& Config); // override;
         void save(rviz::Config Config) const; // override;
 
     private:
         Ui::NaviMultipleNs* ui_{ nullptr };
         std::shared_ptr<ros::NodeHandle> node_handle_{ nullptr };
+        TypeSetting type_setting_{ nullptr };
+        NsSetting ns_setting_{ nullptr };
     };
 } // end namespace whi_rviz_plugins

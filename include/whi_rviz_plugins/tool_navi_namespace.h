@@ -37,6 +37,8 @@ namespace whi_rviz_plugins
         void onPoseSet(double X, double Y, double Theta) override;
 
     private:
+        void setToolType(int Type);
+        void setNs(const std::string& Namespace);
         void load(const rviz::Config& Config) override;
         void save(rviz::Config Config) const override;
 
@@ -48,5 +50,7 @@ namespace whi_rviz_plugins
         std::unique_ptr<ros::Publisher> pub_{ nullptr };
         rviz::PanelDockWidget* frame_dock_{ nullptr };
         NaviNsPanel* panel_{ nullptr };
+        int type_{ TYPE_INITIAL_POSE };
+        std::string namespace_;
     };
 } // end namespace whi_rviz_plugins
