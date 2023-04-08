@@ -92,13 +92,16 @@ namespace whi_rviz_plugins
     void NaviNsTool::setToolType(int Type)
     {
         type_ = Type;
-        QString toolName = "2D Pose Estimate";
-        if (type_ == TYPE_GOAL)
+        if (type_ == TYPE_INITIAL_POSE)
         {
-            toolName = "2D Nav Goal";
-            arrow_->setColor(1.0f, 0.0f, 1.0f, 1.0f);
+            arrow_->setColor(0.0f, 1.0f, 0.0f, 1.0f);
+            setName("2D Pose Estimate");
         }
-        setName(toolName);
+        else if (type_ == TYPE_GOAL)
+        {
+            arrow_->setColor(1.0f, 0.0f, 1.0f, 1.0f);
+            setName("2D Nav Goal");
+        }
         updateTopic();
     }
 
