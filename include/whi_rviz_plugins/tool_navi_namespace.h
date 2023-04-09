@@ -19,6 +19,7 @@ Changelog:
 #include "panel_navi_namespace.h"
 #include <rviz/default_plugin/tools/pose_tool.h>
 #include <rviz/panel_dock_widget.h>
+#include <rviz/properties/float_property.h>
 
 #include <memory>
 
@@ -52,5 +53,8 @@ namespace whi_rviz_plugins
         NaviNsPanel* panel_{ nullptr };
         int type_{ TYPE_INITIAL_POSE };
         std::string namespace_;
+        rviz::FloatProperty* std_dev_x_;
+        rviz::FloatProperty* std_dev_y_;
+        rviz::FloatProperty* std_dev_theta_;
     };
 } // end namespace whi_rviz_plugins

@@ -29,10 +29,20 @@ namespace whi_rviz_plugins
     NaviNsTool::NaviNsTool()
         : node_handle_(std::make_unique<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for navigation goal with namespace VERSION 00.01" << std::endl;
+        std::cout << "\nWHI RViz plugin for navigation goal with namespace VERSION 00.02" << std::endl;
         std::cout << "Copyright @ 2023-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         shortcut_key_ = 'n';
+        // properties for initial pose
+        std_dev_x_ = new rviz::FloatProperty("X std deviation", 0.5, "X standard deviation for initial pose [m]",
+            getPropertyContainer());
+        std_dev_y_ = new rviz::FloatProperty("Y std deviation", 0.5, "Y standard deviation for initial pose [m]",
+            getPropertyContainer());
+        std_dev_theta_ = new rviz::FloatProperty("Theta std deviation", M_PI / 12.0,
+            "Theta standard deviation for initial pose [rad]", getPropertyContainer());
+        std_dev_x_->setMin(0);
+        std_dev_y_->setMin(0);
+        std_dev_theta_->setMin(0);
     }
 
     void NaviNsTool::onInitialize()
@@ -66,9 +76,9 @@ namespace whi_rviz_plugins
             tf2::Quaternion quat;
             quat.setRPY(0.0, 0.0, Theta);
             pose.pose.pose.orientation = tf2::toMsg(quat);
-            pose.pose.covariance[6 * 0 + 0] = std::pow(0.5, 2); // TODO
-            pose.pose.covariance[6 * 1 + 1] = std::pow(0.5, 2); // TODO
-            pose.pose.covariance[6 * 5 + 5] = std::pow(M_PI / 12.0, 2); // TODO
+            pose.pose.covariance[6 * 0 + 0] = std::pow(std_dev_x_->getFloat(), 2);
+            pose.pose.covariance[6 * 1 + 1] = std::pow(std_dev_y_->getFloat(), 2);
+            pose.pose.covariance[6 * 5 + 5] = std::pow(std_dev_theta_->getFloat(), 2);
             ROS_INFO("Setting pose: %.3f %.3f %.3f [frame=%s]", X, Y, Theta, fixedFrame.c_str());
             pub_->publish(pose);
         }
@@ -95,13 +105,12 @@ namespace whi_rviz_plugins
         if (type_ == TYPE_INITIAL_POSE)
         {
             arrow_->setColor(0.0f, 1.0f, 0.0f, 1.0f);
-            setName("2D Pose Estimate");
         }
         else if (type_ == TYPE_GOAL)
         {
             arrow_->setColor(1.0f, 0.0f, 1.0f, 1.0f);
-            setName("2D Nav Goal");
         }
+        setName("Navi_namespace");
         updateTopic();
     }
 
