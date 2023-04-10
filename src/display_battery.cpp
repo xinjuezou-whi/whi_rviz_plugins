@@ -28,8 +28,8 @@ namespace whi_rviz_plugins
 {
     DisplayBat::DisplayBat()
     {
-        std::cout << "\nWHI RViz plugin for battery VERSION 00.05" << std::endl;
-        std::cout << "Copyright © 2022-2023 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
+        std::cout << "\nWHI RViz plugin for battery VERSION 00.06" << std::endl;
+        std::cout << "Copyright © 2022-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         color_red_ = std::make_shared<Ogre::ColourValue>(239.0 / 255.0, 41.0 / 255.0, 41.0 / 255.0);
         color_property_ = new rviz::ColorProperty("Color", QColor(138, 226, 52),
@@ -72,7 +72,11 @@ namespace whi_rviz_plugins
     void DisplayBat::onInitialize()
     {
         MFDClass::onInitialize();
+        updateColorAndAlpha();
         updateHistoryLength();
+        updateSize();
+        updateOffsets();
+        updateOrientation();
     }
 
     // clear the visuals by deleting their objects

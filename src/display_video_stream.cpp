@@ -31,8 +31,8 @@ namespace whi_rviz_plugins
     VideoStreamDisplay::VideoStreamDisplay()
         : ImageDisplayBase(), texture_()
     {
-        std::cout << "\nWHI RViz plugin for video stream VERSION 00.03" << std::endl;
-        std::cout << "Copyright @ 2022-2023 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
+        std::cout << "\nWHI RViz plugin for video stream VERSION 00.04" << std::endl;
+        std::cout << "Copyright @ 2022-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         normalize_property_ = new rviz::BoolProperty("Normalize Range", true,
             "If set to true, will try to estimate the range of possible values from the received images",
@@ -131,6 +131,9 @@ namespace whi_rviz_plugins
         render_panel_->getCamera()->setNearClipDistance(0.01f);
 
         updateNormalizeOptions();
+        updateStreamDevice();
+        updateStreamUrl();
+        updateStreamSource();
         resetTexture();
     }
 

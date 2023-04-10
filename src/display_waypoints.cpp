@@ -29,7 +29,7 @@ namespace whi_rviz_plugins
     WaypointsDisplay::WaypointsDisplay()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.09" << std::endl;
+        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.10" << std::endl;
         std::cout << "Copyright @ 2022-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         marker_size_property_ = new rviz::FloatProperty("Marker Size", 1.0, "Arrow size of waypoint mark.",
@@ -39,11 +39,11 @@ namespace whi_rviz_plugins
         marker_color_property_ = new rviz::ColorProperty("Marker Color", QColor(0, 255, 0), "Color of waypoints arrow.",
             this, SLOT(updateMarks()));
         font_bool_property_ = new rviz::BoolProperty("Show ETA", true, "Toggle the visibility of ETA info.",
-            this, SLOT(setVisibility()));
+            this, SLOT(updateVisibility()));
         font_size_property_ = new rviz::FloatProperty("ETA Font Size", 1.0, "Characters size of ETA info.",
-            this, SLOT(setSize()));
+            this, SLOT(updateSize()));
         font_color_property_ = new rviz::ColorProperty("ETA Font Color", QColor(255, 255, 255), "Characters color of ETA info.",
-            this, SLOT(setColor()));
+            this, SLOT(updateColor()));
     }
 
     WaypointsDisplay::~WaypointsDisplay()
@@ -66,11 +66,14 @@ namespace whi_rviz_plugins
         }
 
         eta_text_.reset(new rviz::MovableText("."));
-        eta_text_->setCharacterHeight(font_size_property_->getFloat());
         eta_text_->setLineSpacing(1.0);
-        eta_text_->setColor(font_color_property_->getOgreColor());
+
         frame_node_ = getSceneNode()->createChildSceneNode();
-        frame_node_->attachObject(eta_text_.get());
+
+        updateMarks();
+        updateSize();
+        updateColor();
+        updateVisibility();
     }
 
     void WaypointsDisplay::clearWaypointsLocationsDisplay()
@@ -172,19 +175,26 @@ namespace whi_rviz_plugins
         panel_->updateHeight(marker_height_property_->getFloat());
     }
 
-    void WaypointsDisplay::setVisibility(bool Visible)
+    void WaypointsDisplay::updateVisibility()
     {
-        // do nothing
+        if (font_bool_property_->getBool())
+        {
+            frame_node_->attachObject(eta_text_.get());
+        }
+        else
+        {
+            frame_node_->detachObject(eta_text_.get());
+        }
     }
 
-	void WaypointsDisplay::setSize(float Size)
+	void WaypointsDisplay::updateSize()
 	{
-		eta_text_->setCharacterHeight(Size);
+		eta_text_->setCharacterHeight(font_size_property_->getFloat());
 	}
 
-    void WaypointsDisplay::setColor(const Ogre::ColourValue& Color)
+    void WaypointsDisplay::updateColor()
 	{
-		eta_text_->setColor(Color);
+		eta_text_->setColor(font_color_property_->getOgreColor());
 	}
 
     void WaypointsDisplay::addPositionControl(visualization_msgs::InteractiveMarker& IntMarker, bool OrientationFixed)

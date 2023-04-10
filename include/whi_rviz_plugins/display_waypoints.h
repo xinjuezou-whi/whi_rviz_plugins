@@ -54,9 +54,9 @@ namespace whi_rviz_plugins
         void interactiveMarkerProcessFeedback(visualization_msgs::InteractiveMarkerFeedback& Feedback);
 		// these Qt slots get connected to signals indicating changes in the user-editable properties
 		void updateMarks();
-        void setVisibility(bool Visible);
-        void setSize(float Size);
-        void setColor(const Ogre::ColourValue& Color);
+        void updateVisibility();
+        void updateSize();
+        void updateColor();
 
     private:
         static void addPositionControl(visualization_msgs::InteractiveMarker& IntMarker, bool OrientationFixed);
