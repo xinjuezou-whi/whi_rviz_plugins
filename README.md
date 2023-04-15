@@ -6,12 +6,14 @@ Rviz plugins package for showing custom info. currently there are five plugins: 
 - [Teleop](#teleop)
 - [Map_saver](#map_saver)
 - [Video_stream](#video_stream)
+- [Navi_namespace](#navi_namespace)
 - [Build](#build)
 - [Use Battery](#use-battery)
 - [Use Navi_waypoints](#use-navi_waypoints)
 - [Use Teleop](#use-teleop)
 - [Use Map_saver](#use-map_saver)
 - [Use Video_stream](#use-video_stream)
+- [Use Navi_namespace](#use-navi_namespace)
 
 ## Battery
 Plugin Battery is a derived class from MessageFilterDisplay:
@@ -48,6 +50,9 @@ Map_saver is a panel type plugin. It can help user to save map directly through 
 This plugin derived from the default image plugin with extended stream sources including webcam, IP stream, and video file:
 ![stream](https://user-images.githubusercontent.com/72239958/204996337-f5bc2fae-bb17-4306-b71b-8beb10904a62.gif)
 
+## Navi_namespace
+This plugin dervied from the PoseTool, and extended to functionalities with both 2D Pose Estimate and 2D Nav goal. With this plugin user can navigate specified robot by GUI rather than laborious texting by Tool Properties:
+![multiple](https://user-images.githubusercontent.com/72239958/232202523-065316e1-c1eb-497a-9a42-6731e7f24d40.gif)
 
 ## Build
 Clone package `whi_interfaces` and `whi_rviz_plugins` to your workspace:
@@ -188,3 +193,21 @@ Click the "Add" button at the bottom of the "Displays" panel, then scrolling dow
 | Message | sensor_msgs::Image            | ROS default image message                                                                 |
 | Device  | webcam                        | /dev/video1, just input the index of video device, like 1 in this example                 |
 | URL     | IP video stream or video file | rtsp://xxxx or http://xxxx or https://xxxx and even a video file like /home/user/xxxx.mp4 |
+
+## Use Navi_namespace
+1. Add the Navi_namespace plugin to RViz
+
+Click the "+" icon at the tool bar, then scrolling down through the available tools until your see "Navi_namespace" under package name "whi_rviz_plugins":
+
+![image](https://user-images.githubusercontent.com/72239958/232203203-955d5f4c-b5d8-47fa-9cee-de7cb9702ca8.png)
+
+2. Add namespace
+
+Input namespace in combox, then click button "Add". If namespace is added successfully, the Navi_namespace panel will show the total count of added namespaces:
+
+![image](https://user-images.githubusercontent.com/72239958/232203413-5bad7ee2-7f95-415a-8ab5-15c9fe91170f.png)
+![image](https://user-images.githubusercontent.com/72239958/232203575-be620bb2-596e-4cce-a9c2-6084ba0a2977.png)
+
+3. Toggle between Initial Pose and Navi Goal for setting initial pose and sending out navigation goal:
+
+![toggle](https://user-images.githubusercontent.com/72239958/232205172-eebd5188-f570-41bc-87d2-c040ff8fd5a3.gif)
