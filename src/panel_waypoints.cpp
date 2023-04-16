@@ -95,7 +95,7 @@ namespace whi_rviz_plugins
 		connect(ui_->pushButton_execute, &QPushButton::clicked, this, [=]()
 		{
 			// re-configure namespace
-			goals_->setNamespace(ui_->comboBox_ns->currentText().toStdString());
+			goals_->setNamespace(ui_->comboBox_ns->currentText().toStdString(), is_remote_);
 
 			std::vector<geometry_msgs::PoseStamped> waypoints;
 			retrieveWaypoints(waypoints);
@@ -138,7 +138,7 @@ namespace whi_rviz_plugins
 			if (ui_->comboBox_ns->findText(ui_->comboBox_ns->currentText()) < 0)
 			{
 				// re-configure namespace
-				goals_->setNamespace(ui_->comboBox_ns->currentText().toStdString());
+				goals_->setNamespace(ui_->comboBox_ns->currentText().toStdString(), is_remote_);
 				// add to map
 				storeAll2Map(ui_->comboBox_ns->currentText().toStdString());
 				// add to combox
@@ -152,7 +152,7 @@ namespace whi_rviz_plugins
 		connect(ui_->comboBox_ns, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [=](int Index)
 		{
 			// re-configure namespace
-			goals_->setNamespace(ui_->comboBox_ns->currentText().toStdString());
+			goals_->setNamespace(ui_->comboBox_ns->currentText().toStdString(), is_remote_);
 			// remove all rows from table
 			ui_->tableWidget_waypoints->setRowCount(0);
 			// fill all from map to table
@@ -176,11 +176,23 @@ namespace whi_rviz_plugins
 		goals_->registerExecutionUpdater(std::bind(&WaypointsPanel::executionState,
 			this, std::placeholders::_1, std::placeholders::_2));
 		goals_->registerMapReceived(std::bind(&WaypointsPanel::mapTrigger, this));
+		
+		timer_map_ = new QTimer(this);
+		timer_map_->setSingleShot(true);
+		connect(timer_map_, &QTimer::timeout, this, [=]()
+		{
+			QMessageBox::warning(this, tr("Warning"), tr("failed to get current position"));
+		});
 	}
 
 	WaypointsPanel::~WaypointsPanel()
 	{
 		delete ui_;
+	}
+
+	void WaypointsPanel::setRemoteFlag(bool Flag)
+	{
+		is_remote_ = Flag;
 	}
 
 	void WaypointsPanel::updateWaypoint(int Index, const geometry_msgs::Pose& Pose)
@@ -285,12 +297,12 @@ namespace whi_rviz_plugins
 		{
 			trigger_state_ = TRIGGER_ADD;
 			// re-configure namespace
-			goals_->setNamespace(ui_->comboBox_ns->currentText().toStdString());
+			goals_->setNamespace(ui_->comboBox_ns->currentText().toStdString(), is_remote_);
 
-			QTimer::singleShot(1000, this, [=]()
+			if (!timer_map_->isActive())
 			{
-				QMessageBox::warning(this, tr("Warning"), tr("failed to get current position"));
-			});
+				timer_map_->start(1000);
+			}
 		}
 		else
 		{
@@ -304,12 +316,12 @@ namespace whi_rviz_plugins
 		{
 			trigger_state_ = TRIGGER_INSERT;
 			// re-configure namespace
-			goals_->setNamespace(ui_->comboBox_ns->currentText().toStdString());
+			goals_->setNamespace(ui_->comboBox_ns->currentText().toStdString(), is_remote_);
 
-			QTimer::singleShot(1000, this, [=]()
+			if (!timer_map_->isActive())
 			{
-				QMessageBox::warning(this, tr("Warning"), tr("failed to get current position"));
-			});
+				timer_map_->start(1000);
+			}
 		}
 		else
 		{
@@ -469,7 +481,7 @@ namespace whi_rviz_plugins
 			{
 				trigger_state_ = TRIGGER_LOAD;
 				// re-configure namespace
-				goals_->setNamespace(ns_from_load_);
+				goals_->setNamespace(ns_from_load_, is_remote_);
 
 				// wait for map subscriber
 				QTimer::singleShot(1000, this, [=]()
@@ -567,9 +579,17 @@ namespace whi_rviz_plugins
 			loadWaypoints(waypoints_file_);
 			break;
 		case TRIGGER_ADD:
+			if (timer_map_->isActive())
+			{
+				timer_map_->stop();
+			}
 			addWaypoint();
 			break;
 		case TRIGGER_INSERT:
+			if (timer_map_->isActive())
+			{
+				timer_map_->stop();
+			}
 			insertWaypoint();
 			break;
 		default:

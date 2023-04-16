@@ -22,6 +22,8 @@ Changelog:
 
 #include <QWidget>
 
+class QTimer;
+
 namespace Ui
 {
 class NaviWaypoints;
@@ -43,6 +45,7 @@ namespace whi_rviz_plugins
 		~WaypointsPanel() override;
 
 	public:
+		void setRemoteFlag(bool Flag);
 		void updateWaypoint(int Index, const geometry_msgs::Pose& Pose);
 		void updateHeight(double Height);
 
@@ -76,5 +79,7 @@ namespace whi_rviz_plugins
 		std::string waypoints_file_;
 		std::map<std::string, std::vector<geometry_msgs::Pose>> waypoints_map_;
 		std::string ns_from_load_;
+		bool is_remote_{ false };
+		QTimer* timer_map_{ nullptr };
 	};
 } // end namespace whi_rviz_plugins

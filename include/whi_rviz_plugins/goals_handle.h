@@ -40,7 +40,7 @@ public:
     ~GoalsHandle() = default;
 
 public:
-	void setNamespace(const std::string& Namespace);
+	void setNamespace(const std::string& Namespace, bool IsRemote);
 	bool execute(std::vector<geometry_msgs::Pose> Waypoints, double PointSpan, double StopSpan, bool Loop = false);
 	void cancel();
 	void setLooping(bool Looping);
@@ -53,7 +53,7 @@ public:
 	void registerMapReceived(MapReceived Func);
 
 private:
-	void init();
+	void init(bool IsRemote = false);
 	bool setGoal(const geometry_msgs::Pose& Goal);
 	void cancelGoal() const;
 	void handleGoalAndState(const geometry_msgs::Pose& Pose);

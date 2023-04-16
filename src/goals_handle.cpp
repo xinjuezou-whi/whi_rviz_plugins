@@ -21,7 +21,7 @@ GoalsHandle::GoalsHandle()
 	init();
 }
 
-void GoalsHandle::setNamespace(const std::string& Namespace)
+void GoalsHandle::setNamespace(const std::string& Namespace, bool IsRemote)
 {
 	if (!Namespace.empty())
 	{
@@ -31,7 +31,7 @@ void GoalsHandle::setNamespace(const std::string& Namespace)
 	{
 		namespace_ = Namespace;
 	}
-	init();
+	init(IsRemote);
 }
 
 bool GoalsHandle::execute(std::vector<geometry_msgs::Pose> Waypoints, double PointSpan, double StopSpan, bool Loop/* = false*/)
@@ -131,15 +131,16 @@ void GoalsHandle::registerMapReceived(MapReceived Func)
 	func_map_received_ = Func;
 }
 
-void GoalsHandle::init()
+void GoalsHandle::init(bool IsRemote/* = false*/)
 {
 	std::string model;
 	with_ux_ = node_handle_->getParam(namespace_ + "whi_navigation_ux/robot_model", model);
 
 	sub_planned_path_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<nav_msgs::Path>(
 		namespace_ + "move_base/NavfnROS/plan", 10, std::bind(&GoalsHandle::subCallbackPlanPath, this, std::placeholders::_1)));
+	std::string topicMap = IsRemote ? "map_metadata" : namespace_ + "map_metadata";
 	sub_map_data_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<nav_msgs::MapMetaData>(
-		namespace_ + "map_metadata", 10, std::bind(&GoalsHandle::subCallbackMapData, this, std::placeholders::_1)));
+		topicMap, 10, std::bind(&GoalsHandle::subCallbackMapData, this, std::placeholders::_1)));
 	sub_estimate_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<geometry_msgs::PoseWithCovarianceStamped>(
 		namespace_ + "amcl_pose", 10, std::bind(&GoalsHandle::subCallbackEstimated, this, std::placeholders::_1)));
 	sub_cmd_vel_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<geometry_msgs::Twist>(
