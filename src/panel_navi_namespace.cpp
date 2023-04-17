@@ -71,6 +71,14 @@ namespace whi_rviz_plugins
 				QMessageBox::information(this, tr("Info"), tr("namespace is present already"));
 			}
 		});
+        connect(ui_->pushButton_remove_ns, &QPushButton::clicked, this, [=]()
+		{
+			if (ui_->comboBox_ns->findText(ui_->comboBox_ns->currentText()) >= 0)
+			{
+                ui_->comboBox_ns->removeItem(ui_->comboBox_ns->currentIndex());
+                ui_->label_count->setText("ns count: " + QString::number(ui_->comboBox_ns->count()));
+			}
+		});
         connect(buttonGroup, QOverload<QAbstractButton *>::of(&QButtonGroup::buttonClicked), this,
         [=](QAbstractButton* Button)
             {

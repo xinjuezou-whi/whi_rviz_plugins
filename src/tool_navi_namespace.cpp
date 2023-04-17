@@ -29,7 +29,7 @@ namespace whi_rviz_plugins
     NaviNsTool::NaviNsTool()
         : node_handle_(std::make_unique<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for navigation goal with namespace VERSION 00.02" << std::endl;
+        std::cout << "\nWHI RViz plugin for navigation goal with namespace VERSION 00.03" << std::endl;
         std::cout << "Copyright @ 2023-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         shortcut_key_ = 'n';

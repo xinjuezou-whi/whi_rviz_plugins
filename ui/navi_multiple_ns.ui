@@ -41,6 +41,13 @@
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_remove_ns">
+           <property name="text">
+            <string>Remove</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
        <item>
