@@ -467,7 +467,7 @@ namespace whi_rviz_plugins
 			ns_from_load_ = ns ? ns.as<std::string>() : "";
 
 			int ret = QMessageBox::Yes;
-			if (ui_->comboBox_ns->findText(ns_from_load_.c_str()) >= 0)
+			if (nsExisted(ns_from_load_))
 			{
 				if (ui_->tableWidget_waypoints->rowCount() > 0)
 				{
@@ -488,7 +488,10 @@ namespace whi_rviz_plugins
 				{
 					if (trigger_state_ == TRIGGER_LOAD)
 					{
-						ui_->comboBox_ns->addItem(ns_from_load_.c_str());
+						if (!this->nsExisted(ns_from_load_))
+						{
+							ui_->comboBox_ns->addItem(ns_from_load_.c_str());
+						}
 						ui_->comboBox_ns->setCurrentText(ns_from_load_.c_str());
 						ui_->comboBox_ns->setCurrentIndex(ui_->comboBox_ns->findText(ns_from_load_.c_str()));
 						
@@ -574,7 +577,10 @@ namespace whi_rviz_plugins
 		switch (trigger_state_)
 		{
 		case TRIGGER_LOAD:
-			ui_->comboBox_ns->addItem(ns_from_load_.c_str());
+			if (!nsExisted(ns_from_load_))
+			{
+				ui_->comboBox_ns->addItem(ns_from_load_.c_str());
+			}
 			ui_->comboBox_ns->setCurrentText(ns_from_load_.c_str());
 			loadWaypoints(waypoints_file_);
 			break;
@@ -616,5 +622,10 @@ namespace whi_rviz_plugins
 		ui_->pushButton_insert->setEnabled(Flag);
 		ui_->pushButton_remove->setEnabled(Flag);
 		ui_->pushButton_load->setEnabled(Flag);
+	}
+
+	bool WaypointsPanel::nsExisted(const std::string& Namespace) const
+	{
+		return ui_->comboBox_ns->findText(Namespace.c_str()) >= 0;
 	}
 } // end namespace whi_rviz_plugins

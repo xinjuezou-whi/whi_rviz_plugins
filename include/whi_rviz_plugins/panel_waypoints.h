@@ -68,6 +68,7 @@ namespace whi_rviz_plugins
 		void mapTrigger();
 		double getYawFromPose(const geometry_msgs::Pose& Pose) const;
 		void enableUi(bool Flag);
+		bool nsExisted(const std::string& Namespace) const;
 
 	private:
 		enum TriggerState { TRIGGER_LOAD = 0, TRIGGER_ADD, TRIGGER_INSERT, TRIGGER_NA };
