@@ -57,7 +57,6 @@ private:
 	bool setGoal(const geometry_msgs::Pose& Goal);
 	void cancelGoal() const;
 	void handleGoalAndState(const geometry_msgs::Pose& Pose);
-	void handleGoalAndStateUx(const geometry_msgs::Pose& Pose);
 	void updateStateInfo(bool IsFinalOne);
 	void subCallbackPlanPath(const nav_msgs::Path::ConstPtr& PlanPath);
 	void subCallbackMapData(const nav_msgs::MapMetaData::ConstPtr& MapData);
@@ -77,7 +76,6 @@ private:
     std::unique_ptr<ros::NodeHandle> node_handle_{ nullptr };
 	using MoveBaseClient = actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>;
 	std::unique_ptr<MoveBaseClient> movebase_client_{ nullptr };
-    nav_msgs::Path::_poses_type traj_poses_;
     geometry_msgs::Pose map_origin_;
     geometry_msgs::Pose estimated_;
 	std::list<geometry_msgs::Pose> goals_list_;
@@ -89,9 +87,7 @@ private:
 	double current_linear_{ 0.0001 };
 	std::mutex mtx_estimated_;
 	std::unique_ptr<ros::Timer> non_realtime_loop_{ nullptr };
-	bool with_ux_{ true };
 	// subscriber
-	std::unique_ptr<ros::Subscriber> sub_planned_path_{ nullptr };
 	std::unique_ptr<ros::Subscriber> sub_map_data_{ nullptr };
 	std::unique_ptr<ros::Subscriber> sub_estimate_{ nullptr };
 	std::unique_ptr<ros::Subscriber> sub_cmd_vel_{ nullptr };

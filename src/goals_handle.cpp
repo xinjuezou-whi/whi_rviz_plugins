@@ -133,11 +133,6 @@ void GoalsHandle::registerMapReceived(MapReceived Func)
 
 void GoalsHandle::init(bool IsRemote/* = false*/)
 {
-	std::string model;
-	with_ux_ = node_handle_->getParam(namespace_ + "whi_navigation_ux/robot_model", model);
-
-	sub_planned_path_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<nav_msgs::Path>(
-		namespace_ + "move_base/NavfnROS/plan", 10, std::bind(&GoalsHandle::subCallbackPlanPath, this, std::placeholders::_1)));
 	std::string topicMap = IsRemote ? "map_metadata" : namespace_ + "map_metadata";
 	sub_map_data_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<nav_msgs::MapMetaData>(
 		topicMap, 10, std::bind(&GoalsHandle::subCallbackMapData, this, std::placeholders::_1)));
@@ -166,7 +161,7 @@ bool GoalsHandle::setGoal(const geometry_msgs::Pose& Goal)
 	move_base_msgs::MoveBaseGoal goalMsg;
 	goalMsg.target_pose.header.frame_id = "map";
 	goalMsg.target_pose.header.stamp = ros::Time::now();
-	goalMsg.target_pose.pose  = Goal;
+	goalMsg.target_pose.pose = Goal;
 
 	movebase_client_->sendGoal(goalMsg, std::bind(&GoalsHandle::callbackGoalDone, this, std::placeholders::_1, std::placeholders::_2),
 		std::bind(&GoalsHandle::callbackGoalActive, this),
@@ -243,53 +238,6 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 	}
 }
 
-void GoalsHandle::handleGoalAndStateUx(const geometry_msgs::Pose& Pose)
-{
-	double dist = distance(Pose, active_goal_);
-	if (goals_list_.empty())
-	{
-		if (dist < 0.5) // the last one
-		{
-			if (func_execution_state_)
-			{
-				func_execution_state_(STA_DONE, nullptr);
-			}
-			if (func_eta_)
-			{
-				func_eta_(active_goal_, -1.0);
-			}
-			std::cout << "all goals traversed. remained goals " << goals_list_.size() << std::endl;
-		}
-	}
-	else
-	{
-		bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
-		double tolerance = isFinalOne ? -stop_span_ * current_linear_ : -point_span_ * current_linear_;
-		if (dist < tolerance)
-		{
-			setGoal(goals_list_.front());
-			updateStateInfo(isFinalOne);
-
-			std::cout << "tolerace reached, proceeding the next. remained goals " << goals_list_.size() << "  " << tolerance << std::endl;
-		}
-		else if (tolerance < 0.0)
-		{
-			ros::Duration duration = isFinalOne ? ros::Duration(stop_span_) : ros::Duration(point_span_);
-			non_realtime_loop_ = std::make_unique<ros::Timer>(
-				node_handle_->createTimer(duration, std::bind(&GoalsHandle::callbackTimer, this, std::placeholders::_1)));
-		}
-	}
-
-	// eta info shows during running state
-	if (current_linear_ > 1e-2 && dist > 0.2)
-	{
-		if (func_eta_)
-		{
-			func_eta_(active_goal_, dist / current_linear_);
-		}
-	}
-}
-
 void GoalsHandle::updateStateInfo(bool IsFinalOne)
 {
 	if (func_execution_state_)
@@ -313,11 +261,6 @@ void GoalsHandle::updateStateInfo(bool IsFinalOne)
 	}
 }
 
-void GoalsHandle::subCallbackPlanPath(const nav_msgs::Path::ConstPtr& PlanPath)
-{
-	traj_poses_ = PlanPath->poses;
-}
-
 void GoalsHandle::subCallbackMapData(const nav_msgs::MapMetaData::ConstPtr& MapData)
 {
 	map_origin_ = MapData->origin;
@@ -336,11 +279,6 @@ void GoalsHandle::subCallbackEstimated(const geometry_msgs::PoseWithCovarianceSt
 	tf::Quaternion quat(estimated_.orientation.x, estimated_.orientation.y, estimated_.orientation.z, estimated_.orientation.w);
   	double roll = 0.0, pitch = 0.0, yaw = 0.0;
   	tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
-
-	if (with_ux_)
-	{
-		handleGoalAndStateUx(estimated_);
-	}
 }
 
 void GoalsHandle::subCallbackCmdVel(const geometry_msgs::Twist::ConstPtr& CmdVel)
@@ -353,24 +291,21 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 #ifdef DEBUG
 	std::cout << "goal state " << std::to_string(State.state_) << " goal left " << goals_list_.size() << std::endl;
 #endif
-	if (!with_ux_)
+	if (goals_list_.empty())
 	{
-		if (goals_list_.empty())
+		if (func_execution_state_)
 		{
-			if (func_execution_state_)
-			{
-				func_execution_state_(STA_DONE, nullptr);
-			}
+			func_execution_state_(STA_DONE, nullptr);
 		}
-		else
+	}
+	else
+	{
+		if (point_span_ > 0.0 || stop_span_ > 0.0)
 		{
-			if (point_span_ > 0.0 || stop_span_ > 0.0)
-			{
-				bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
-				ros::Duration duration = isFinalOne ? ros::Duration(stop_span_) : ros::Duration(point_span_);
-				non_realtime_loop_ = std::make_unique<ros::Timer>(
-					node_handle_->createTimer(duration, std::bind(&GoalsHandle::callbackTimer, this, std::placeholders::_1)));
-			}
+			bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
+			ros::Duration duration = isFinalOne ? ros::Duration(stop_span_) : ros::Duration(point_span_);
+			non_realtime_loop_ = std::make_unique<ros::Timer>(
+				node_handle_->createTimer(duration, std::bind(&GoalsHandle::callbackTimer, this, std::placeholders::_1)));
 		}
 	}
 }
@@ -398,10 +333,7 @@ void GoalsHandle::callbackGoalActive()
 
 void GoalsHandle::callbackGoalFeedback(const move_base_msgs::MoveBaseFeedbackConstPtr& Feedback)
 {
-	if (!with_ux_)
-	{
-		handleGoalAndState(Feedback->base_position.pose);
-	}
+	handleGoalAndState(Feedback->base_position.pose);
 }
 
 void GoalsHandle::callbackTimer(const ros::TimerEvent& Event)
