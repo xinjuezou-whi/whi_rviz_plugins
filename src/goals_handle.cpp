@@ -131,6 +131,18 @@ void GoalsHandle::registerMapReceived(MapReceived Func)
 	func_map_received_ = Func;
 }
 
+bool GoalsHandle::isActive() const
+{
+	return !goals_list_.empty();
+}
+
+void GoalsHandle::unbindCallback()
+{
+	func_eta_ = nullptr;
+	func_execution_state_ = nullptr;
+	func_map_received_ = nullptr;
+}
+
 void GoalsHandle::init(bool IsRemote/* = false*/)
 {
 	std::string topicMap = IsRemote ? "map_metadata" : namespace_ + "map_metadata";

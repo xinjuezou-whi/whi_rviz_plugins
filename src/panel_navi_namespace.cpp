@@ -80,7 +80,7 @@ namespace whi_rviz_plugins
 			}
 		});
         connect(buttonGroup, QOverload<QAbstractButton *>::of(&QButtonGroup::buttonClicked), this,
-        [=](QAbstractButton* Button)
+            [=](QAbstractButton* Button)
             {
                 if (ui_->pushButton_initial->isChecked())
                 {

@@ -95,7 +95,7 @@ namespace whi_rviz_plugins
 		connect(ui_->pushButton_execute, &QPushButton::clicked, this, [=]()
 		{
 			// re-configure namespace
-			goals_->setNamespace(ui_->comboBox_ns->currentText().toStdString(), is_remote_);
+			configureNs(ui_->comboBox_ns->currentText().toStdString());
 
 			std::vector<geometry_msgs::PoseStamped> waypoints;
 			retrieveWaypoints(waypoints);
@@ -104,8 +104,9 @@ namespace whi_rviz_plugins
 			{
 				points.push_back(it.pose);
 			}
-			if (goals_->execute(points, ui_->doubleSpinBox_point_span->value(), 
-				ui_->doubleSpinBox_stop_span->value(), ui_->checkBox_loop->isChecked()))
+			if (goals_map_[ui_->comboBox_ns->currentText().toStdString()]->execute(points,
+				ui_->doubleSpinBox_point_span->value(), ui_->doubleSpinBox_stop_span->value(),
+				ui_->checkBox_loop->isChecked()))
 			{
 				ui_->label_state->setText("Executing...");
 				ui_->pushButton_execute->setEnabled(false);
@@ -119,7 +120,10 @@ namespace whi_rviz_plugins
 		});
 		connect(ui_->pushButton_abort, &QPushButton::clicked, this, [=]()
 		{
-			goals_->cancel();
+			if (goals_map_[ui_->comboBox_ns->currentText().toStdString()])
+			{
+				goals_map_[ui_->comboBox_ns->currentText().toStdString()]->cancel();
+			}
 
 			ui_->label_state->setText("Standby");
 			if (ui_->tableWidget_waypoints->rowCount() > 0)
@@ -128,17 +132,35 @@ namespace whi_rviz_plugins
 			}
 			enableUi(true);
 		});
-		connect(ui_->checkBox_loop, &QCheckBox::stateChanged, this, [=](int State) { goals_->setLooping(State); });
+		connect(ui_->checkBox_loop, &QCheckBox::stateChanged, this, [=](int State)
+		{
+			if (goals_map_[ui_->comboBox_ns->currentText().toStdString()])
+			{
+				goals_map_[ui_->comboBox_ns->currentText().toStdString()]->setLooping(State);
+			}
+		});
 		connect(ui_->doubleSpinBox_point_span, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
-			[=](double Value) { goals_->setPointSpan(Value); });
+			[=](double Value)
+			{
+				if (goals_map_[ui_->comboBox_ns->currentText().toStdString()])
+				{
+					goals_map_[ui_->comboBox_ns->currentText().toStdString()]->setPointSpan(Value);
+				}
+			});
 		connect(ui_->doubleSpinBox_stop_span, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
-			[=](double Value) { goals_->setStopSpan(Value); });
+			[=](double Value)
+			{
+				if (goals_map_[ui_->comboBox_ns->currentText().toStdString()])
+				{
+					goals_map_[ui_->comboBox_ns->currentText().toStdString()]->setStopSpan(Value);
+				}
+			});
 		connect(ui_->pushButton_add_ns, &QPushButton::clicked, this, [=]()
 		{
 			if (ui_->comboBox_ns->findText(ui_->comboBox_ns->currentText()) < 0)
 			{
 				// re-configure namespace
-				goals_->setNamespace(ui_->comboBox_ns->currentText().toStdString(), is_remote_);
+				configureNs(ui_->comboBox_ns->currentText().toStdString());
 				// add to map
 				storeAll2Map(ui_->comboBox_ns->currentText().toStdString());
 				// add to combox
@@ -152,7 +174,7 @@ namespace whi_rviz_plugins
 		connect(ui_->comboBox_ns, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [=](int Index)
 		{
 			// re-configure namespace
-			goals_->setNamespace(ui_->comboBox_ns->currentText().toStdString(), is_remote_);
+			configureNs(ui_->comboBox_ns->currentText().toStdString());
 			// remove all rows from table
 			ui_->tableWidget_waypoints->setRowCount(0);
 			// fill all from map to table
@@ -169,13 +191,6 @@ namespace whi_rviz_plugins
 			}
 			visualizeWaypoints(0);
 		});
-
-		// multiple goals
-		goals_ = std::make_unique<GoalsHandle>();
-		goals_->registerEatUpdater(func_visualize_eta_);
-		goals_->registerExecutionUpdater(std::bind(&WaypointsPanel::executionState,
-			this, std::placeholders::_1, std::placeholders::_2));
-		goals_->registerMapReceived(std::bind(&WaypointsPanel::mapTrigger, this));
 		
 		timer_map_ = new QTimer(this);
 		timer_map_->setSingleShot(true);
@@ -225,12 +240,36 @@ namespace whi_rviz_plugins
 		}
 	}
 
+	void WaypointsPanel::configureNs(const std::string& Namespace)
+	{
+		if (pre_ns_ != Namespace)
+		{
+			// only visualize info of one namespace
+			if (goals_map_[pre_ns_])
+			{
+				goals_map_[pre_ns_]->unbindCallback();
+			}
+			pre_ns_ = Namespace;
+
+			if (!goals_map_[Namespace])
+			{
+				goals_map_[Namespace] = std::make_unique<GoalsHandle>();
+			}
+			goals_map_[Namespace]->registerEatUpdater(func_visualize_eta_);
+			goals_map_[Namespace]->registerExecutionUpdater(std::bind(&WaypointsPanel::executionState,
+				this, std::placeholders::_1, std::placeholders::_2));
+			goals_map_[Namespace]->registerMapReceived(std::bind(&WaypointsPanel::mapTrigger, this));
+
+			goals_map_[Namespace]->setNamespace(Namespace, is_remote_);
+		}
+	}
+
 	void WaypointsPanel::fillWaypoint(int RowIndex, bool WithCurrent/* = false*/, const std::vector<double>* Point/* = nullptr*/)
 	{
 		ui_->tableWidget_waypoints->blockSignals(true);
 		if (WithCurrent)
 		{
-			geometry_msgs::Pose currentPose = goals_->getCurrentPose();;
+			geometry_msgs::Pose currentPose = goals_map_[ui_->comboBox_ns->currentText().toStdString()]->getCurrentPose();
 			ui_->tableWidget_waypoints->setItem(RowIndex, 0, new QTableWidgetItem(QString::number(currentPose.position.x)));
 			ui_->tableWidget_waypoints->setItem(RowIndex, 1, new QTableWidgetItem(QString::number(currentPose.position.y)));
 			double yaw = getYawFromPose(currentPose);
@@ -297,7 +336,7 @@ namespace whi_rviz_plugins
 		{
 			trigger_state_ = TRIGGER_ADD;
 			// re-configure namespace
-			goals_->setNamespace(ui_->comboBox_ns->currentText().toStdString(), is_remote_);
+			configureNs(ui_->comboBox_ns->currentText().toStdString());
 
 			if (!timer_map_->isActive())
 			{
@@ -316,7 +355,7 @@ namespace whi_rviz_plugins
 		{
 			trigger_state_ = TRIGGER_INSERT;
 			// re-configure namespace
-			goals_->setNamespace(ui_->comboBox_ns->currentText().toStdString(), is_remote_);
+			configureNs(ui_->comboBox_ns->currentText().toStdString());
 
 			if (!timer_map_->isActive())
 			{
@@ -381,7 +420,7 @@ namespace whi_rviz_plugins
 			double originY = mapOrigin[1].as<double>();
 
 			int ret = QMessageBox::Yes;
-			geometry_msgs::Pose origin = goals_->getMapOrigin();
+			geometry_msgs::Pose origin = goals_map_[ui_->comboBox_ns->currentText().toStdString()]->getMapOrigin();
 			if (fabs(originX - origin.position.x) > 1e-2 || fabs(originY - origin.position.y) > 1e-2)
 			{
 				ret = QMessageBox::question(this, tr("Your call"),
@@ -439,7 +478,11 @@ namespace whi_rviz_plugins
 				ofs.write(line.c_str(), line.length());
 			}
 			// use the map origin to check if the loaded points meet current map
-			geometry_msgs::Pose origin = goals_->getMapOrigin();
+			geometry_msgs::Pose origin;
+			if (goals_map_[ui_->comboBox_ns->currentText().toStdString()])
+			{
+				origin = goals_map_[ui_->comboBox_ns->currentText().toStdString()]->getMapOrigin();
+			}
 			std::string line("map: [" + std::to_string(origin.position.x) + ", " +
 				std::to_string(origin.position.y) + "]\nwaypoints:\n");
 			ofs.write(line.c_str(), line.length());
@@ -481,7 +524,7 @@ namespace whi_rviz_plugins
 			{
 				trigger_state_ = TRIGGER_LOAD;
 				// re-configure namespace
-				goals_->setNamespace(ns_from_load_, is_remote_);
+				configureNs(ns_from_load_);
 
 				// wait for map subscriber
 				QTimer::singleShot(1000, this, [=]()

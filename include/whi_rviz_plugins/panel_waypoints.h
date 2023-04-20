@@ -50,6 +50,7 @@ namespace whi_rviz_plugins
 		void updateHeight(double Height);
 
 	private:
+		void configureNs(const std::string& Namespace);
 		void fillWaypoint(int RowIndex, bool WithCurrent = false, const std::vector<double>* Point = nullptr);
 		void retrieveWaypoints(std::vector<geometry_msgs::PoseStamped>& Waypoints) const;
 		void retrieveWaypoint(int Index, geometry_msgs::PoseStamped& Waypoint) const;
@@ -76,11 +77,12 @@ namespace whi_rviz_plugins
 		Ui::NaviWaypoints* ui_{ nullptr };
 		VisualizeWaypoints func_visualize_waypoints_{ nullptr };
 		VisualizeEta func_visualize_eta_{ nullptr };
-		std::unique_ptr<GoalsHandle> goals_{ nullptr };
+		std::map<std::string, std::unique_ptr<GoalsHandle>> goals_map_;
 		std::string waypoints_file_;
 		std::map<std::string, std::vector<geometry_msgs::Pose>> waypoints_map_;
 		std::string ns_from_load_;
 		bool is_remote_{ false };
 		QTimer* timer_map_{ nullptr };
+		std::string pre_ns_;
 	};
 } // end namespace whi_rviz_plugins

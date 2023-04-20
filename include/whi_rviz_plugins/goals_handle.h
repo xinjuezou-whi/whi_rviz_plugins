@@ -51,6 +51,8 @@ public:
 	void registerEatUpdater(VisualizeEta Func);
 	void registerExecutionUpdater(ExecutionState Func);
 	void registerMapReceived(MapReceived Func);
+	bool isActive() const;
+	void unbindCallback();
 
 private:
 	void init(bool IsRemote = false);
