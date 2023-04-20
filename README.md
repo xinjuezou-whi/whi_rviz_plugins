@@ -34,9 +34,11 @@ int8 state
 The base of the charge text will be at the frame listed in the header of the WhiBattery message, which let the charge info stick to robot and move with it. Besides under multiple robots senario, frame with namespace enable each robot bearing its own charge info.
 
 ## Navi_waypoints
-Plugin Navi_waypoints derives from class rviz::Display, and creates a panel for waypoints interaction logic. From version 00.09 it supports the namespace for manipulating multiple robots:
-
+Plugin Navi_waypoints derives from class rviz::Display, and creates a panel for waypoints interaction logic:
 ![waypoints_im](https://user-images.githubusercontent.com/72239958/198922851-85c9cbee-87e3-4eca-871b-9a39282a0e05.gif)
+
+From version 00.09 it supports the namespace for manipulating multiple robots simultaneously:
+![multiple_waypoints](https://user-images.githubusercontent.com/72239958/233375738-db73c3f4-9613-462e-8808-ec631c5aef5d.gif)
 
 ## Teleop
 Teleop's function is same as the one operated through terminal but with graphic interaction which can be more convenient in senario like mapping. User can navigate the robot directly through the mapping's RViz window without opening another terminal:
