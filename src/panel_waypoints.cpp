@@ -109,7 +109,6 @@ namespace whi_rviz_plugins
 				ui_->checkBox_loop->isChecked()))
 			{
 				ui_->label_state->setText("Executing...");
-				ui_->pushButton_execute->setEnabled(false);
 				enableUi(false);
 			}
 			else
@@ -126,10 +125,6 @@ namespace whi_rviz_plugins
 			}
 
 			ui_->label_state->setText("Standby");
-			if (ui_->tableWidget_waypoints->rowCount() > 0)
-			{
-				ui_->pushButton_execute->setEnabled(true);
-			}
 			enableUi(true);
 		});
 		connect(ui_->checkBox_loop, &QCheckBox::stateChanged, this, [=](int State)
@@ -190,6 +185,8 @@ namespace whi_rviz_plugins
 				fillWaypoint(i, false, &poseVector);
 			}
 			visualizeWaypoints(0);
+
+			enableUi(!goals_map_[ui_->comboBox_ns->currentText().toStdString()]->isActive());
 		});
 		
 		timer_map_ = new QTimer(this);
@@ -253,14 +250,12 @@ namespace whi_rviz_plugins
 
 			if (!goals_map_[Namespace])
 			{
-				goals_map_[Namespace] = std::make_unique<GoalsHandle>();
+				goals_map_[Namespace] = std::make_unique<GoalsHandle>(Namespace, is_remote_);
 			}
 			goals_map_[Namespace]->registerEatUpdater(func_visualize_eta_);
 			goals_map_[Namespace]->registerExecutionUpdater(std::bind(&WaypointsPanel::executionState,
 				this, std::placeholders::_1, std::placeholders::_2));
 			goals_map_[Namespace]->registerMapReceived(std::bind(&WaypointsPanel::mapTrigger, this));
-
-			goals_map_[Namespace]->setNamespace(Namespace, is_remote_);
 		}
 	}
 
@@ -399,7 +394,6 @@ namespace whi_rviz_plugins
 	{
 		if (State == GoalsHandle::STA_DONE)
 		{
-			ui_->pushButton_execute->setEnabled(true);
 			enableUi(true);
 			ui_->label_state->setText("Standby");
 		}
@@ -659,7 +653,17 @@ namespace whi_rviz_plugins
 
 	void WaypointsPanel::enableUi(bool Flag)
 	{
-		ui_->comboBox_ns->setEnabled(Flag);
+		if (Flag)
+		{
+			if (ui_->tableWidget_waypoints->rowCount() > 0)
+			{
+				ui_->pushButton_execute->setEnabled(Flag);
+			}
+		}
+		else
+		{
+			ui_->pushButton_execute->setEnabled(Flag);
+		}
 		ui_->pushButton_add_ns->setEnabled(Flag);
 		ui_->pushButton_add->setEnabled(Flag);
 		ui_->pushButton_insert->setEnabled(Flag);

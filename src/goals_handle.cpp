@@ -15,23 +15,11 @@ All text above must be included in any redistribution.
 
 #include <tf/tf.h>
 
-GoalsHandle::GoalsHandle()
+GoalsHandle::GoalsHandle(const std::string& Namespace, bool Remote/* = false*/)
 	: node_handle_(std::make_unique<ros::NodeHandle>())
 {
-	init();
-}
-
-void GoalsHandle::setNamespace(const std::string& Namespace, bool IsRemote)
-{
-	if (!Namespace.empty())
-	{
-		namespace_ = "/" + Namespace + "/";
-	}
-	else
-	{
-		namespace_ = Namespace;
-	}
-	init(IsRemote);
+	setNamespace(Namespace);
+	init(Remote);
 }
 
 bool GoalsHandle::execute(std::vector<geometry_msgs::Pose> Waypoints, double PointSpan, double StopSpan, bool Loop/* = false*/)
@@ -141,6 +129,18 @@ void GoalsHandle::unbindCallback()
 	func_eta_ = nullptr;
 	func_execution_state_ = nullptr;
 	func_map_received_ = nullptr;
+}
+
+void GoalsHandle::setNamespace(const std::string& Namespace)
+{
+	if (!Namespace.empty())
+	{
+		namespace_ = "/" + Namespace + "/";
+	}
+	else
+	{
+		namespace_ = Namespace;
+	}
 }
 
 void GoalsHandle::init(bool IsRemote/* = false*/)

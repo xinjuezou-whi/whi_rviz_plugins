@@ -36,11 +36,11 @@ public:
 	enum State { STA_STANDBY = 0, STA_POINT_APPROACHED, STA_DONE, STA_ABORTED };
 
 public:
-    GoalsHandle();
+    GoalsHandle() = delete;
+	GoalsHandle(const std::string& Namespace, bool Remote = false);
     ~GoalsHandle() = default;
 
 public:
-	void setNamespace(const std::string& Namespace, bool IsRemote);
 	bool execute(std::vector<geometry_msgs::Pose> Waypoints, double PointSpan, double StopSpan, bool Loop = false);
 	void cancel();
 	void setLooping(bool Looping);
@@ -55,6 +55,7 @@ public:
 	void unbindCallback();
 
 private:
+	void setNamespace(const std::string& Namespace);
 	void init(bool IsRemote = false);
 	bool setGoal(const geometry_msgs::Pose& Goal);
 	void cancelGoal() const;
