@@ -179,29 +179,17 @@ bool GoalsHandle::setGoal(const geometry_msgs::Pose& Goal)
 		std::bind(&GoalsHandle::callbackGoalActive, this),
 		std::bind(&GoalsHandle::callbackGoalFeedback, this, std::placeholders::_1));
 
-	// waitForResult will block until the move_base action is done processing the goal we sent it
-	// refer to http://wiki.ros.org/actionlib
-	// and http://wiki.ros.org/actionlib/Tutorials
-	//movebase_client_->waitForResult();
-	//if (movebase_client_->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-	//{
-	//	ROS_INFO("Hooray, the base moved 1 meter forward");
-	//}
-	//else
-	//{
-	//	ROS_INFO("The base failed to move forward 1 meter for some reason");
-	//}
-
 	return true;
 }
 
 void GoalsHandle::cancelGoal() const
 {
-	auto pubCancel = std::make_unique<ros::Publisher>(
-		node_handle_->advertise<actionlib_msgs::GoalID>(namespace_ + "move_base/cancel", 10));
-	actionlib_msgs::GoalID cancelID; // must be an empty goal msg
-
-	pubCancel->publish(cancelID);
+	// wait for the action server to come up
+	while (!movebase_client_->waitForServer(ros::Duration(5.0)))
+	{
+		ROS_INFO("Waiting for the move_base action server to come up");
+	}
+	movebase_client_->cancelGoal();
 
 	if (func_eta_)
 	{
