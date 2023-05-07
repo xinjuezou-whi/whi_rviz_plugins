@@ -175,7 +175,8 @@ bool GoalsHandle::setGoal(const geometry_msgs::Pose& Goal)
 	goalMsg.target_pose.header.stamp = ros::Time::now();
 	goalMsg.target_pose.pose = Goal;
 
-	movebase_client_->sendGoal(goalMsg, std::bind(&GoalsHandle::callbackGoalDone, this, std::placeholders::_1, std::placeholders::_2),
+	movebase_client_->sendGoal(goalMsg,
+		std::bind(&GoalsHandle::callbackGoalDone, this, std::placeholders::_1, std::placeholders::_2),
 		std::bind(&GoalsHandle::callbackGoalActive, this),
 		std::bind(&GoalsHandle::callbackGoalFeedback, this, std::placeholders::_1));
 
