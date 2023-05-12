@@ -66,14 +66,11 @@ namespace whi_rviz_plugins
 		void storeAll2Map(const std::string& Namespace);
 		void addWaypoint();
 		void insertWaypoint();
-		void mapTrigger();
 		double getYawFromPose(const geometry_msgs::Pose& Pose) const;
 		void enableUi(bool Flag);
 		bool nsExisted(const std::string& Namespace) const;
 
 	private:
-		enum TriggerState { TRIGGER_LOAD = 0, TRIGGER_ADD, TRIGGER_INSERT, TRIGGER_NA };
-		int trigger_state_{ TRIGGER_NA };
 		Ui::NaviWaypoints* ui_{ nullptr };
 		VisualizeWaypoints func_visualize_waypoints_{ nullptr };
 		VisualizeEta func_visualize_eta_{ nullptr };
@@ -82,7 +79,6 @@ namespace whi_rviz_plugins
 		std::map<std::string, std::vector<geometry_msgs::Pose>> waypoints_map_;
 		std::string ns_from_load_;
 		bool is_remote_{ false };
-		QTimer* timer_map_{ nullptr };
 		std::string pre_ns_;
 	};
 } // end namespace whi_rviz_plugins

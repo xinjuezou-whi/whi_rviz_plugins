@@ -114,11 +114,6 @@ void GoalsHandle::registerExecutionUpdater(ExecutionState Func)
 	func_execution_state_ = Func;
 }
 
-void GoalsHandle::registerMapReceived(MapReceived Func)
-{
-	func_map_received_ = Func;
-}
-
 bool GoalsHandle::isActive() const
 {
 	return !goals_list_.empty();
@@ -128,7 +123,11 @@ void GoalsHandle::unbindCallback()
 {
 	func_eta_ = nullptr;
 	func_execution_state_ = nullptr;
-	func_map_received_ = nullptr;
+}
+
+bool GoalsHandle::isMapReceived()
+{
+	return map_received_;
 }
 
 void GoalsHandle::setNamespace(const std::string& Namespace)
@@ -265,10 +264,7 @@ void GoalsHandle::updateStateInfo(bool IsFinalOne)
 void GoalsHandle::subCallbackMapData(const nav_msgs::MapMetaData::ConstPtr& MapData)
 {
 	map_origin_ = MapData->origin;
-	if (func_map_received_)
-	{
-		func_map_received_();
-	}
+	map_received_ = true;
 }
 
 void GoalsHandle::subCallbackEstimated(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& Estimated)

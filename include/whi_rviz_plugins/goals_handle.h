@@ -28,7 +28,6 @@ Changelog:
 
 using VisualizeEta = std::function<void(const geometry_msgs::Pose&, double)>;
 using ExecutionState = std::function<void(int, std::shared_ptr<std::string> Info)>;
-using MapReceived = std::function<void()>;
 
 class GoalsHandle
 {
@@ -50,9 +49,9 @@ public:
 	geometry_msgs::Pose getCurrentPose();
 	void registerEatUpdater(VisualizeEta Func);
 	void registerExecutionUpdater(ExecutionState Func);
-	void registerMapReceived(MapReceived Func);
 	bool isActive() const;
 	void unbindCallback();
+	bool isMapReceived();
 
 private:
 	void setNamespace(const std::string& Namespace);
@@ -90,6 +89,7 @@ private:
 	double current_linear_{ 0.0001 };
 	std::mutex mtx_estimated_;
 	std::unique_ptr<ros::Timer> non_realtime_loop_{ nullptr };
+	bool map_received_{ false };
 	// subscriber
 	std::unique_ptr<ros::Subscriber> sub_map_data_{ nullptr };
 	std::unique_ptr<ros::Subscriber> sub_estimate_{ nullptr };
@@ -97,7 +97,6 @@ private:
 	// updater
 	VisualizeEta func_eta_{ nullptr };
 	ExecutionState func_execution_state_{ nullptr };
-	MapReceived func_map_received_{ nullptr };
 	int waypoints_num_{ 0 };
 	int loop_count_{ 0 };
 };

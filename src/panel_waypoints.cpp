@@ -188,13 +188,6 @@ namespace whi_rviz_plugins
 
 			enableUi(!goals_map_[ui_->comboBox_ns->currentText().toStdString()]->isActive());
 		});
-		
-		timer_map_ = new QTimer(this);
-		timer_map_->setSingleShot(true);
-		connect(timer_map_, &QTimer::timeout, this, [=]()
-		{
-			QMessageBox::warning(this, tr("Warning"), tr("failed to get current position"));
-		});
 	}
 
 	WaypointsPanel::~WaypointsPanel()
@@ -255,7 +248,6 @@ namespace whi_rviz_plugins
 			goals_map_[Namespace]->registerEatUpdater(func_visualize_eta_);
 			goals_map_[Namespace]->registerExecutionUpdater(std::bind(&WaypointsPanel::executionState,
 				this, std::placeholders::_1, std::placeholders::_2));
-			goals_map_[Namespace]->registerMapReceived(std::bind(&WaypointsPanel::mapTrigger, this));
 		}
 	}
 
@@ -329,14 +321,18 @@ namespace whi_rviz_plugins
 	{
 		if (ui_->checkBox_current->isChecked())
 		{
-			trigger_state_ = TRIGGER_ADD;
 			// re-configure namespace
 			configureNs(ui_->comboBox_ns->currentText().toStdString());
-
-			if (!timer_map_->isActive())
+			// wait for map subscriber
+			QTimer::singleShot(500, this, [=]()
 			{
-				timer_map_->start(1000);
-			}
+				if (!goals_map_[ui_->comboBox_ns->currentText().toStdString()]->isMapReceived())
+				{
+					QMessageBox::warning(this, tr("Warning"), tr("failed to get current position"));
+				}
+
+				addWaypoint();
+			});
 		}
 		else
 		{
@@ -348,14 +344,18 @@ namespace whi_rviz_plugins
 	{
 		if (ui_->checkBox_current->isChecked())
 		{
-			trigger_state_ = TRIGGER_INSERT;
 			// re-configure namespace
 			configureNs(ui_->comboBox_ns->currentText().toStdString());
-
-			if (!timer_map_->isActive())
+			// wait for map subscriber
+			QTimer::singleShot(500, this, [=]()
 			{
-				timer_map_->start(1000);
-			}
+				if (!goals_map_[ui_->comboBox_ns->currentText().toStdString()]->isMapReceived())
+				{
+					QMessageBox::warning(this, tr("Warning"), tr("failed to get current position"));
+				}
+
+				insertWaypoint();
+			});
 		}
 		else
 		{
@@ -453,7 +453,7 @@ namespace whi_rviz_plugins
 
 			return true;
 		}
-		catch(const std::exception& e)
+		catch (const std::exception& e)
 		{
 			std::cout << "failed to load waypoints file " << File << std::endl;
 			return false;
@@ -516,32 +516,25 @@ namespace whi_rviz_plugins
 			}
 			if (ret == QMessageBox::Yes)
 			{
-				trigger_state_ = TRIGGER_LOAD;
 				// re-configure namespace
 				configureNs(ns_from_load_);
 
 				// wait for map subscriber
-				QTimer::singleShot(1000, this, [=]()
+				QTimer::singleShot(500, this, [=]()
 				{
-					if (trigger_state_ == TRIGGER_LOAD)
+					if (!this->nsExisted(ns_from_load_))
 					{
-						if (!this->nsExisted(ns_from_load_))
-						{
-							ui_->comboBox_ns->addItem(ns_from_load_.c_str());
-						}
-						ui_->comboBox_ns->setCurrentText(ns_from_load_.c_str());
-						ui_->comboBox_ns->setCurrentIndex(ui_->comboBox_ns->findText(ns_from_load_.c_str()));
-						
-						loadWaypoints(waypoints_file_);
-
-						trigger_state_ = TRIGGER_NA;
+						ui_->comboBox_ns->addItem(ns_from_load_.c_str());
 					}
+					ui_->comboBox_ns->setCurrentText(ns_from_load_.c_str());
+						
+					loadWaypoints(waypoints_file_);
 				});
 			}
 
 			return true;
 		}
-		catch(const std::exception& e)
+		catch (const std::exception& e)
 		{
 			std::cout << "failed to load waypoints file " << waypoints_file_ << std::endl;
 			return false;
@@ -607,39 +600,6 @@ namespace whi_rviz_plugins
 			+ QString(")"));
 
 		ui_->tableWidget_waypoints->setCurrentCell(ui_->tableWidget_waypoints->currentRow() - 1, 0);
-	}
-
-	void WaypointsPanel::mapTrigger()
-	{
-		switch (trigger_state_)
-		{
-		case TRIGGER_LOAD:
-			if (!nsExisted(ns_from_load_))
-			{
-				ui_->comboBox_ns->addItem(ns_from_load_.c_str());
-			}
-			ui_->comboBox_ns->setCurrentText(ns_from_load_.c_str());
-			loadWaypoints(waypoints_file_);
-			break;
-		case TRIGGER_ADD:
-			if (timer_map_->isActive())
-			{
-				timer_map_->stop();
-			}
-			addWaypoint();
-			break;
-		case TRIGGER_INSERT:
-			if (timer_map_->isActive())
-			{
-				timer_map_->stop();
-			}
-			insertWaypoint();
-			break;
-		default:
-			break;
-		}
-
-		trigger_state_ = TRIGGER_NA;
 	}
 
 	double WaypointsPanel::getYawFromPose(const geometry_msgs::Pose& Pose) const
