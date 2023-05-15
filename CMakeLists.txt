@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD 17)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   rviz
+  move_base_msgs
   whi_interfaces
 )
 
