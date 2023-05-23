@@ -184,9 +184,8 @@ namespace whi_rviz_plugins
 
     void TeleopPanel::moveLinear(int Dir)
     {
-        linear_ = fabs(twist_widget_->getLinear()) < 1e-3 ? Dir * twist_widget_->getLinearMin() :
-            twist_widget_->getLinear() + Dir * twist_widget_->getLinearStep();
-        linear_ = fabs(linear_) < twist_widget_->getLinearMin() ? 0.0 : linear_;
+        linear_ = twist_widget_->getLinear() + Dir * twist_widget_->getLinearStep();
+        linear_ = fabs(linear_) < twist_widget_->getLinearMin() ? Dir * twist_widget_->getLinearMin() : linear_;
         linear_ = fabs(linear_) > twist_widget_->getLinearMax() ? twist_widget_->getLinearMax() : linear_;
 
         twist_widget_->setLinear(linear_);
@@ -195,9 +194,8 @@ namespace whi_rviz_plugins
 
 	void TeleopPanel::moveAngular(int Dir)
     {
-        angular_ = fabs(twist_widget_->getAngular()) < 1e-3 ? Dir * twist_widget_->getAngularStep() :
-            twist_widget_->getAngular() + Dir * twist_widget_->getAngularStep();
-        angular_ = fabs(angular_) < twist_widget_->getAngularMin() ? 0.0 : angular_;
+        angular_ = twist_widget_->getAngular() + Dir * twist_widget_->getAngularStep();
+        angular_ = fabs(angular_) < twist_widget_->getAngularMin() ? Dir * twist_widget_->getAngularMin() : angular_;
         angular_ = fabs(angular_) > twist_widget_->getAngularMax() ? twist_widget_->getAngularMax() : angular_;
 
         twist_widget_->setAngular(angular_);

@@ -25,7 +25,7 @@ namespace whi_rviz_plugins
     DisplayTeleop::DisplayTeleop()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for teleop VERSION 00.01" << std::endl;
+        std::cout << "\nWHI RViz plugin for teleop VERSION 00.02" << std::endl;
         std::cout << "Copyright @ 2022-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         enable_property_ = new rviz::BoolProperty("Enable teleop", true, "Toggle the functionality of teleop",
@@ -37,15 +37,19 @@ namespace whi_rviz_plugins
             this, SLOT(updatePubTopic()));
         linear_min_ = new rviz::FloatProperty("Min linear", 0.08, "Min limit of linear velocity",
             this, SLOT(updateLinearMin()));
+        linear_min_->setMin(0.0);
         linear_max_ = new rviz::FloatProperty("Max linear", 1.5, "Max limit of linear velocity",
             this, SLOT(updateLinearMax()));
+        linear_max_->setMin(0.0);
         linear_step_ = new rviz::FloatProperty("Linear step", 0.01, "Delta of linear per jog",
             this, SLOT(updateLinearStep()));
         linear_step_->setMin(0.01);
-        angular_min_ = new rviz::FloatProperty("Min angular", 0.0, "Min limit of angular velocity",
+        angular_min_ = new rviz::FloatProperty("Min angular", 0.01, "Min limit of angular velocity",
             this, SLOT(updateAngularMin()));
+        angular_min_->setMin(0.0);
         angular_max_ = new rviz::FloatProperty("Max angular", 1.57, "Max limit of angular velocity",
             this, SLOT(updateAngularMax()));
+        angular_max_->setMin(0.0);
         angular_step_ = new rviz::FloatProperty("Angular step", 0.1, "Delta of angular per jog",
             this, SLOT(updateAngularStep()));
         angular_step_->setMin(0.01);
