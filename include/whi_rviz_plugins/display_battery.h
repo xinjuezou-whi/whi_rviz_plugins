@@ -19,7 +19,9 @@ Changelog:
 #include <boost/circular_buffer.hpp>
 
 #include <rviz/message_filter_display.h>
+#include <rviz/panel_dock_widget.h>
 
+#include "panel_battery.h"
 #include "whi_interfaces/WhiBattery.h"
 #endif
 
@@ -35,6 +37,8 @@ namespace rviz
 	class FloatProperty;
 	class IntProperty;
 	class VectorProperty;
+	class BoolProperty;
+	class StringProperty;
 }
 
 namespace whi_rviz_plugins
@@ -76,6 +80,8 @@ namespace whi_rviz_plugins
 		void updateSize();
 		void updateOffsets();
 		void updateOrientation();
+		void updateShowPanel();
+		void updateChargingStateTopic();
 
 	private:
 		// function to handle an incoming ROS message
@@ -95,5 +101,12 @@ namespace whi_rviz_plugins
 		rviz::VectorProperty* orientation_property_;
 		// other properties
 		std::shared_ptr<Ogre::ColourValue> color_red_{ nullptr };
+		// panel
+		rviz::BoolProperty* show_panel_property_;
+		rviz::StringProperty* charging_state_topic_property_;
+
+		// dock and panel
+		rviz::PanelDockWidget* frame_dock_{ nullptr };
+        BatteryPanel* panel_{ nullptr };
 	};
 } // end namespace whi_rviz_plugins

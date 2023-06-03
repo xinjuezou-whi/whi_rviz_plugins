@@ -17,18 +17,20 @@ All text above must be included in any redistribution.
 #include <OGRE/OgreSceneNode.h>
 #include <OGRE/OgreSceneManager.h>
 
+#include <rviz/window_manager_interface.h>
 #include <rviz/visualization_manager.h>
 #include <rviz/properties/color_property.h>
 #include <rviz/properties/float_property.h>
 #include <rviz/properties/int_property.h>
 #include <rviz/properties/vector_property.h>
+#include <rviz/properties/bool_property.h>
 #include <pluginlib/class_list_macros.h>
 
 namespace whi_rviz_plugins
 {
     DisplayBat::DisplayBat()
     {
-        std::cout << "\nWHI RViz plugin for battery VERSION 00.06" << std::endl;
+        std::cout << "\nWHI RViz plugin for battery VERSION 00.07" << std::endl;
         std::cout << "Copyright © 2022-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         color_red_ = std::make_shared<Ogre::ColourValue>(239.0 / 255.0, 41.0 / 255.0, 41.0 / 255.0);
@@ -57,9 +59,21 @@ namespace whi_rviz_plugins
         orientation_property_ = new rviz::VectorProperty("Orientation", Ogre::Vector3(float(0.0), float(90.0), float(0.0)),
             "Orientation of battery symbol",
             this, SLOT(updateOrientation()));
+
+        show_panel_property_ = new rviz::BoolProperty("Show info panel", false, "Toggle the show of info panel",
+            this, SLOT(updateShowPanel()));
+        charging_state_topic_property_ = new rviz::StringProperty("Charging state topic", "charging_state",
+            "Topic of charging state",
+            this, SLOT(updateChargingStateTopic()));
     }
 
-    DisplayBat::~DisplayBat() {}
+    DisplayBat::~DisplayBat()
+    {
+        if (frame_dock_)
+        {
+            delete frame_dock_;
+        }
+    }
 
     // after the top-level rviz::Display::initialize() does its own setup,
     // it calls the subclass's onInitialize() function
@@ -77,6 +91,7 @@ namespace whi_rviz_plugins
         updateSize();
         updateOffsets();
         updateOrientation();
+        updateShowPanel();
     }
 
     // clear the visuals by deleting their objects
@@ -128,6 +143,33 @@ namespace whi_rviz_plugins
         }
     }
 
+    void DisplayBat::updateShowPanel()
+    {
+        if (show_panel_property_->getBool())
+        {
+            panel_ = new BatteryPanel();
+            rviz::WindowManagerInterface* windowContext = context_->getWindowManager();
+            if (windowContext)
+            {
+                frame_dock_ = windowContext->addPane("Battery Info", panel_); // getName() return "" ???
+                frame_dock_->setIcon(getIcon()); // set the image name as same as the name of plugin
+            }
+        }
+        else
+        {
+            delete frame_dock_;
+            frame_dock_ = nullptr;
+        }
+    }
+
+    void DisplayBat::updateChargingStateTopic()
+    {
+        if (panel_)
+        {
+            panel_->setChargingStateTopic(charging_state_topic_property_->getString().toStdString());
+        }
+    }
+
     void DisplayBat::processMessage(const whi_interfaces::WhiBattery::ConstPtr& Msg)
     {
         // call the rviz::FrameManager to get the transform from the fixed frame to the frame in the header of this battery message
@@ -176,6 +218,12 @@ namespace whi_rviz_plugins
 
         // send it to the end of the circular buffer
         visuals_.push_back(visual);
+
+        // synchronize info in panel
+        if (panel_)
+        {
+            panel_->setSoc(int(Msg->soc / 100.0));
+        }
     }
 
     PLUGINLIB_EXPORT_CLASS(whi_rviz_plugins::DisplayBat, rviz::Display)

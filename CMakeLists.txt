@@ -152,6 +152,7 @@ qt_wrap_ui(UIC_FILES
   ui/navi_waypoints.ui
   ui/navi_teleop.ui
   ui/navi_multiple_ns.ui
+  ui/navi_battery.ui
 )
 
 find_package(OpenCV)
