@@ -30,7 +30,7 @@ namespace whi_rviz_plugins
         Q_OBJECT
     public:
         NaviNsTool();
-        ~NaviNsTool() = default;
+        ~NaviNsTool();
 
         void onInitialize() override;
 
