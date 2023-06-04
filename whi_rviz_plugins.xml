@@ -42,4 +42,11 @@
       2D Navigation initial pose and goal operation with namespace
     </description>
   </class>
+  <class name="whi_rviz_plugins/Navi_state"
+         type="whi_rviz_plugins::DisplayState"
+         base_class_type="rviz::Display">
+    <description>
+      Navigation status
+    </description>
+  </class>
 </library>
