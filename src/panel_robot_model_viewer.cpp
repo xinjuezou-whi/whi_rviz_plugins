@@ -122,6 +122,7 @@ namespace whi_rviz_plugins
     RobotModelViewerPanel::~RobotModelViewerPanel()
 	{
 		delete ui_;
+        delete manager_;
 	}
 
     void RobotModelViewerPanel::onViewIndexChanged(int Index, QWidget* Group)
