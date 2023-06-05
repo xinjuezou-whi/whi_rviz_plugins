@@ -15,12 +15,12 @@ All text above must be included in any redistribution.
 ******************************************************************/
 #include "whi_rviz_plugins/display_state.h"
 
-#include <rviz/properties/string_property.h>
-#include <pluginlib/class_list_macros.h>
 #include <rviz/window_manager_interface.h>
 #include <rviz/display_context.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
+#include <rviz/properties/string_property.h>
+#include <pluginlib/class_list_macros.h>
 
 namespace whi_rviz_plugins
 {

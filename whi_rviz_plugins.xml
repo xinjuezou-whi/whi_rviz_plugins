@@ -49,4 +49,11 @@
       Navigation status
     </description>
   </class>
+  <class name="whi_rviz_plugins/Navi_robot_model_viewer"
+         type="whi_rviz_plugins::DisplayRobotModelViewer"
+         base_class_type="rviz::Display">
+    <description>
+      Viewer of robot model
+    </description>
+  </class>
 </library>

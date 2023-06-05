@@ -154,6 +154,7 @@ qt_wrap_ui(UIC_FILES
   ui/navi_multiple_ns.ui
   ui/navi_battery.ui
   ui/navi_state.ui
+  ui/navi_robot_model_viewer.ui
 )
 
 find_package(OpenCV)
