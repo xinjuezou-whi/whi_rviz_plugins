@@ -24,6 +24,7 @@ All text above must be included in any redistribution.
 #include <rviz/properties/int_property.h>
 #include <rviz/properties/vector_property.h>
 #include <rviz/properties/bool_property.h>
+#include <rviz/properties/string_property.h>
 #include <pluginlib/class_list_macros.h>
 
 namespace whi_rviz_plugins

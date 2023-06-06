@@ -17,17 +17,21 @@ All text above must be included in any redistribution.
 
 #include <ros/package.h>
 #include <rviz/display.h>
+#include <rviz/display_context.h>
 #include <rviz/visualization_manager.h>
+#include <rviz/selection/selection_manager.h>
 #include <rviz/view_manager.h>
 #include <rviz/render_panel.h>
 #include <rviz/tool_manager.h>
 #include <rviz/properties/parse_color.h>
 #include <boost/filesystem.hpp>
+#include <QTimer>
 
 namespace whi_rviz_plugins
 {
-    RobotModelViewerPanel::RobotModelViewerPanel(QWidget* Parent/* = nullptr*/)
-		: QWidget(Parent), ui_(new Ui::NaviRobotModelViewer())
+    RobotModelViewerPanel::RobotModelViewerPanel(rviz::DisplayContext* Context, Ogre::SceneNode* SceneNode,
+        QWidget* Parent/* = nullptr*/)
+        : context_(Context), scene_node_(SceneNode), QWidget(Parent), ui_(new Ui::NaviRobotModelViewer())
 	{
 		// set up the GUI
 		ui_->setupUi(this);
@@ -60,7 +64,7 @@ namespace whi_rviz_plugins
 
         // next we initialize the main RViz classes
         //
-        // The VisualizationManager is the container for Display objects,
+        // the VisualizationManager is the container for Display objects,
         // holds the main Ogre scene, holds the ViewController, etc.  It is
         // very central and we will probably need one in every usage of
         // librviz.
@@ -107,7 +111,7 @@ namespace whi_rviz_plugins
         // create a RobotModel display
         robot_model_ = manager_->createDisplay("rviz/RobotModel", "Robot model", true );
         ROS_ASSERT(robot_model_ != NULL);
-        grid_->subProp("Robot Description")->setValue("robot_description");
+        robot_model_->subProp("Robot Description")->setValue("robot_description");
 
         // handles mouse events without rviz::tool
         mouse_event_handler_ = new MouseEventHandler();
@@ -116,7 +120,7 @@ namespace whi_rviz_plugins
         QObject::connect(render_panel_, SIGNAL(signalMouseDoubleClickEvent(QMouseEvent*)), mouse_event_handler_, SLOT(mouseDoubleClick(QMouseEvent*)));
 
         // set background color to rviz default
-        render_panel_->getViewport()->setBackgroundColour(rviz::qtToOgre(QColor(48, 48, 48)));
+        setBackgroundColor(QColor(48, 48, 48));
     }
 
     RobotModelViewerPanel::~RobotModelViewerPanel()
@@ -125,8 +129,131 @@ namespace whi_rviz_plugins
         delete manager_;
 	}
 
+    void RobotModelViewerPanel::setBackgroundColor(const QColor& Color)
+    {
+        if (render_panel_)
+        {
+            render_panel_->getViewport()->setBackgroundColour(rviz::qtToOgre(Color));
+        }
+    }
+
+    void RobotModelViewerPanel::setFixedFrame(const QString& Frame)
+    {
+        if (manager_)
+        {
+            manager_->setFixedFrame(Frame.toStdString().c_str());
+        }
+    }
+
+    void RobotModelViewerPanel::setRobotDescription(const QString& Description)
+    {
+        if (robot_model_)
+        {
+            robot_model_->subProp("Robot Description")->setValue(Description.toStdString().c_str());
+        }
+    }
+
+    void RobotModelViewerPanel::updateCameraParams()
+    {
+        QPoint mousePanel = render_panel_->mapFromGlobal(QCursor::pos());
+        Ogre::Vector3 pointWorld;
+        context_->getSelectionManager()->get3DPoint(render_panel_->getViewport(), mousePanel.x(),
+                                                    mousePanel.y(), pointWorld);
+        auto camera = render_panel_->getCamera();
+        Ogre::Vector3 position = camera->getPosition();
+
+        if (ui_->comboBox_view->currentIndex() == 0)
+        {
+            Ogre::Quaternion orientation = camera->getOrientation();
+            focal_point_ = orientation.Inverse() * (pointWorld - scene_node_->getPosition());
+            distance_ = focal_point_.distance(position);
+            Ogre::Vector3 diff = position - focal_point_;
+            pitch_ = std::asin(diff.z / distance_);
+            yaw_ = atan2(diff.y, diff.x);
+#ifdef DEBUG
+            std::cout << "focal x:" << focal_point_.x << ",y:" << focal_point_.y << ",z:" << focal_point_.z << std::endl;
+            std::cout << "distance: " << distance_ << ", pitch: " << pitch_ << ", yaw: " << yaw_ << std::endl;
+#endif
+        }
+        else if (ui_->comboBox_view->currentIndex() == 1)
+        {
+
+        }
+    }
+
     void RobotModelViewerPanel::onViewIndexChanged(int Index, QWidget* Group)
     {
-        manager_->getViewManager()->setCurrentViewControllerType(ui_->comboBox_view->currentText());
+        manager_->getViewManager()->setCurrentViewControllerType(ui_->comboBox_view->itemText(Index));
+    }
+
+    void RobotModelViewerPanel::load(const rviz::Config& Config)
+    {
+        // not an override from rviz::Panel
+        //rviz::Panel::load(Config);
+
+        auto viewer = Config.mapGetChild("robot_model_viewer");
+        auto view = viewer.mapGetChild("view").getValue().toString();
+        QTimer::singleShot(500, this, [=]()
+		{
+            ui_->comboBox_view->setCurrentText(view);
+            if (manager_)
+            {
+                manager_->getViewManager()->setCurrentViewControllerType(view);
+            }
+		});
+        if (ui_->comboBox_view->currentIndex() == 0)
+        {
+            distance_ = viewer.mapGetChild("distance").getValue().toDouble();
+            pitch_ = viewer.mapGetChild("pitch").getValue().toDouble();
+            yaw_ = viewer.mapGetChild("yaw").getValue().toDouble();
+            auto focal = viewer.mapGetChild("focal point");
+            focal_point_.x = focal.mapGetChild("x").getValue().toDouble();
+            focal_point_.y = focal.mapGetChild("y").getValue().toDouble();
+            focal_point_.z = focal.mapGetChild("z").getValue().toDouble();
+
+            // Ogre::Vector3 pos;
+            // pos.x = distance_ * std::cos(yaw_) * std::cos(pitch_) + focal_point_.x;
+            // pos.y = distance_ * std::sin(yaw_) * std::cos(pitch_) + focal_point_.y;
+            // pos.z = distance_ * std::sin(pitch_) + focal_point_.z;
+            // auto camera = render_panel_->getCamera();
+            // camera->setPosition(pos);
+            // Ogre::Vector3 cameraZ = Ogre::Vector3::UNIT_Z;
+            // camera->setFixedYawAxis(true, scene_node_->getOrientation() * cameraZ);
+            // camera->setDirection(scene_node_->getOrientation() * (focal_point_ - pos));
+            // camera->setFOVy(Ogre::Radian(0.05));
+        }
+        else if (ui_->comboBox_view->currentIndex() == 1)
+        {
+            scale_ = viewer.mapGetChild("scale").getValue().toDouble();
+            angle_ = viewer.mapGetChild("angle").getValue().toDouble();
+            x_ = viewer.mapGetChild("x").getValue().toDouble();
+            y_ = viewer.mapGetChild("y").getValue().toDouble();
+        }
+    }
+
+    void RobotModelViewerPanel::save(rviz::Config Config) const
+    {
+        // not an override from rviz::Panel
+        //rviz::Panel::save(Config);
+
+        auto viewer = Config.mapMakeChild("robot_model_viewer");
+        viewer.mapMakeChild("view").setValue(ui_->comboBox_view->currentText());
+        if (ui_->comboBox_view->currentIndex() == 0)
+        {
+            viewer.mapMakeChild("distance").setValue(distance_);
+            viewer.mapMakeChild("pitch").setValue(pitch_);
+            viewer.mapMakeChild("yaw").setValue(yaw_);
+            auto childFocal = viewer.mapMakeChild("focal point");
+            childFocal.mapMakeChild("x").setValue(focal_point_.x);
+            childFocal.mapMakeChild("y").setValue(focal_point_.y);
+            childFocal.mapMakeChild("z").setValue(focal_point_.z);
+        }
+        else if (ui_->comboBox_view->currentIndex() == 1)
+        {
+            viewer.mapMakeChild("scale").setValue(scale_);
+            viewer.mapMakeChild("angle").setValue(angle_);
+            viewer.mapMakeChild("x").setValue(x_);
+            viewer.mapMakeChild("y").setValue(y_);
+        }
     }
 } // end namespace whi_rviz_plugins

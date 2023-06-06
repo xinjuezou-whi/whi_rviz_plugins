@@ -18,6 +18,8 @@ Changelog:
 
 #include <rviz/window_manager_interface.h>
 #include <rviz/display_context.h>
+#include <rviz/properties/color_property.h>
+#include <rviz/properties/string_property.h>
 #include <pluginlib/class_list_macros.h>
 
 namespace whi_rviz_plugins
@@ -26,18 +28,17 @@ namespace whi_rviz_plugins
         : Display()
         , node_handle_(std::make_unique<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for viewing robot model VERSION 00.01" << std::endl;
+        std::cout << "\nWHI RViz plugin for viewing robot model VERSION 00.02" << std::endl;
         std::cout << "Copyright @ 2023-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
-        // topic_odom_property_ = new rviz::StringProperty("Odom topic", "odom",
-        //     "Topic of odometry",
-        //     this, SLOT(updateOdomTopic()));
-        // topic_goal_property_ = new rviz::StringProperty("Goal topic", "goal",
-        //     "Topic of navigation goal",
-        //     this, SLOT(updateGoalTopic()));
-        // frame_baselink_property_ = new rviz::StringProperty("baselink frame", "base_link",
-        //     "Frame of base_link",
-        //     this, SLOT(updateGoalTopic()));
+        color_property_ = new rviz::ColorProperty("Background Color", QColor(48, 48, 48),
+            "Background color for the 3D view.", this, SLOT(updateBackgroundColor()));
+        fixed_frame_property_ = new rviz::StringProperty("Fixed Frame", "base_link",
+            "Frame into which all data is transformed before being displayed.",
+            this, SLOT(updateFixedFrame()));
+        robot_description_property_ = new rviz::StringProperty("Robot Description", "robot_description",
+            "Name of the parameter to search for to load the robot description.",
+            this, SLOT(updateRobotDescription()));
     }
 
     DisplayRobotModelViewer::~DisplayRobotModelViewer()
@@ -49,7 +50,7 @@ namespace whi_rviz_plugins
     {
         Display::onInitialize();
 
-        panel_ = new RobotModelViewerPanel();
+        panel_ = new RobotModelViewerPanel(context_, scene_node_);
         rviz::WindowManagerInterface* windowContext = context_->getWindowManager();
         if (windowContext)
         {
@@ -57,9 +58,41 @@ namespace whi_rviz_plugins
             frame_dock_->setIcon(getIcon()); // set the image name as same as the name of plugin
         }
 
-        // updateOdomTopic();
-        // updateGoalTopic();
-        // updateBaselinkFrame();
+        updateBackgroundColor();
+        updateFixedFrame();
+        updateRobotDescription();
+    }
+
+    void DisplayRobotModelViewer::update(float WallDt, float RosDt)
+    {
+        panel_->updateCameraParams();
+    }
+
+    void DisplayRobotModelViewer::load(const rviz::Config& Config)
+    {
+        rviz::Display::load(Config);
+        panel_->load(Config);
+    }
+
+    void DisplayRobotModelViewer::save(rviz::Config Config) const
+    {
+        rviz::Display::save(Config);
+        panel_->save(Config);
+    }
+
+    void DisplayRobotModelViewer::updateBackgroundColor()
+    {
+        panel_->setBackgroundColor(color_property_->getColor());
+    }
+
+    void DisplayRobotModelViewer::updateFixedFrame()
+    {
+        panel_->setFixedFrame(fixed_frame_property_->getString());
+    }
+
+    void DisplayRobotModelViewer::updateRobotDescription()
+    {
+        panel_->setRobotDescription(robot_description_property_->getString());
     }
 
     PLUGINLIB_EXPORT_CLASS(whi_rviz_plugins::DisplayRobotModelViewer, rviz::Display)

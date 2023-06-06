@@ -20,6 +20,12 @@ Changelog:
 
 #include "panel_robot_model_viewer.h"
 
+namespace rviz
+{
+	class ColorProperty;
+	class StringProperty;
+}
+
 namespace whi_rviz_plugins
 {
 	// declare a new subclass of rviz::Display
@@ -41,18 +47,24 @@ namespace whi_rviz_plugins
 		virtual void onInitialize();
 
     private:
+		void update(float WallDt, float RosDt) override;
+		void load(const rviz::Config& Config) override;
+		void save(rviz::Config Config) const override;
 
 	private Q_SLOTS:
 		// these Qt slots get connected to signals indicating changes in the user-editable properties
-		// void updateOdomTopic();
-		// void updateGoalTopic();
-        // void updateBaselinkFrame();
+		void updateBackgroundColor();
+		void updateFixedFrame();
+		void updateRobotDescription();
 
 	private:
         std::unique_ptr<ros::NodeHandle> node_handle_{ nullptr };
         rviz::PanelDockWidget* frame_dock_{ nullptr };
         RobotModelViewerPanel* panel_{ nullptr };
-		// // user-editable property variables
+		// user-editable property variables
+		rviz::ColorProperty* color_property_;
+		rviz::StringProperty* fixed_frame_property_;
+		rviz::StringProperty* robot_description_property_;
 		// rviz::StringProperty* topic_odom_property_;
         // rviz::StringProperty* topic_goal_property_;
         // rviz::StringProperty* frame_baselink_property_;

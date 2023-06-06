@@ -50,20 +50,20 @@ class MouseEventHandler : public QObject
 {
 Q_OBJECT
 public:
-  MouseEventHandler( QObject* parent = 0 );
+  MouseEventHandler(QObject* Parent = 0);
   virtual ~MouseEventHandler();
 
 Q_SIGNALS:
-  void mouseLeftButton( bool, int, int );
-  void mouseLeftButtonCtrl( bool, int, int );
-  void mouseLeftButtonShift( bool, int, int );
-  void mouseRightButton( bool, int, int );
-  void signalMouseLeftDoubleClick(int,int);
+  void mouseLeftButton(bool, int, int);
+  void mouseLeftButtonCtrl(bool, int, int);
+  void mouseLeftButtonShift(bool, int, int);
+  void mouseRightButton(bool, int, int);
+  void signalMouseLeftDoubleClick(int, int);
 
 public Q_SLOTS:
-  void mousePressEvent( QMouseEvent* event );
-  void mouseReleaseEvent( QMouseEvent* event );
-  void mouseDoubleClick(QMouseEvent * event);
+  void mousePressEvent(QMouseEvent* Event);
+  void mouseReleaseEvent(QMouseEvent* Event);
+  void mouseDoubleClick(QMouseEvent * Event);
 
 };
 

@@ -16,6 +16,8 @@ Changelog:
 ******************************************************************/
 #pragma once
 #include <rviz/panel.h>
+#include <OgrePrerequisites.h>
+#include <OgreVector3.h>
 
 #include "whi_rviz_plugins/mouse_event_handler.h"
 
@@ -27,6 +29,7 @@ class NaviRobotModelViewer;
 namespace rviz
 {
 class Display;
+class DisplayContext;
 class RenderPanel;
 class VisualizationManager;
 }
@@ -37,20 +40,36 @@ namespace whi_rviz_plugins
 	{
 		Q_OBJECT
 	public:
-		RobotModelViewerPanel(QWidget* Parent = nullptr);
+		RobotModelViewerPanel(rviz::DisplayContext* Context, Ogre::SceneNode* SceneNode, QWidget* Parent = nullptr);
 		~RobotModelViewerPanel() override;
 
 	public:
+		void setBackgroundColor(const QColor& Color);
+		void setFixedFrame(const QString& Frame);
+		void setRobotDescription(const QString& Description);
+		void updateCameraParams();
+		void load(const rviz::Config& Config); // override;
+        void save(rviz::Config Config) const; // override;
 
 	private:
 		void onViewIndexChanged(int Index, QWidget* Group);
 
 	private:
 		Ui::NaviRobotModelViewer* ui_{ nullptr };
+		rviz::DisplayContext* context_{ nullptr };
+		Ogre::SceneNode* scene_node_{ nullptr };
         rviz::VisualizationManager* manager_;
         rviz::RenderPanel* render_panel_;
         rviz::Display* grid_;
 		rviz::Display* robot_model_;
 		MouseEventHandler* mouse_event_handler_;
+		Ogre::Vector3 focal_point_;
+		double distance_{ 0.0 };
+		double pitch_{ 0.0 };
+		double yaw_{ 0.0 };
+		double scale_{ 10.0 };
+		double angle_{ 0.0 };
+		double x_{ -1.0 };
+		double y_{ 1.0 };
 	};
 } // end namespace whi_rviz_plugins

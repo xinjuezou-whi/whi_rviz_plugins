@@ -38,8 +38,8 @@
 
 namespace whi_rviz_plugins
 {
-MouseEventHandler::MouseEventHandler( QObject* parent ) 
-    : QObject( parent )
+MouseEventHandler::MouseEventHandler(QObject* Parent)
+    : QObject(Parent)
 {
 }
 
@@ -47,59 +47,56 @@ MouseEventHandler::~MouseEventHandler()
 {
 }
 
-void MouseEventHandler::mousePressEvent( QMouseEvent* event ) 
+void MouseEventHandler::mousePressEvent(QMouseEvent* Event) 
 { 
-    if( event->button() == Qt::LeftButton )
+    if (Event->button() == Qt::LeftButton)
     {
-        Qt::KeyboardModifiers keyMod = event->modifiers();
+        Qt::KeyboardModifiers keyMod = Event->modifiers();
         bool shift = keyMod.testFlag(Qt::ShiftModifier);
         bool ctrl = keyMod.testFlag(Qt::ControlModifier);
 
-        if( shift && !ctrl ) // as long as shift is pressed
+        if (shift && !ctrl) // as long as shift is pressed
         {
-            Q_EMIT mouseLeftButtonShift( true, event->x(), event->y() );
+            Q_EMIT mouseLeftButtonShift(true, Event->x(), Event->y());
         }
-        if( ctrl && !shift ) // if only ctrl is pressed
+        if (ctrl && !shift) // if only ctrl is pressed
         {
-            Q_EMIT mouseLeftButtonCtrl( true, event->x(), event->y() );
+            Q_EMIT mouseLeftButtonCtrl(true, Event->x(), Event->y());
         }
 
-        if( !ctrl && !shift )
+        if (!ctrl && !shift)
         {
-            Q_EMIT mouseLeftButton( true, event->x(), event->y() );
+            Q_EMIT mouseLeftButton(true, Event->x(), Event->y());
         }
     }
-    else if( event->button() == Qt::RightButton )
+    else if (Event->button() == Qt::RightButton)
     {
-        Q_EMIT mouseRightButton( true, event->x(), event->y() );
+        Q_EMIT mouseRightButton(true, Event->x(), Event->y());
     }
 }
 
-void MouseEventHandler::mouseReleaseEvent( QMouseEvent* event )
+void MouseEventHandler::mouseReleaseEvent(QMouseEvent* Event)
 {
-    //std::cout << "mouse release event: " << event->button() << " " << event->modifiers() << std::endl;
-    if( event->button() == Qt::LeftButton )
+    if (Event->button() == Qt::LeftButton)
     {
-        //std::cout << "left button" << std::endl;
-        if( event->modifiers() & Qt::ShiftModifier ) // as long as shift is pressed
+        if (Event->modifiers() & Qt::ShiftModifier) // as long as shift is pressed
         {
-            //std::cout << "shift" << std::endl;
             // need to emit selection signal here
-            Q_EMIT mouseLeftButtonShift( false, event->x(), event->y() );
+            Q_EMIT mouseLeftButtonShift(false, Event->x(), Event->y());
         }
-        else if( event->modifiers() == Qt::NoModifier )
+        else if (Event->modifiers() == Qt::NoModifier)
         {
-            Q_EMIT mouseLeftButton( false, event->x(), event->y() );
+            Q_EMIT mouseLeftButton(false, Event->x(), Event->y());
         }
     }
 }
 
-void MouseEventHandler::mouseDoubleClick(QMouseEvent * event)
+void MouseEventHandler::mouseDoubleClick(QMouseEvent* Event)
 {
     //should only handle left double click
-    if( event->button() == Qt::LeftButton )
+    if (Event->button() == Qt::LeftButton)
     {
-        Q_EMIT signalMouseLeftDoubleClick(event->x(),event->y());
+        Q_EMIT signalMouseLeftDoubleClick(Event->x(), Event->y());
     }
 }
 
