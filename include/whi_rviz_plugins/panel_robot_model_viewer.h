@@ -19,8 +19,6 @@ Changelog:
 #include <OgrePrerequisites.h>
 #include <OgreVector3.h>
 
-#include "whi_rviz_plugins/mouse_event_handler.h"
-
 namespace Ui
 {
 class NaviRobotModelViewer;
@@ -62,7 +60,6 @@ namespace whi_rviz_plugins
         rviz::RenderPanel* render_panel_;
         rviz::Display* grid_;
 		rviz::Display* robot_model_;
-		MouseEventHandler* mouse_event_handler_;
 		Ogre::Vector3 focal_point_;
 		double distance_{ 0.0 };
 		double pitch_{ 0.0 };

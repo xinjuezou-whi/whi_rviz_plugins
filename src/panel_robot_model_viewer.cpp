@@ -12,12 +12,12 @@ All text above must be included in any redistribution.
 
 ******************************************************************/
 #include "whi_rviz_plugins/panel_robot_model_viewer.h"
-#include "whi_rviz_plugins/render_panel_custom.h"
 #include "ui_navi_robot_model_viewer.h"
 
 #include <ros/package.h>
 #include <rviz/display.h>
 #include <rviz/display_context.h>
+#include <rviz/render_panel.h>
 #include <rviz/visualization_manager.h>
 #include <rviz/selection/selection_manager.h>
 #include <rviz/view_manager.h>
@@ -52,13 +52,7 @@ namespace whi_rviz_plugins
 			[=](int Index) { onViewIndexChanged(Index, this); });
 
         // construct and lay out render panel.
-        render_panel_ = new rviz::RenderPanelCustom();
-        ((rviz::RenderPanelCustom*)render_panel_)->setEventFilters(rviz::RenderPanelCustom::MOUSE_PRESS_EVENT,
-            false, Qt::NoModifier, Qt::RightButton);
-        ((rviz::RenderPanelCustom*)render_panel_)->setEventFilters(rviz::RenderPanelCustom::MOUSE_RELEASE_EVENT,
-            false, Qt::NoModifier, Qt::RightButton);
-        ((rviz::RenderPanelCustom*)render_panel_)->setEventFilters(rviz::RenderPanelCustom::MOUSE_MOVE_EVENT,
-            false, Qt::NoModifier, Qt::RightButton);
+        render_panel_ = new rviz::RenderPanel();
 
         ui_->horizontalLayout_main->insertWidget(0, render_panel_);
 
@@ -98,7 +92,6 @@ namespace whi_rviz_plugins
         // set reference frame
         // IMPORTANT: WITHOUT THIS, ALL THE DIFFERENT PARTS OF THE ROBOT MODEL WILL BE DISPLAYED AT 0,0,0
         manager_->setFixedFrame("base_link");
-
         manager_->initialize();
         manager_->startUpdate();
 
@@ -112,12 +105,6 @@ namespace whi_rviz_plugins
         robot_model_ = manager_->createDisplay("rviz/RobotModel", "Robot model", true );
         ROS_ASSERT(robot_model_ != NULL);
         robot_model_->subProp("Robot Description")->setValue("robot_description");
-
-        // handles mouse events without rviz::tool
-        mouse_event_handler_ = new MouseEventHandler();
-        QObject::connect(render_panel_, SIGNAL(signalMousePressEvent(QMouseEvent*)), mouse_event_handler_, SLOT(mousePressEvent(QMouseEvent*)));
-        QObject::connect(render_panel_, SIGNAL(signalMouseReleaseEvent(QMouseEvent*)), mouse_event_handler_, SLOT(mouseReleaseEvent(QMouseEvent*)));
-        QObject::connect(render_panel_, SIGNAL(signalMouseDoubleClickEvent(QMouseEvent*)), mouse_event_handler_, SLOT(mouseDoubleClick(QMouseEvent*)));
 
         // set background color to rviz default
         setBackgroundColor(QColor(48, 48, 48));

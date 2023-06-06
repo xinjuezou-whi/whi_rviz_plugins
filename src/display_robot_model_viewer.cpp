@@ -28,7 +28,7 @@ namespace whi_rviz_plugins
         : Display()
         , node_handle_(std::make_unique<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for viewing robot model VERSION 00.02" << std::endl;
+        std::cout << "\nWHI RViz plugin for viewing robot model VERSION 00.03" << std::endl;
         std::cout << "Copyright @ 2023-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         color_property_ = new rviz::ColorProperty("Background Color", QColor(48, 48, 48),
