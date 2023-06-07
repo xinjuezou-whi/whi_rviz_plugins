@@ -3,6 +3,7 @@ rviz plugin for robot model viewer
 
 Features:
 - OGRE view
+- viewcontroller/viewmanager
 - xxx
 
 Written by Xinjue Zou, xinjue.zou@outlook.com
@@ -52,9 +53,8 @@ namespace whi_rviz_plugins
         connect(ui_->comboBox_view, QOverload<int>::of(&QComboBox::activated), this,
 			[=](int Index) { onViewIndexChanged(Index, this); });
 
-        // construct and lay out render panel.
+        // construct and lay out render panel
         render_panel_ = new rviz::RenderPanel();
-
         ui_->horizontalLayout_main->insertWidget(0, render_panel_);
 
         // next we initialize the main RViz classes
@@ -66,9 +66,7 @@ namespace whi_rviz_plugins
         manager_ = new rviz::VisualizationManager(render_panel_);
         render_panel_->initialize(manager_->getSceneManager(), manager_);
         
-        Ogre::SceneNode* lightSceneNode = NULL;
         Ogre::Light* light = manager_->getSceneManager()->createLight();
-
         // set some attributes of the light
         // the basic light type can be:
         //   pointlight (like a candle?)
@@ -76,7 +74,6 @@ namespace whi_rviz_plugins
         //   directional light (like the sun in an outdoor scene)
         // directional light is like parallel rays coming from 1 direction
         light->setType(Ogre::Light::LT_DIRECTIONAL);
-
         // choose the color of the light
         // the diffuse color is the main color of the light
         // the specular color is its color when reflected on an imperfect surface
@@ -86,15 +83,15 @@ namespace whi_rviz_plugins
         // color values vary between 0.0(minimum) to 1.0 (maximum)
         light->setDiffuseColour(0.25f, 0.25f, 0.25f); // this will be a red light
         light->setSpecularColour(1.0f, 1.0f, 1.0f);// color of 'reflected' light
-
-        lightSceneNode = manager_->getSceneManager()->getRootSceneNode()->createChildSceneNode();
+        Ogre::SceneNode* lightSceneNode = manager_->getSceneManager()->getRootSceneNode()->createChildSceneNode();
         lightSceneNode->attachObject(light);
 
-        // set reference frame
-        // IMPORTANT: WITHOUT THIS, ALL THE DIFFERENT PARTS OF THE ROBOT MODEL WILL BE DISPLAYED AT 0,0,0
-        manager_->setFixedFrame("base_link");
+        // initialize display context
         manager_->initialize();
         manager_->startUpdate();
+        // set reference frame
+        // IMPORTANT: WITHOUT THIS, ALL THE DIFFERENT PARTS OF THE ROBOT MODEL WILL BE DISPLAYED AT 0,0,0
+        setFixedFrame("base_link");
 
         // create a Grid display
         grid_ = manager_->createDisplay("rviz/Grid", "Grid", true);
@@ -102,13 +99,13 @@ namespace whi_rviz_plugins
         grid_->subProp("Plane Cell Count")->setValue(10);
         grid_->subProp("Cell Size")->setValue(1.0);
         grid_->subProp("Alpha")->setValue(0.5);
+        // set background color to rviz default
+        setBackgroundColor(QColor(48, 48, 48));
+
         // create a RobotModel display
         robot_model_ = manager_->createDisplay("rviz/RobotModel", "Robot model", true );
         ROS_ASSERT(robot_model_ != NULL);
-        robot_model_->subProp("Robot Description")->setValue("robot_description");
-
-        // set background color to rviz default
-        setBackgroundColor(QColor(48, 48, 48));
+        setRobotDescription("robot_description");
     }
 
     RobotModelViewerPanel::~RobotModelViewerPanel()
@@ -143,6 +140,7 @@ namespace whi_rviz_plugins
 
     void RobotModelViewerPanel::updateCameraParams()
     {
+        // leave for reference
         QPoint mousePanel = render_panel_->mapFromGlobal(QCursor::pos());
         Ogre::Vector3 pointWorld;
         manager_->getSelectionManager()->get3DPoint(render_panel_->getViewport(), mousePanel.x(),
@@ -153,14 +151,14 @@ namespace whi_rviz_plugins
         if (ui_->comboBox_view->currentIndex() == 0)
         {
             Ogre::Quaternion orientation = camera->getOrientation();
-            focal_point_ = orientation.Inverse() * (pointWorld - scene_node_->getPosition());
-            distance_ = focal_point_.distance(position);
-            Ogre::Vector3 diff = position - focal_point_;
-            pitch_ = std::asin(diff.z / distance_);
-            yaw_ = atan2(diff.y, diff.x);
+            auto focalPoint = orientation.Inverse() * (pointWorld - scene_node_->getPosition());
+            double distance = focalPoint.distance(position);
+            Ogre::Vector3 diff = position - focalPoint;
+            double pitch = std::asin(diff.z / distance);
+            double yaw = atan2(diff.y, diff.x);
 #ifdef DEBUG
-            std::cout << "focal x:" << focal_point_.x << ",y:" << focal_point_.y << ",z:" << focal_point_.z << std::endl;
-            std::cout << "distance: " << distance_ << ", pitch: " << pitch_ << ", yaw: " << yaw_ << std::endl;
+            std::cout << "focal x:" << focalPoint.x << ",y:" << focalPoint.y << ",z:" << focalPoint.z << std::endl;
+            std::cout << "distance: " << distance << ", pitch: " << pitch << ", yaw: " << yaw << std::endl;
 #endif
         }
         else if (ui_->comboBox_view->currentIndex() == 1)
