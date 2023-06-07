@@ -12,6 +12,7 @@ All text above must be included in any redistribution.
 
 ******************************************************************/
 #include "whi_rviz_plugins/panel_state.h"
+#include <whi_interfaces/WhiMotionInterface.h>
 #include "ui_navi_state.h"
 
 #include <ros/package.h>
@@ -49,6 +50,14 @@ namespace whi_rviz_plugins
         setIndicatorIcon(ui_->label_indicator_6, INDICATOR_GREY);
         setIndicatorIcon(ui_->label_indicator_7, INDICATOR_GREY);
         setIndicatorIcon(ui_->label_indicator_8, INDICATOR_GREY);
+        setIndicatorText(ui_->label_indicator_cap_1, "inactve");
+        setIndicatorText(ui_->label_indicator_cap_2, "reserved");
+        setIndicatorText(ui_->label_indicator_cap_3, "reserved");
+        setIndicatorText(ui_->label_indicator_cap_4, "reserved");
+        setIndicatorText(ui_->label_indicator_cap_5, "reserved");
+        setIndicatorText(ui_->label_indicator_cap_6, "reserved");
+        setIndicatorText(ui_->label_indicator_cap_7, "reserved");
+        setIndicatorText(ui_->label_indicator_cap_8, "reserved");
     }
 
     StatePanel::~StatePanel()
@@ -77,6 +86,20 @@ namespace whi_rviz_plugins
     void StatePanel::setEta(const std::string& Eta)
     {
         ui_->label_eta->setText(Eta.c_str());
+    }
+
+    void StatePanel::setMotionInterface(int State)
+    {
+        if (State == whi_interfaces::WhiMotionInterface::STA_STANDBY)
+        {
+            setIndicatorIcon(ui_->label_indicator_1, INDICATOR_GREEN);
+            setIndicatorText(ui_->label_indicator_cap_1, "standby");
+        }
+        else if (State == whi_interfaces::WhiMotionInterface::STA_FAULT)
+        {
+            setIndicatorIcon(ui_->label_indicator_1, INDICATOR_ORANGE);
+            setIndicatorText(ui_->label_indicator_cap_1, "fault");
+        }
     }
 
     std::string StatePanel::getPackagePath() const
@@ -110,5 +133,10 @@ namespace whi_rviz_plugins
             QImage scaled = indicator.scaledToHeight(24);
 			Label->setPixmap(QPixmap::fromImage(scaled));
 		}
+    }
+
+    void StatePanel::setIndicatorText(QLabel* Label, const std::string& Text)
+    {
+        Label->setText(Text.c_str());
     }
 } // end namespace whi_rviz_plugins

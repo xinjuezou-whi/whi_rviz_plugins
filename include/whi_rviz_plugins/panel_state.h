@@ -38,10 +38,12 @@ namespace whi_rviz_plugins
         void setVelocities(double Linear, double Angular);
         void setGoal(const geometry_msgs::Pose& Goal);
         void setEta(const std::string& Eta);
+		void setMotionInterface(int State);
 
 	private:
         std::string getPackagePath() const;
         void setIndicatorIcon(QLabel* Label, int Type);
+		void setIndicatorText(QLabel* Label, const std::string& Text);
 
 	private:
         enum IndicatorType { INDICATOR_GREY = 0, INDICATOR_ORANGE, INDICATOR_YELLOW, INDICATOR_GREEN };

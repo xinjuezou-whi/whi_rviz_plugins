@@ -37,7 +37,7 @@ namespace whi_rviz_plugins
         : Display()
         , node_handle_(std::make_unique<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for motion state VERSION 00.01" << std::endl;
+        std::cout << "\nWHI RViz plugin for motion state VERSION 00.01.1" << std::endl;
         std::cout << "Copyright @ 2023-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         topic_odom_property_ = new rviz::StringProperty("Odom topic", "odom",
@@ -46,6 +46,9 @@ namespace whi_rviz_plugins
         topic_goal_property_ = new rviz::StringProperty("Goal topic", "goal",
             "Topic of navigation goal",
             this, SLOT(updateGoalTopic()));
+        topic_motion_inteface_property_ = new rviz::StringProperty("Motion interface topic", "motion_interface",
+            "Topic of motion interface",
+            this, SLOT(updateMotionInterfaceTopic()));
         frame_baselink_property_ = new rviz::StringProperty("baselink frame", "base_link",
             "Frame of base_link",
             this, SLOT(updateGoalTopic()));
@@ -125,6 +128,11 @@ namespace whi_rviz_plugins
         panel_->setGoal(goal_);
     }
 
+    void DisplayState::subCallbackMotionInterface(const whi_interfaces::WhiMotionInterface::ConstPtr& MotionInterface)
+    {
+        panel_->setMotionInterface(MotionInterface->state);
+    }
+
     void DisplayState::updateOdomTopic()
     {
         sub_odom_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<nav_msgs::Odometry>(
@@ -139,9 +147,17 @@ namespace whi_rviz_plugins
             std::bind(&DisplayState::subCallbackGoal, this, std::placeholders::_1)));
     }
 
+    void DisplayState::updateMotionInterfaceTopic()
+    {
+        sub_motion_interface_ = std::make_unique<ros::Subscriber>(
+            node_handle_->subscribe<whi_interfaces::WhiMotionInterface>(
+		    topic_motion_inteface_property_->getString().toStdString(), 10,
+            std::bind(&DisplayState::subCallbackMotionInterface, this, std::placeholders::_1)));
+    }
+
     void DisplayState::updateBaselinkFrame()
     {
-
+        // do nothing so far
     }
 
     PLUGINLIB_EXPORT_CLASS(whi_rviz_plugins::DisplayState, rviz::Display)
