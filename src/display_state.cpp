@@ -93,11 +93,8 @@ namespace whi_rviz_plugins
             baselink.position.x = tfBase2Map.transform.translation.x;
             baselink.position.y = tfBase2Map.transform.translation.y;
             double dist = distance(baselink, goal_);
-            if (dist > 0.0)
-            {
-                std::string etaStr = dist < 0.1 ? "arrived" : "in " + toStringWithPrecision(dist / velocities_.first, 2);
-                panel_->setEta(etaStr);
-            }
+            std::string etaStr = dist < 0.1 ? "arrived" : "in " + toStringWithPrecision(dist / velocities_.first, 2);
+            panel_->setEta(etaStr);
         }
     }
 
