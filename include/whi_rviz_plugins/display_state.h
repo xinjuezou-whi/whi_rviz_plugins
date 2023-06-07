@@ -24,6 +24,7 @@ Changelog:
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <tf2_ros/transform_listener.h>
 
 #include "panel_state.h"
 
@@ -31,6 +32,7 @@ Changelog:
 namespace rviz
 {
     class StringProperty;
+	class RosTopicProperty;
 }
 
 namespace whi_rviz_plugins
@@ -75,9 +77,9 @@ namespace whi_rviz_plugins
         rviz::PanelDockWidget* frame_dock_{ nullptr };
         StatePanel* panel_{ nullptr };
 		// user-editable property variables
-		rviz::StringProperty* topic_odom_property_;
-        rviz::StringProperty* topic_goal_property_;
-        rviz::StringProperty* topic_motion_inteface_property_;
+		rviz::RosTopicProperty* odom_topic_property_;
+        rviz::RosTopicProperty* goal_topic_property_;
+        rviz::RosTopicProperty* motion_topic_inteface_property_;
 		rviz::StringProperty* frame_baselink_property_;
         // subscriber
         std::unique_ptr<ros::Subscriber> sub_odom_{ nullptr };
@@ -85,5 +87,7 @@ namespace whi_rviz_plugins
 		std::unique_ptr<ros::Subscriber> sub_motion_interface_{ nullptr };
         std::pair<double, double> velocities_;
         geometry_msgs::Pose goal_;
+		tf2_ros::Buffer buffer_;
+		std::unique_ptr<tf2_ros::TransformListener> tf_listener_{ nullptr };
 	};
 } // end namespace whi_rviz_plugins

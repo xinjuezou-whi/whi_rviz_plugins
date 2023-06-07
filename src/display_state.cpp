@@ -20,6 +20,7 @@ All text above must be included in any redistribution.
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 #include <rviz/properties/string_property.h>
+#include <rviz/properties/ros_topic_property.h>
 #include <pluginlib/class_list_macros.h>
 
 namespace whi_rviz_plugins
@@ -37,17 +38,19 @@ namespace whi_rviz_plugins
         : Display()
         , node_handle_(std::make_unique<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for motion state VERSION 00.01.1" << std::endl;
+        std::cout << "\nWHI RViz plugin for motion state VERSION 00.01.2" << std::endl;
         std::cout << "Copyright @ 2023-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
-        topic_odom_property_ = new rviz::StringProperty("Odom topic", "odom",
+        tf_listener_ = std::make_unique<tf2_ros::TransformListener>(buffer_);
+
+        odom_topic_property_ = new rviz::RosTopicProperty("Odom topic", "odom", "nav_msgs/Odometry",
             "Topic of odometry",
             this, SLOT(updateOdomTopic()));
-        topic_goal_property_ = new rviz::StringProperty("Goal topic", "goal",
+        goal_topic_property_ = new rviz::RosTopicProperty("Goal topic", "goal", "geometry_msgs/PoseStamped",
             "Topic of navigation goal",
             this, SLOT(updateGoalTopic()));
-        topic_motion_inteface_property_ = new rviz::StringProperty("Motion interface topic", "motion_interface",
-            "Topic of motion interface",
+        motion_topic_inteface_property_ = new rviz::RosTopicProperty("Motion interface topic", "motion_interface",
+            "whi_interfaces/WhiMotionInterface", "Topic of motion interface",
             this, SLOT(updateMotionInterfaceTopic()));
         frame_baselink_property_ = new rviz::StringProperty("baselink frame", "base_link",
             "Frame of base_link",
@@ -90,8 +93,11 @@ namespace whi_rviz_plugins
             baselink.position.x = tfBase2Map.transform.translation.x;
             baselink.position.y = tfBase2Map.transform.translation.y;
             double dist = distance(baselink, goal_);
-
-            panel_->setEta("in " + toStringWithPrecision(dist / velocities_.first, 2));
+            if (dist > 0.0)
+            {
+                std::string etaStr = dist < 0.1 ? "arrived" : "in " + toStringWithPrecision(dist / velocities_.first, 2);
+                panel_->setEta(etaStr);
+            }
         }
     }
 
@@ -100,8 +106,7 @@ namespace whi_rviz_plugins
     {
         try
         {
-            tf2_ros::Buffer buffer;
-            return buffer.lookupTransform(DstFrame, SrcFrame, Time, ros::Duration(1.0));
+            return buffer_.lookupTransform(DstFrame, SrcFrame, Time, ros::Duration(1.0));
         }
         catch (tf2::TransformException &e)
         {
@@ -136,14 +141,14 @@ namespace whi_rviz_plugins
     void DisplayState::updateOdomTopic()
     {
         sub_odom_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<nav_msgs::Odometry>(
-		    topic_odom_property_->getString().toStdString(), 10,
+		    odom_topic_property_->getTopicStd(), 10,
             std::bind(&DisplayState::subCallbackOdom, this, std::placeholders::_1)));
     }
 
 	void DisplayState::updateGoalTopic()
     {
         sub_goal_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<geometry_msgs::PoseStamped>(
-		    topic_goal_property_->getString().toStdString(), 10,
+		    goal_topic_property_->getTopicStd(), 10,
             std::bind(&DisplayState::subCallbackGoal, this, std::placeholders::_1)));
     }
 
@@ -151,7 +156,7 @@ namespace whi_rviz_plugins
     {
         sub_motion_interface_ = std::make_unique<ros::Subscriber>(
             node_handle_->subscribe<whi_interfaces::WhiMotionInterface>(
-		    topic_motion_inteface_property_->getString().toStdString(), 10,
+		    motion_topic_inteface_property_->getTopicStd(), 10,
             std::bind(&DisplayState::subCallbackMotionInterface, this, std::placeholders::_1)));
     }
 
