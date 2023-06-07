@@ -6,7 +6,7 @@ Rviz plugins package for handling custom info. currently there are serveral plug
 - [Map_saver](#map_saver)
 - [Video_stream](#video_stream)
 - [Navi_namespace](#navi_namespace)
-- [Navi_robot_model_viewer](navi_robot_model_viewer)
+- [Navi_robot_model_viewer](#navi_robot_model_viewer)
 
 The Battery which shows the battery's left charge in text and symbolizing battery; the Navi_waypoints which allows user add multiple navigation targets with interactive markers; the Teleop which publishes the twist message through GUI; the panel Map_saver which helps user to save map directly by RViz without typing command in terminal; the Video_stream which derived from default image plugin with extended stream sources like webcam, IP stream, and video file; the tool Navi_namespace, under multiple robots scenario, allows user to specify target robot target through GUI without laboring edit in tool property; the Navi_robot_model_viewer is an auxiliary OGRE view for showing the URDF of robot
 
