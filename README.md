@@ -1,19 +1,26 @@
 # whi_rviz_plugins
-Rviz plugins package for showing custom info. currently there are five plugins: the Battery which shows the battery's left charge in text and symbolizing battery; the Navi_waypoints which allows user add multiple navigation targets with interactive markers; the Teleop which publishes the twist message through GUI; and the panel Map_saver which helps user to save map directly by RViz without typing command in terminal; the Video_stream which derived from default image plugin with extended stream sources like webcam, IP stream, and video file.
-
+Rviz plugins package for handling custom info. currently there are serveral plugins:
 - [Battery](#battery)
 - [Navi_waypoints](#navi_waypoints)
 - [Teleop](#teleop)
 - [Map_saver](#map_saver)
 - [Video_stream](#video_stream)
 - [Navi_namespace](#navi_namespace)
+- [Navi_robot_model_viewer](navi_robot_model_viewer)
+
+The Battery which shows the battery's left charge in text and symbolizing battery; the Navi_waypoints which allows user add multiple navigation targets with interactive markers; the Teleop which publishes the twist message through GUI; the panel Map_saver which helps user to save map directly by RViz without typing command in terminal; the Video_stream which derived from default image plugin with extended stream sources like webcam, IP stream, and video file; the tool Navi_namespace, under multiple robots scenario, allows user to specify target robot target through GUI without laboring edit in tool property; the Navi_robot_model_viewer is an auxiliary OGRE view for showing the URDF of robot
+
+Refering build section fo setup the package:
 - [Build](#build)
+
+Following the brief introduction for the usage of each plugin:
 - [Use Battery](#use-battery)
 - [Use Navi_waypoints](#use-navi_waypoints)
 - [Use Teleop](#use-teleop)
 - [Use Map_saver](#use-map_saver)
 - [Use Video_stream](#use-video_stream)
 - [Use Navi_namespace](#use-navi_namespace)
+- [Use Navi_robot_model_viewer](#use-navi_robot_model_viewer)
 
 ## Battery
 Plugin Battery is a derived class from MessageFilterDisplay:
@@ -55,6 +62,10 @@ This plugin derived from the default image plugin with extended stream sources i
 ## Navi_namespace
 This plugin dervied from the PoseTool, and extended to functionalities with both 2D Pose Estimate and 2D Nav goal. With this plugin user can navigate specified robot by GUI rather than laborious texting by Tool Properties:
 ![multiple](https://user-images.githubusercontent.com/72239958/232202523-065316e1-c1eb-497a-9a42-6731e7f24d40.gif)
+
+## Navi_robot_model_viewer
+This plugin is an additional OGRE view for showing the URDF of robot, which is requested from our end-user. It is derived from rviz::Display with user interaction in 3D scene:
+![robot_model_viewer](https://github.com/xinjuezou-whi/whi_rviz_plugins/assets/72239958/27de3ed2-b725-44f6-bff7-ac2ed428383d)
 
 ## Build
 Clone package `whi_interfaces` and `whi_rviz_plugins` to your workspace:
@@ -220,3 +231,14 @@ Input namespace in combox, then click button "Add". If namespace is added succes
 > When using the Navi_waypoints plugin in the master to perform multi-point path navigation operations, the current target timestamp recorded in the robot's actionlib is the current time of the master. If a navigation target operation is sent again using 2D Navi Goal (whether from the master or the client itself), navigation cannot be performed. This is because the plugin Navi_waypoints uses the simple action client to send navigation targets, and the timestamp used by this method is the master's own time. When actionlib receives the target, it will assign this target as its internal current target. On the other hand, 2D Navi Goal uses the message method with the topic move_base_simple/goal to send navigation targets. Under this method, when move_base receives the target message (type geometry_msgs::PoseStamped), it converts the target into move_base's target message move_base_msgs::MoveBaseActionGoal, and assigns its own time to it before forwarding the message to actionlib. Therefore, there may be a situation where the timestamp of the new navigation target is earlier than the current target timestamp recorded by actionlib. In this case, actionlib will consider it an invalid target and abandon its execution.
 > 
 > There are already plenty of well-established methods for timestamp synchronization, among them we recommend NTP. Please google it for setting up
+
+## Use Navi_robot_model_viewer
+1. Add the Video_stream plugin to RViz
+
+Click the "Add" button at the bottom of the "Displays" panel, then scrolling down through the available displays until you see "Navi_robot_model_viewer" under package name "whi_rviz_plugins":
+![image](https://github.com/xinjuezou-whi/whi_rviz_plugins/assets/72239958/063872f0-a80a-46ee-a7b6-b82aa7ca8368)
+
+2. Specify the frame of URDF
+
+Usually the frame of URDF is "base_link", you can set it through property "Fixed Frame". While the URDF is showing, user can interacte the model with mouse as same as the main view of RViz:
+![robot_model_viewer_use](https://github.com/xinjuezou-whi/whi_rviz_plugins/assets/72239958/cedddc0b-e70c-4142-b126-98d19960af7f)
