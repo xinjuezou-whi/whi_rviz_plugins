@@ -28,7 +28,7 @@ namespace whi_rviz_plugins
         : Display()
         , node_handle_(std::make_unique<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for viewing robot model VERSION 00.03" << std::endl;
+        std::cout << "\nWHI RViz plugin for viewing robot model VERSION 00.04" << std::endl;
         std::cout << "Copyright @ 2023-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         color_property_ = new rviz::ColorProperty("Background Color", QColor(48, 48, 48),
@@ -50,7 +50,7 @@ namespace whi_rviz_plugins
     {
         Display::onInitialize();
 
-        panel_ = new RobotModelViewerPanel(context_, scene_node_);
+        panel_ = new RobotModelViewerPanel(scene_node_);
         rviz::WindowManagerInterface* windowContext = context_->getWindowManager();
         if (windowContext)
         {
@@ -65,7 +65,7 @@ namespace whi_rviz_plugins
 
     void DisplayRobotModelViewer::update(float WallDt, float RosDt)
     {
-        panel_->updateCameraParams();
+        // panel_->updateCameraParams();
     }
 
     void DisplayRobotModelViewer::load(const rviz::Config& Config)

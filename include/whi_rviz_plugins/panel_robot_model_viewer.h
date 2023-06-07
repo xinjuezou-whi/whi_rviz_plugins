@@ -38,7 +38,7 @@ namespace whi_rviz_plugins
 	{
 		Q_OBJECT
 	public:
-		RobotModelViewerPanel(rviz::DisplayContext* Context, Ogre::SceneNode* SceneNode, QWidget* Parent = nullptr);
+		RobotModelViewerPanel(Ogre::SceneNode* SceneNode, QWidget* Parent = nullptr);
 		~RobotModelViewerPanel() override;
 
 	public:
@@ -54,7 +54,6 @@ namespace whi_rviz_plugins
 
 	private:
 		Ui::NaviRobotModelViewer* ui_{ nullptr };
-		rviz::DisplayContext* context_{ nullptr };
 		Ogre::SceneNode* scene_node_{ nullptr };
         rviz::VisualizationManager* manager_;
         rviz::RenderPanel* render_panel_;

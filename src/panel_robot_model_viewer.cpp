@@ -24,14 +24,16 @@ All text above must be included in any redistribution.
 #include <rviz/render_panel.h>
 #include <rviz/tool_manager.h>
 #include <rviz/properties/parse_color.h>
+#include <rviz/ogre_helpers/shape.h>
+#include <rviz/default_plugin/view_controllers/orbit_view_controller.h>
 #include <boost/filesystem.hpp>
 #include <QTimer>
 
 namespace whi_rviz_plugins
 {
-    RobotModelViewerPanel::RobotModelViewerPanel(rviz::DisplayContext* Context, Ogre::SceneNode* SceneNode,
+    RobotModelViewerPanel::RobotModelViewerPanel(Ogre::SceneNode* SceneNode,
         QWidget* Parent/* = nullptr*/)
-        : context_(Context), scene_node_(SceneNode), QWidget(Parent), ui_(new Ui::NaviRobotModelViewer())
+        : scene_node_(SceneNode), QWidget(Parent), ui_(new Ui::NaviRobotModelViewer())
 	{
 		// set up the GUI
 		ui_->setupUi(this);
@@ -46,7 +48,6 @@ namespace whi_rviz_plugins
 		}
         // other properties
         ui_->comboBox_view->addItems(QStringList({ "rviz/Orbit", "rviz/TopDownOrtho" }));
-        ui_->comboBox_view->setCurrentIndex(0);
         // signals
         connect(ui_->comboBox_view, QOverload<int>::of(&QComboBox::activated), this,
 			[=](int Index) { onViewIndexChanged(Index, this); });
@@ -144,7 +145,7 @@ namespace whi_rviz_plugins
     {
         QPoint mousePanel = render_panel_->mapFromGlobal(QCursor::pos());
         Ogre::Vector3 pointWorld;
-        context_->getSelectionManager()->get3DPoint(render_panel_->getViewport(), mousePanel.x(),
+        manager_->getSelectionManager()->get3DPoint(render_panel_->getViewport(), mousePanel.x(),
                                                     mousePanel.y(), pointWorld);
         auto camera = render_panel_->getCamera();
         Ogre::Vector3 position = camera->getPosition();
@@ -179,43 +180,15 @@ namespace whi_rviz_plugins
         //rviz::Panel::load(Config);
 
         auto viewer = Config.mapGetChild("robot_model_viewer");
-        auto view = viewer.mapGetChild("view").getValue().toString();
         QTimer::singleShot(500, this, [=]()
 		{
-            ui_->comboBox_view->setCurrentText(view);
+            ui_->comboBox_view->setCurrentText(viewer.mapGetChild("Class").getValue().toString());
             if (manager_)
             {
-                manager_->getViewManager()->setCurrentViewControllerType(view);
+                manager_->getViewManager()->setCurrentViewControllerType(ui_->comboBox_view->currentText());
             }
+            manager_->getViewManager()->getCurrent()->load(viewer);
 		});
-        if (ui_->comboBox_view->currentIndex() == 0)
-        {
-            distance_ = viewer.mapGetChild("distance").getValue().toDouble();
-            pitch_ = viewer.mapGetChild("pitch").getValue().toDouble();
-            yaw_ = viewer.mapGetChild("yaw").getValue().toDouble();
-            auto focal = viewer.mapGetChild("focal point");
-            focal_point_.x = focal.mapGetChild("x").getValue().toDouble();
-            focal_point_.y = focal.mapGetChild("y").getValue().toDouble();
-            focal_point_.z = focal.mapGetChild("z").getValue().toDouble();
-
-            // Ogre::Vector3 pos;
-            // pos.x = distance_ * std::cos(yaw_) * std::cos(pitch_) + focal_point_.x;
-            // pos.y = distance_ * std::sin(yaw_) * std::cos(pitch_) + focal_point_.y;
-            // pos.z = distance_ * std::sin(pitch_) + focal_point_.z;
-            // auto camera = render_panel_->getCamera();
-            // camera->setPosition(pos);
-            // Ogre::Vector3 cameraZ = Ogre::Vector3::UNIT_Z;
-            // camera->setFixedYawAxis(true, scene_node_->getOrientation() * cameraZ);
-            // camera->setDirection(scene_node_->getOrientation() * (focal_point_ - pos));
-            // camera->setFOVy(Ogre::Radian(0.05));
-        }
-        else if (ui_->comboBox_view->currentIndex() == 1)
-        {
-            scale_ = viewer.mapGetChild("scale").getValue().toDouble();
-            angle_ = viewer.mapGetChild("angle").getValue().toDouble();
-            x_ = viewer.mapGetChild("x").getValue().toDouble();
-            y_ = viewer.mapGetChild("y").getValue().toDouble();
-        }
     }
 
     void RobotModelViewerPanel::save(rviz::Config Config) const
@@ -224,23 +197,6 @@ namespace whi_rviz_plugins
         //rviz::Panel::save(Config);
 
         auto viewer = Config.mapMakeChild("robot_model_viewer");
-        viewer.mapMakeChild("view").setValue(ui_->comboBox_view->currentText());
-        if (ui_->comboBox_view->currentIndex() == 0)
-        {
-            viewer.mapMakeChild("distance").setValue(distance_);
-            viewer.mapMakeChild("pitch").setValue(pitch_);
-            viewer.mapMakeChild("yaw").setValue(yaw_);
-            auto childFocal = viewer.mapMakeChild("focal point");
-            childFocal.mapMakeChild("x").setValue(focal_point_.x);
-            childFocal.mapMakeChild("y").setValue(focal_point_.y);
-            childFocal.mapMakeChild("z").setValue(focal_point_.z);
-        }
-        else if (ui_->comboBox_view->currentIndex() == 1)
-        {
-            viewer.mapMakeChild("scale").setValue(scale_);
-            viewer.mapMakeChild("angle").setValue(angle_);
-            viewer.mapMakeChild("x").setValue(x_);
-            viewer.mapMakeChild("y").setValue(y_);
-        }
+        manager_->getViewManager()->getCurrent()->save(viewer);
     }
 } // end namespace whi_rviz_plugins
