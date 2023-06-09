@@ -56,6 +56,7 @@ namespace whi_rviz_plugins
 		void updateBackgroundColor();
 		void updateFixedFrame();
 		void updateRobotDescription();
+		void updateTfPrefix();
 
 	private:
         std::unique_ptr<ros::NodeHandle> node_handle_{ nullptr };
@@ -65,8 +66,6 @@ namespace whi_rviz_plugins
 		rviz::ColorProperty* color_property_;
 		rviz::StringProperty* fixed_frame_property_;
 		rviz::StringProperty* robot_description_property_;
-		// rviz::StringProperty* topic_odom_property_;
-        // rviz::StringProperty* topic_goal_property_;
-        // rviz::StringProperty* frame_baselink_property_;
+		rviz::StringProperty* tf_prefix_property_;
 	};
 } // end namespace whi_rviz_plugins

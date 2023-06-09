@@ -106,6 +106,7 @@ namespace whi_rviz_plugins
         robot_model_ = manager_->createDisplay("rviz/RobotModel", "Robot model", true );
         ROS_ASSERT(robot_model_ != NULL);
         setRobotDescription("robot_description");
+        setTfPrefix("");
     }
 
     RobotModelViewerPanel::~RobotModelViewerPanel()
@@ -135,6 +136,14 @@ namespace whi_rviz_plugins
         if (robot_model_)
         {
             robot_model_->subProp("Robot Description")->setValue(Description.toStdString().c_str());
+        }
+    }
+
+    void RobotModelViewerPanel::setTfPrefix(const QString& Prefix)
+    {
+        if (robot_model_)
+        {
+            robot_model_->subProp("TF Prefix")->setValue(Prefix.toStdString().c_str());
         }
     }
 

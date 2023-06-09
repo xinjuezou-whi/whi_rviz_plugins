@@ -28,7 +28,7 @@ namespace whi_rviz_plugins
         : Display()
         , node_handle_(std::make_unique<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for viewing robot model VERSION 00.04" << std::endl;
+        std::cout << "\nWHI RViz plugin for viewing robot model VERSION 00.05" << std::endl;
         std::cout << "Copyright @ 2023-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         color_property_ = new rviz::ColorProperty("Background Color", QColor(48, 48, 48),
@@ -39,6 +39,10 @@ namespace whi_rviz_plugins
         robot_description_property_ = new rviz::StringProperty("Robot Description", "robot_description",
             "Name of the parameter to search for to load the robot description.",
             this, SLOT(updateRobotDescription()));
+        tf_prefix_property_ = new rviz::StringProperty("TF Prefix", "",
+            "Robot Model normally assumes the link name is the same as the tf frame name.\
+            This option allows you to set a prefix. Mainly useful for multi-robot situations.",
+            this, SLOT(updateTfPrefix()));
     }
 
     DisplayRobotModelViewer::~DisplayRobotModelViewer()
@@ -93,6 +97,11 @@ namespace whi_rviz_plugins
     void DisplayRobotModelViewer::updateRobotDescription()
     {
         panel_->setRobotDescription(robot_description_property_->getString());
+    }
+
+    void DisplayRobotModelViewer::updateTfPrefix()
+    {
+        panel_->setTfPrefix(tf_prefix_property_->getString());
     }
 
     PLUGINLIB_EXPORT_CLASS(whi_rviz_plugins::DisplayRobotModelViewer, rviz::Display)

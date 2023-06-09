@@ -46,6 +46,7 @@ namespace whi_rviz_plugins
 		void setBackgroundColor(const QColor& Color);
 		void setFixedFrame(const QString& Frame);
 		void setRobotDescription(const QString& Description);
+		void setTfPrefix(const QString& Prefix);
 		void load(const rviz::Config& Config); // override;
         void save(rviz::Config Config) const; // override;
 
