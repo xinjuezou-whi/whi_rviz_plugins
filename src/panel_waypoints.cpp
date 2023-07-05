@@ -232,6 +232,11 @@ namespace whi_rviz_plugins
 
 	void WaypointsPanel::configureNs(const std::string& Namespace)
 	{
+		if (!goals_map_[Namespace])
+		{
+			goals_map_[Namespace] = std::make_unique<GoalsHandle>(Namespace, is_remote_);
+			pre_ns_ = Namespace;
+		}
 		if (pre_ns_ != Namespace)
 		{
 			// only visualize info of one namespace
@@ -241,10 +246,6 @@ namespace whi_rviz_plugins
 			}
 			pre_ns_ = Namespace;
 
-			if (!goals_map_[Namespace])
-			{
-				goals_map_[Namespace] = std::make_unique<GoalsHandle>(Namespace, is_remote_);
-			}
 			goals_map_[Namespace]->registerEatUpdater(func_visualize_eta_);
 			goals_map_[Namespace]->registerExecutionUpdater(std::bind(&WaypointsPanel::executionState,
 				this, std::placeholders::_1, std::placeholders::_2));
@@ -322,11 +323,12 @@ namespace whi_rviz_plugins
 		if (ui_->checkBox_current->isChecked())
 		{
 			// re-configure namespace
-			configureNs(ui_->comboBox_ns->currentText().toStdString());
+			std::string ns = ui_->comboBox_ns->currentText().toStdString();
+			configureNs(ns);
 			// wait for map subscriber
 			QTimer::singleShot(500, this, [=]()
 			{
-				if (!goals_map_[ui_->comboBox_ns->currentText().toStdString()]->isMapReceived())
+				if (!goals_map_[ns]->isMapReceived())
 				{
 					QMessageBox::warning(this, tr("Warning"), tr("failed to get current position"));
 				}
