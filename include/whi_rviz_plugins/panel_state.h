@@ -38,7 +38,7 @@ namespace whi_rviz_plugins
         void setVelocities(double Linear, double Angular);
         void setGoal(const geometry_msgs::Pose& Goal);
         void setEta(const std::string& Eta);
-		void setMotionInterface(int State);
+		void setMotionState(int State);
 
 	private:
         std::string getPackagePath() const;

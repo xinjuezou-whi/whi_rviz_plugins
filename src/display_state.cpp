@@ -49,9 +49,9 @@ namespace whi_rviz_plugins
         goal_topic_property_ = new rviz::RosTopicProperty("Goal topic", "goal", "geometry_msgs/PoseStamped",
             "Topic of navigation goal",
             this, SLOT(updateGoalTopic()));
-        motion_topic_inteface_property_ = new rviz::RosTopicProperty("Motion interface topic", "motion_interface",
-            "whi_interfaces/WhiMotionInterface", "Topic of motion interface",
-            this, SLOT(updateMotionInterfaceTopic()));
+        motion_state_topic_property_ = new rviz::RosTopicProperty("Motion state topic", "motion_state",
+            "whi_interfaces/WhiMotionState", "Topic of motion state",
+            this, SLOT(updateMotionStateTopic()));
         frame_baselink_property_ = new rviz::StringProperty("baselink frame", "base_link",
             "Frame of base_link",
             this, SLOT(updateGoalTopic()));
@@ -130,9 +130,9 @@ namespace whi_rviz_plugins
         panel_->setGoal(goal_);
     }
 
-    void DisplayState::subCallbackMotionInterface(const whi_interfaces::WhiMotionInterface::ConstPtr& MotionInterface)
+    void DisplayState::subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState)
     {
-        panel_->setMotionInterface(MotionInterface->state);
+        panel_->setMotionState(MotionState->state);
     }
 
     void DisplayState::updateOdomTopic()
@@ -149,12 +149,12 @@ namespace whi_rviz_plugins
             std::bind(&DisplayState::subCallbackGoal, this, std::placeholders::_1)));
     }
 
-    void DisplayState::updateMotionInterfaceTopic()
+    void DisplayState::updateMotionStateTopic()
     {
-        sub_motion_interface_ = std::make_unique<ros::Subscriber>(
-            node_handle_->subscribe<whi_interfaces::WhiMotionInterface>(
-		    motion_topic_inteface_property_->getTopicStd(), 10,
-            std::bind(&DisplayState::subCallbackMotionInterface, this, std::placeholders::_1)));
+        sub_motion_state_ = std::make_unique<ros::Subscriber>(
+            node_handle_->subscribe<whi_interfaces::WhiMotionState>(
+		    motion_state_topic_property_->getTopicStd(), 10,
+            std::bind(&DisplayState::subCallbackMotionState, this, std::placeholders::_1)));
     }
 
     void DisplayState::updateBaselinkFrame()

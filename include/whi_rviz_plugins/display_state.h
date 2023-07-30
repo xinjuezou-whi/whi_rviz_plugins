@@ -17,7 +17,7 @@ Changelog:
 2022-xx-xx: xxx
 ******************************************************************/
 #pragma once
-#include <whi_interfaces/WhiMotionInterface.h>
+#include <whi_interfaces/WhiMotionState.h>
 
 #include <rviz/display.h>
 #include <rviz/panel_dock_widget.h>
@@ -62,13 +62,13 @@ namespace whi_rviz_plugins
         double distance(const geometry_msgs::Pose& Pose1, const geometry_msgs::Pose& Pose2);
         void subCallbackOdom(const nav_msgs::Odometry::ConstPtr& Odom);
         void subCallbackGoal(const geometry_msgs::PoseStamped::ConstPtr& Goal);
-		void subCallbackMotionInterface(const whi_interfaces::WhiMotionInterface::ConstPtr& MotionInterface);
+		void subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState);
 
 	private Q_SLOTS:
 		// these Qt slots get connected to signals indicating changes in the user-editable properties
 		void updateOdomTopic();
 		void updateGoalTopic();
-		void updateMotionInterfaceTopic();
+		void updateMotionStateTopic();
         void updateBaselinkFrame();
 
 	private:
@@ -79,12 +79,12 @@ namespace whi_rviz_plugins
 		// user-editable property variables
 		rviz::RosTopicProperty* odom_topic_property_;
         rviz::RosTopicProperty* goal_topic_property_;
-        rviz::RosTopicProperty* motion_topic_inteface_property_;
+        rviz::RosTopicProperty* motion_state_topic_property_;
 		rviz::StringProperty* frame_baselink_property_;
         // subscriber
         std::unique_ptr<ros::Subscriber> sub_odom_{ nullptr };
         std::unique_ptr<ros::Subscriber> sub_goal_{ nullptr };
-		std::unique_ptr<ros::Subscriber> sub_motion_interface_{ nullptr };
+		std::unique_ptr<ros::Subscriber> sub_motion_state_{ nullptr };
         std::pair<double, double> velocities_;
         geometry_msgs::Pose goal_;
 		tf2_ros::Buffer buffer_;

@@ -12,7 +12,7 @@ All text above must be included in any redistribution.
 
 ******************************************************************/
 #include "whi_rviz_plugins/panel_state.h"
-#include <whi_interfaces/WhiMotionInterface.h>
+#include <whi_interfaces/WhiMotionState.h>
 #include "ui_navi_state.h"
 
 #include <ros/package.h>
@@ -88,14 +88,14 @@ namespace whi_rviz_plugins
         ui_->label_eta->setText(Eta.c_str());
     }
 
-    void StatePanel::setMotionInterface(int State)
+    void StatePanel::setMotionState(int State)
     {
-        if (State == whi_interfaces::WhiMotionInterface::STA_STANDBY)
+        if (State == whi_interfaces::WhiMotionState::STA_STANDBY)
         {
             setIndicatorIcon(ui_->label_indicator_1, INDICATOR_GREEN);
             setIndicatorText(ui_->label_indicator_cap_1, "standby");
         }
-        else if (State == whi_interfaces::WhiMotionInterface::STA_FAULT)
+        else if (State == whi_interfaces::WhiMotionState::STA_FAULT)
         {
             setIndicatorIcon(ui_->label_indicator_1, INDICATOR_ORANGE);
             setIndicatorText(ui_->label_indicator_cap_1, "fault");
