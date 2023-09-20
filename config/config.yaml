@@ -1,2 +1,2 @@
 whi_rviz_plugins:
-  plugins: []
+  tasks_plugin: dummy

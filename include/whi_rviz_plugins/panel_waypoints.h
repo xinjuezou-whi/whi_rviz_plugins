@@ -21,6 +21,7 @@ Changelog:
 
 #include <rviz/panel.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <pluginlib/class_loader.hpp>
 
 #include <QWidget>
 
@@ -72,7 +73,7 @@ namespace whi_rviz_plugins
 		void enableUi(bool Flag);
 		bool nsExisted(const std::string& Namespace) const;
 		bool loadPlugin(const std::string& Config);
-		bool createPlugin(const std::string& Name);
+		bool createTaskPlugin();
 		void bindTaskPlugin(int Row);
 
 	private:
@@ -87,5 +88,7 @@ namespace whi_rviz_plugins
 		std::string pre_ns_;
 		std::map<std::string, boost::shared_ptr<BasePlugin>> plugins_map_;
 		std::map<int, std::string> plugins_tasks_map_;
+		std::unique_ptr<pluginlib::ClassLoader<BasePlugin>> plugin_loader_{ nullptr };
+		std::string task_plugin_name_;
 	};
 } // end namespace whi_rviz_plugins

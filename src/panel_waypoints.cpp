@@ -22,7 +22,6 @@ All text above must be included in any redistribution.
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf/LinearMath/Matrix3x3.h>
 #include <angles/angles.h>
-#include <pluginlib/class_loader.hpp>
 #include <yaml-cpp/yaml.h>
 
 #include <QFileDialog>
@@ -61,7 +60,7 @@ namespace whi_rviz_plugins
 		ui_->doubleSpinBox_stop_span->setValue(2.0);
 		ui_->doubleSpinBox_stop_span->setSingleStep(0.1);
 		QStringList header = { "x", "y", "yaw" };
-		if (plugins_map_["way_points_tasks"])
+		if (plugins_map_[task_plugin_name_])
 		{
 			header.push_back("task");
 		}
@@ -273,9 +272,9 @@ namespace whi_rviz_plugins
 			goals_map_[Namespace]->registerExecutionUpdater(std::bind(&WaypointsPanel::executionState,
 				this, std::placeholders::_1, std::placeholders::_2));
 
-			if (plugins_map_["way_points_tasks"])
+			if (plugins_map_[task_plugin_name_])
 			{
-				goals_map_[Namespace]->setTaskPlugin(plugins_map_["way_points_tasks"]);
+				goals_map_[Namespace]->setTaskPlugin(plugins_map_[task_plugin_name_]);
 			}
 		}
 	}
@@ -681,13 +680,11 @@ namespace whi_rviz_plugins
 			const auto& main = node["whi_rviz_plugins"];
 			if (main)
 			{
-				const auto& plugins = main["plugins"];
-				if (plugins && !plugins.size() > 0)
+				const auto& plugin = main["tasks_plugin"];
+				if (plugin)
 				{
-					for (const auto& plugin : plugins)
-					{
-						createPlugin(plugin.as<std::string>());
-					}
+					task_plugin_name_ = plugin.as<std::string>();
+					createTaskPlugin();
 				}
 				else
 				{
@@ -704,25 +701,25 @@ namespace whi_rviz_plugins
     	}
 	}
 
-	bool WaypointsPanel::createPlugin(const std::string& Name)
+	bool WaypointsPanel::createTaskPlugin()
 	{
         try
         {
-			if (!plugins_map_[Name])
+			if (!plugins_map_[task_plugin_name_])
 			{
-				auto pluginLoader = std::make_unique<pluginlib::ClassLoader<BasePlugin>>
-					("whi_pose_registration", "whi_pose_registration::BasePoseRegistration");
-				plugins_map_[Name] = pluginLoader->createInstance(Name);
-				plugins_map_[Name]->initialize();
+				plugin_loader_ = std::make_unique<pluginlib::ClassLoader<BasePlugin>>
+					("whi_rviz_plugins", "whi_rviz_plugins::BasePlugin");
+				plugins_map_[task_plugin_name_] = plugin_loader_->createInstance(task_plugin_name_);
+				plugins_map_[task_plugin_name_]->initialize();
 			}
             
-            ROS_INFO_STREAM("created plugin " << Name);
+            ROS_INFO_STREAM("created plugin " << task_plugin_name_);
 
 			return true;
         }
         catch (const pluginlib::PluginlibException& ex)
         {
-            ROS_FATAL_STREAM("failed to create the " << Name <<
+            ROS_FATAL_STREAM("failed to create the " << task_plugin_name_ <<
                 "are you sure it is properly registered and that the containing library is built? Exception: " <<
 				ex.what());
 
@@ -733,7 +730,7 @@ namespace whi_rviz_plugins
 	void WaypointsPanel::bindTaskPlugin(int Row)
 	{
 		// add task button
-		if (plugins_map_["way_points_tasks"])
+		if (plugins_map_[task_plugin_name_])
 		{
 			QWidget* general = new QWidget();
 			QPushButton* btnTask = new QPushButton();
@@ -748,7 +745,7 @@ namespace whi_rviz_plugins
 			{
 				QString fileName = QFileDialog::getOpenFileName(this, tr("Open tasks"), "/home/whi",
 					tr("Tasks Files (*.yaml)"));
-				if (!fileName.isNull() && plugins_map_["way_points_tasks"]->config(fileName.toStdString()))
+				if (!fileName.isNull() && plugins_map_[task_plugin_name_]->config(fileName.toStdString()))
 				{
 					plugins_tasks_map_[Row] = fileName.toStdString();
 				}
