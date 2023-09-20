@@ -7,15 +7,17 @@ Features:
 
 Written by Xinjue Zou, xinjue.zou@outlook.com
 
-GNU General Public License, check LICENSE for more information.
+Apache License Version 2.0, check LICENSE for more information.
 All text above must be included in any redistribution.
 
 Changelog:
 2022-10-26: Initial version
-2022-xx-xx: xxx
+2023-09-20: Add plugin mechanism
+2023-xx-xx: xxx
 ******************************************************************/
 #pragma once
 #include "goals_handle.h"
+#include "base_plugin.h"
 
 #include <rviz/panel.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -69,6 +71,9 @@ namespace whi_rviz_plugins
 		double getYawFromPose(const geometry_msgs::Pose& Pose) const;
 		void enableUi(bool Flag);
 		bool nsExisted(const std::string& Namespace) const;
+		bool loadPlugin(const std::string& Config);
+		bool createPlugin(const std::string& Name);
+		void bindTaskPlugin(int Row);
 
 	private:
 		Ui::NaviWaypoints* ui_{ nullptr };
@@ -80,5 +85,7 @@ namespace whi_rviz_plugins
 		std::string ns_from_load_;
 		bool is_remote_{ false };
 		std::string pre_ns_;
+		std::map<std::string, boost::shared_ptr<BasePlugin>> plugins_map_;
+		std::map<int, std::string> plugins_tasks_map_;
 	};
 } // end namespace whi_rviz_plugins

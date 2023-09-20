@@ -7,7 +7,7 @@ Features:
 
 Written by Xinjue Zou, xinjue.zou@outlook.com
 
-GNU General Public License, check LICENSE for more information.
+Apache License Version 2.0, check LICENSE for more information.
 All text above must be included in any redistribution.
 
 ******************************************************************/
@@ -22,6 +22,7 @@ All text above must be included in any redistribution.
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf/LinearMath/Matrix3x3.h>
 #include <angles/angles.h>
+#include <pluginlib/class_loader.hpp>
 #include <yaml-cpp/yaml.h>
 
 #include <QFileDialog>
@@ -47,6 +48,9 @@ namespace whi_rviz_plugins
 			ui_->label_logo->setPixmap(QPixmap::fromImage(scaled));
 		}
 
+		// plugins
+		loadPlugin(path.string() + "/config/config.yaml");
+
 		// widget behaviour
 		ui_->label_state->setText("Standby");
 		ui_->pushButton_execute->setEnabled(false);
@@ -57,6 +61,10 @@ namespace whi_rviz_plugins
 		ui_->doubleSpinBox_stop_span->setValue(2.0);
 		ui_->doubleSpinBox_stop_span->setSingleStep(0.1);
 		QStringList header = { "x", "y", "yaw" };
+		if (plugins_map_["way_points_tasks"])
+		{
+			header.push_back("task");
+		}
 		ui_->tableWidget_waypoints->setColumnCount(header.size());
 		ui_->tableWidget_waypoints->setHorizontalHeaderLabels(header);
 		ui_->tableWidget_waypoints->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
@@ -104,17 +112,35 @@ namespace whi_rviz_plugins
 			{
 				points.push_back(it.pose);
 			}
-			if (goals_map_[ui_->comboBox_ns->currentText().toStdString()]->execute(points,
-				ui_->doubleSpinBox_point_span->value(), ui_->doubleSpinBox_stop_span->value(),
-				ui_->checkBox_loop->isChecked()))
+
+			if (plugins_tasks_map_.empty())
 			{
-				ui_->label_state->setText("Executing...");
-				enableUi(false);
+				if (goals_map_[ui_->comboBox_ns->currentText().toStdString()]->execute(points,
+					ui_->doubleSpinBox_point_span->value(), ui_->doubleSpinBox_stop_span->value(),
+					ui_->checkBox_loop->isChecked()))
+				{
+					ui_->label_state->setText("Executing...");
+					enableUi(false);
+				}
+				else
+				{
+					QMessageBox::critical(this, tr("Error"), tr("failed to send goal"));
+					ui_->label_state->setText("Failed to send goal");
+				}
 			}
 			else
 			{
-				QMessageBox::critical(this, tr("Error"), tr("failed to send goal"));
-				ui_->label_state->setText("Failed to send goal");
+				if (goals_map_[ui_->comboBox_ns->currentText().toStdString()]->execute(points,
+					plugins_tasks_map_, ui_->checkBox_loop->isChecked()))
+				{
+					ui_->label_state->setText("Executing...");
+					enableUi(false);
+				}
+				else
+				{
+					QMessageBox::critical(this, tr("Error"), tr("failed to send goal"));
+					ui_->label_state->setText("Failed to send goal");
+				}
 			}
 		});
 		connect(ui_->pushButton_abort, &QPushButton::clicked, this, [=]()
@@ -240,15 +266,17 @@ namespace whi_rviz_plugins
 		if (pre_ns_ != Namespace)
 		{
 			// only visualize info of one namespace
-			if (goals_map_[pre_ns_])
-			{
-				goals_map_[pre_ns_]->unbindCallback();
-			}
-			pre_ns_ = Namespace;
+			goals_map_[pre_ns_]->unbindCallback();
 
+			pre_ns_ = Namespace;
 			goals_map_[Namespace]->registerEatUpdater(func_visualize_eta_);
 			goals_map_[Namespace]->registerExecutionUpdater(std::bind(&WaypointsPanel::executionState,
 				this, std::placeholders::_1, std::placeholders::_2));
+
+			if (plugins_map_["way_points_tasks"])
+			{
+				goals_map_[Namespace]->setTaskPlugin(plugins_map_["way_points_tasks"]);
+			}
 		}
 	}
 
@@ -583,6 +611,9 @@ namespace whi_rviz_plugins
 	void WaypointsPanel::addWaypoint()
 	{
 		ui_->tableWidget_waypoints->insertRow(ui_->tableWidget_waypoints->rowCount());
+
+		bindTaskPlugin(ui_->tableWidget_waypoints->rowCount() - 1);
+
 		fillWaypoint(ui_->tableWidget_waypoints->rowCount() - 1, ui_->checkBox_current->isChecked());
 		// add to map
 		storeItem2Map(ui_->tableWidget_waypoints->rowCount() - 1, false);
@@ -595,6 +626,9 @@ namespace whi_rviz_plugins
 	void WaypointsPanel::insertWaypoint()
 	{
 		ui_->tableWidget_waypoints->insertRow(ui_->tableWidget_waypoints->currentRow());
+
+		bindTaskPlugin(ui_->tableWidget_waypoints->currentRow() - 1);
+
 		fillWaypoint(ui_->tableWidget_waypoints->currentRow() - 1, ui_->checkBox_current->isChecked());
 		// add to map
 		storeItem2Map(ui_->tableWidget_waypoints->currentRow() - 1);
@@ -636,5 +670,89 @@ namespace whi_rviz_plugins
 	bool WaypointsPanel::nsExisted(const std::string& Namespace) const
 	{
 		return ui_->comboBox_ns->findText(Namespace.c_str()) >= 0;
+	}
+
+	bool WaypointsPanel::loadPlugin(const std::string& Config)
+	{
+		try
+    	{
+			bool res = true;
+        	YAML::Node node = YAML::LoadFile(Config);
+			const auto& main = node["whi_rviz_plugins"];
+			if (main)
+			{
+				const auto& plugins = main["plugins"];
+				if (plugins && !plugins.size() > 0)
+				{
+					for (const auto& plugin : plugins)
+					{
+						createPlugin(plugin.as<std::string>());
+					}
+				}
+				else
+				{
+					res = false;
+				}
+			}
+
+        	return res;
+    	}
+    	catch (const std::exception& e)
+    	{
+        	ROS_ERROR_STREAM("failed to load config file " << Config);
+        	return false;
+    	}
+	}
+
+	bool WaypointsPanel::createPlugin(const std::string& Name)
+	{
+        try
+        {
+			if (!plugins_map_[Name])
+			{
+				auto pluginLoader = std::make_unique<pluginlib::ClassLoader<BasePlugin>>
+					("whi_pose_registration", "whi_pose_registration::BasePoseRegistration");
+				plugins_map_[Name] = pluginLoader->createInstance(Name);
+				plugins_map_[Name]->initialize();
+			}
+            
+            ROS_INFO_STREAM("created plugin " << Name);
+
+			return true;
+        }
+        catch (const pluginlib::PluginlibException& ex)
+        {
+            ROS_FATAL_STREAM("failed to create the " << Name <<
+                "are you sure it is properly registered and that the containing library is built? Exception: " <<
+				ex.what());
+
+			return false;
+        }
+	}
+
+	void WaypointsPanel::bindTaskPlugin(int Row)
+	{
+		// add task button
+		if (plugins_map_["way_points_tasks"])
+		{
+			QWidget* general = new QWidget();
+			QPushButton* btnTask = new QPushButton();
+			btnTask->setText("Load");
+			QHBoxLayout* hbox = new QHBoxLayout(general);
+			hbox->addWidget(btnTask);
+			hbox->setAlignment(Qt::AlignCenter);
+			hbox->setContentsMargins(0, 0, 0, 0);
+			general->setLayout(hbox);
+			ui_->tableWidget_waypoints->setCellWidget(Row, 3, general);
+			connect(btnTask, &QPushButton::clicked, this, [=]()
+			{
+				QString fileName = QFileDialog::getOpenFileName(this, tr("Open tasks"), "/home/whi",
+					tr("Tasks Files (*.yaml)"));
+				if (!fileName.isNull() && plugins_map_["way_points_tasks"]->config(fileName.toStdString()))
+				{
+					plugins_tasks_map_[Row] = fileName.toStdString();
+				}
+			});
+		}
 	}
 } // end namespace whi_rviz_plugins

@@ -7,14 +7,17 @@ Features:
 
 Written by Xinjue Zou, xinjue.zou@outlook.com
 
-GNU General Public License, check LICENSE for more information.
+Apache License Version 2.0, check LICENSE for more information.
 All text above must be included in any redistribution.
 
 Changelog:
 2022-10-28: Initial version
-2022-xx-xx: xxx
+2023-09-20: Add task plugin execution
+2023-xx-xx: xxx
 ******************************************************************/
 #pragma once
+#include "base_plugin.h"
+
 #include <ros/ros.h>
 #include <nav_msgs/Path.h>
 #include <nav_msgs/MapMetaData.h>
@@ -40,7 +43,10 @@ public:
     ~GoalsHandle() = default;
 
 public:
-	bool execute(std::vector<geometry_msgs::Pose> Waypoints, double PointSpan, double StopSpan, bool Loop = false);
+	bool execute(const std::vector<geometry_msgs::Pose>& Waypoints, double PointSpan, double StopSpan,
+		bool Loop = false);
+	bool execute(const std::vector<geometry_msgs::Pose>& Waypoints, const std::map<int, std::string>& Tasks,
+		bool Loop = false);
 	void cancel();
 	void setLooping(bool Looping);
 	void setPointSpan(double Span);
@@ -52,6 +58,7 @@ public:
 	bool isActive() const;
 	void unbindCallback();
 	bool isMapReceived();
+	void setTaskPlugin(boost::shared_ptr<whi_rviz_plugins::BasePlugin> Plugin);
 
 private:
 	void setNamespace(const std::string& Namespace);
@@ -68,6 +75,7 @@ private:
 	void callbackGoalActive();
 	void callbackGoalFeedback(const move_base_msgs::MoveBaseFeedbackConstPtr& Feedback);
 	void callbackTimer(const ros::TimerEvent& Event);
+	int findBeginIndex(const std::vector<geometry_msgs::Pose>& Waypoints);
 
 private:
 	static bool metDistance(const geometry_msgs::Pose& Pose1, const geometry_msgs::Pose& Pose2, double Tolerance);
@@ -80,9 +88,10 @@ private:
 	std::unique_ptr<MoveBaseClient> movebase_client_{ nullptr };
     geometry_msgs::Pose map_origin_;
     geometry_msgs::Pose estimated_;
-	std::list<geometry_msgs::Pose> goals_list_;
+	std::list<std::tuple<geometry_msgs::Pose, std::string>> goals_list_;
 	geometry_msgs::Pose active_goal_;
 	geometry_msgs::Pose final_goal_;
+	std::string active_goal_task_;
 	bool looping_{ false };
 	double point_span_{ 0.3 };
 	double stop_span_{ 0.3 };
@@ -99,4 +108,5 @@ private:
 	ExecutionState func_execution_state_{ nullptr };
 	int waypoints_num_{ 0 };
 	int loop_count_{ 0 };
+	boost::shared_ptr<whi_rviz_plugins::BasePlugin> task_plugin_{ nullptr };
 };

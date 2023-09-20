@@ -7,7 +7,7 @@ Features:
 
 Written by Xinjue Zou, xinjue.zou@outlook.com
 
-GNU General Public License, check LICENSE for more information.
+Apache License Version 2.0, check LICENSE for more information.
 All text above must be included in any redistribution.
 
 ******************************************************************/
@@ -22,46 +22,49 @@ GoalsHandle::GoalsHandle(const std::string& Namespace, bool Remote/* = false*/)
 	init(Remote);
 }
 
-bool GoalsHandle::execute(std::vector<geometry_msgs::Pose> Waypoints, double PointSpan, double StopSpan, bool Loop/* = false*/)
+bool GoalsHandle::execute(const std::vector<geometry_msgs::Pose>& Waypoints, double PointSpan, double StopSpan,
+	bool Loop/* = false*/)
+{
+	std::map<int, std::string> tasks;
+	tasks.emplace(1, std::string());
+	bool res = execute(Waypoints, tasks, Loop);
+
+	point_span_ = PointSpan;
+	stop_span_ = StopSpan;
+
+	return res;
+}
+
+bool GoalsHandle::execute(const std::vector<geometry_msgs::Pose>& Waypoints, const std::map<int, std::string>& Tasks,
+	bool Loop/* = false*/)
 {
 	goals_list_.clear();
-	std::size_t metIndex = 0;
-	for (std::size_t i = 0; i < Waypoints.size(); ++i)
+
+	for (std::size_t i = findBeginIndex(Waypoints); ; i = (i + 1) % Waypoints.size())
 	{
-		if (distance(estimated_, Waypoints[i]) > 1.0)
+		std::string config;
+		if (auto search = Tasks.find(i); search != Tasks.end())
 		{
-			// otherwise check the aborted goal if there is
-			if (metDistance(active_goal_, Waypoints[i], 1e-3))
-			{
-				metIndex = i;
-				break;
-			}
+			config = Tasks.at(i);
 		}
-		else
-		{
-			// choose the next one if current pose overlays the waypoint
-			metIndex = (i + 1) % Waypoints.size();
-			break;
-		}
-	}
-	for (std::size_t i = metIndex; ; i = (i + 1) % Waypoints.size())
-	{
-		goals_list_.push_back(Waypoints[i]);
+		goals_list_.push_back(std::make_tuple(Waypoints[i], config));
+
 		if (goals_list_.size() == Waypoints.size())
 		{
 			break;
 		}
 	}
-	point_span_ = PointSpan;
-	stop_span_ = StopSpan;
+
+	point_span_ = 0.0;
+	stop_span_ = 0.0;
 	looping_ = Loop;
 	waypoints_num_ = goals_list_.size();
 	loop_count_ = 0;
 
 	if (!goals_list_.empty())
 	{
-		final_goal_ = goals_list_.back();
-		return setGoal(goals_list_.front());
+		final_goal_ = std::get<0>(goals_list_.back());
+		return setGoal(std::get<0>(goals_list_.front()));
 	}
 	else
 	{
@@ -221,7 +224,7 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 		double tolerance = isFinalOne ? -stop_span_ * current_linear_ : -point_span_ * current_linear_;
 		if (dist < tolerance)
 		{
-			setGoal(goals_list_.front());
+			setGoal(std::get<0>(goals_list_.front()));
 			updateStateInfo(isFinalOne);
 
 			std::cout << "tolerace reached, proceeding the next. remained goals " << goals_list_.size() << "  " << tolerance << std::endl;
@@ -297,23 +300,33 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 	}
 	else
 	{
-		if (point_span_ > 0.0 || stop_span_ > 0.0)
+		if (active_goal_task_.empty())
 		{
-			bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
-			ros::Duration duration = isFinalOne ? ros::Duration(stop_span_) : ros::Duration(point_span_);
-			non_realtime_loop_ = std::make_unique<ros::Timer>(
-				node_handle_->createTimer(duration, std::bind(&GoalsHandle::callbackTimer, this, std::placeholders::_1)));
+			if (point_span_ > 0.0 || stop_span_ > 0.0)
+			{
+				bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
+				ros::Duration duration = isFinalOne ? ros::Duration(stop_span_) : ros::Duration(point_span_);
+				non_realtime_loop_ = std::make_unique<ros::Timer>(
+					node_handle_->createTimer(duration,
+					std::bind(&GoalsHandle::callbackTimer, this, std::placeholders::_1)));
+			}
+		}
+		else
+		{
+			// execute task
+
 		}
 	}
 }
 
 void GoalsHandle::callbackGoalActive()
 {
-	active_goal_ = goals_list_.front();
+	active_goal_ = std::get<0>(goals_list_.front());
+	active_goal_task_ = std::get<1>(goals_list_.front());
 	goals_list_.pop_front();
 	if (looping_)
 	{
-		goals_list_.push_back(active_goal_);
+		goals_list_.push_back(std::make_tuple(active_goal_, active_goal_task_));
 	}
 	else
 	{
@@ -335,11 +348,41 @@ void GoalsHandle::callbackGoalFeedback(const move_base_msgs::MoveBaseFeedbackCon
 
 void GoalsHandle::callbackTimer(const ros::TimerEvent& Event)
 {
-	setGoal(goals_list_.front());
+	setGoal(std::get<0>(goals_list_.front()));
 	std::cout << "span timeout, proceeding the next" << std::endl;	
 
 	non_realtime_loop_->stop();
 	non_realtime_loop_ = nullptr;
+}
+
+int GoalsHandle::findBeginIndex(const std::vector<geometry_msgs::Pose>& Waypoints)
+{
+	int beginIndex = 0;
+	for (std::size_t i = 0; i < Waypoints.size(); ++i)
+	{
+		if (distance(estimated_, Waypoints[i]) > 1.0)
+		{
+			// otherwise check the aborted goal if there is
+			if (metDistance(active_goal_, Waypoints[i], 1e-3))
+			{
+				beginIndex = i;
+				break;
+			}
+		}
+		else
+		{
+			// choose the next one if current pose overlays the waypoint
+			beginIndex = (i + 1) % Waypoints.size();
+			break;
+		}
+	}
+
+	return beginIndex;
+}
+
+void GoalsHandle::setTaskPlugin(boost::shared_ptr<whi_rviz_plugins::BasePlugin> Plugin)
+{
+	task_plugin_ = Plugin;
 }
 
 bool GoalsHandle::metDistance(const geometry_msgs::Pose& Pose1, const geometry_msgs::Pose& Pose2, double Tolerance)
