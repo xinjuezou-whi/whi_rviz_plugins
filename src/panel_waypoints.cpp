@@ -257,22 +257,27 @@ namespace whi_rviz_plugins
 
 	void WaypointsPanel::configureNs(const std::string& Namespace)
 	{
+		if (pre_ns_ != Namespace)
+		{
+			// only visualize the info of one namespace
+			if (goals_map_[pre_ns_])
+			{
+				goals_map_[pre_ns_]->unbindCallback();
+			}
+			pre_ns_ = Namespace;
+		}
+
 		if (!goals_map_[Namespace])
 		{
 			goals_map_[Namespace] = std::make_unique<GoalsHandle>(Namespace, is_remote_);
-			pre_ns_ = Namespace;
 		}
-		if (pre_ns_ != Namespace)
+		else
 		{
-			// only visualize info of one namespace
-			goals_map_[pre_ns_]->unbindCallback();
-
-			pre_ns_ = Namespace;
-			goals_map_[Namespace]->registerEatUpdater(func_visualize_eta_);
-			goals_map_[Namespace]->registerExecutionUpdater(std::bind(&WaypointsPanel::executionState,
-				this, std::placeholders::_1, std::placeholders::_2));
+			goals_map_[Namespace]->unbindCallback();
 		}
-
+		goals_map_[Namespace]->registerEatUpdater(func_visualize_eta_);
+		goals_map_[Namespace]->registerExecutionUpdater(std::bind(&WaypointsPanel::executionState,
+			this, std::placeholders::_1, std::placeholders::_2));
 		if (plugins_map_[task_plugin_name_])
 		{
 			goals_map_[Namespace]->setTaskPlugin(plugins_map_[task_plugin_name_]);
@@ -743,16 +748,29 @@ namespace whi_rviz_plugins
 			ui_->tableWidget_waypoints->setCellWidget(Row, 3, general);
 			connect(btnTask, &QPushButton::clicked, this, [=]()
 			{
-				QString fileName = QFileDialog::getOpenFileName(this, tr("Open tasks"), "/home/whi",
-					tr("Tasks Files (*.yaml)"));
-				if (!fileName.isNull() && plugins_map_[task_plugin_name_]->addTask(fileName.toStdString()))
+				if (btnTask->text() == "Load")
 				{
-					plugins_tasks_map_[Row] = fileName.toStdString();
-				}
-#ifdef DEBUG
-				plugins_tasks_map_[Row] = "/home/whi/tasks.yaml";
-				plugins_map_[task_plugin_name_]->addTask(plugins_tasks_map_[Row]);
+					QString fileName = QFileDialog::getOpenFileName(this, tr("Open tasks"), "/home/whi",
+						tr("Tasks Files (*.yaml)"));
+					if (!fileName.isNull() && plugins_map_[task_plugin_name_]->addTask(fileName.toStdString()))
+					{
+						plugins_tasks_map_[Row] = fileName.toStdString();
+						btnTask->setToolTip(plugins_tasks_map_[Row].c_str());
+						btnTask->setText("Remove");
+					}
+#ifndef DEBUG
+					plugins_tasks_map_[Row] = "/home/whi/tasks.yaml";
+					plugins_map_[task_plugin_name_]->addTask(plugins_tasks_map_[Row]);
+					btnTask->setToolTip(plugins_tasks_map_[Row].c_str());
+					btnTask->setText("Remove");
 #endif
+				}
+				else if (btnTask->text() == "Remove")
+				{
+					plugins_tasks_map_[Row].clear();
+					btnTask->setToolTip("");
+					btnTask->setText("Load");
+				}
 			});
 		}
 	}
