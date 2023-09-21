@@ -6,3 +6,4 @@ tasks_plugin:
   detection_topic: /yolov5/detections
   pixel_size: 0.000003 # m
   focal_length: 0.00193 # m
+  state_topic: actuator_state
