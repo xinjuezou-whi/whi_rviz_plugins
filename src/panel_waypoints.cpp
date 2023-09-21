@@ -677,14 +677,14 @@ namespace whi_rviz_plugins
     	{
 			bool res = true;
         	YAML::Node node = YAML::LoadFile(Config);
-			const auto& main = node["whi_rviz_plugins"];
-			if (main)
+			const auto& taskPlugin = node["tasks_plugin"];
+			if (taskPlugin)
 			{
-				const auto& plugin = main["tasks_plugin"];
-				if (plugin)
+				const auto& name = taskPlugin["name"];
+				if (name)
 				{
-					task_plugin_name_ = plugin.as<std::string>();
-					createTaskPlugin();
+					task_plugin_name_ = name.as<std::string>();
+					createTaskPlugin(taskPlugin);
 				}
 				else
 				{
@@ -701,7 +701,7 @@ namespace whi_rviz_plugins
     	}
 	}
 
-	bool WaypointsPanel::createTaskPlugin()
+	bool WaypointsPanel::createTaskPlugin(const YAML::Node& Node)
 	{
         try
         {
@@ -710,7 +710,7 @@ namespace whi_rviz_plugins
 				plugin_loader_ = std::make_unique<pluginlib::ClassLoader<BasePlugin>>
 					("whi_rviz_plugins", "whi_rviz_plugins::BasePlugin");
 				plugins_map_[task_plugin_name_] = plugin_loader_->createInstance(task_plugin_name_);
-				plugins_map_[task_plugin_name_]->initialize();
+				plugins_map_[task_plugin_name_]->initialize(Node);
 			}
             
             ROS_INFO_STREAM("created plugin " << task_plugin_name_);
@@ -745,7 +745,7 @@ namespace whi_rviz_plugins
 			{
 				QString fileName = QFileDialog::getOpenFileName(this, tr("Open tasks"), "/home/whi",
 					tr("Tasks Files (*.yaml)"));
-				if (!fileName.isNull() && plugins_map_[task_plugin_name_]->config(fileName.toStdString()))
+				if (!fileName.isNull() && plugins_map_[task_plugin_name_]->addTask(fileName.toStdString()))
 				{
 					plugins_tasks_map_[Row] = fileName.toStdString();
 				}

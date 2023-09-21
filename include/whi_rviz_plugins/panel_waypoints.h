@@ -73,7 +73,7 @@ namespace whi_rviz_plugins
 		void enableUi(bool Flag);
 		bool nsExisted(const std::string& Namespace) const;
 		bool loadPlugin(const std::string& Config);
-		bool createTaskPlugin();
+		bool createTaskPlugin(const YAML::Node& Node);
 		void bindTaskPlugin(int Row);
 
 	private:

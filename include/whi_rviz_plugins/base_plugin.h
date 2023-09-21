@@ -15,6 +15,7 @@ Changelog:
 2022-xx-xx: xxx
 ******************************************************************/
 #pragma once
+#include <yaml-cpp/yaml.h>
 #include <string>
 
 namespace whi_rviz_plugins
@@ -26,8 +27,8 @@ namespace whi_rviz_plugins
         virtual ~BasePlugin() = default;
 
     public:
-        virtual void initialize() = 0;
-        virtual void process() = 0;
-        virtual bool config(const std::string& Config) = 0;
+        virtual void initialize(const YAML::Node& Node) = 0;
+        virtual void process(const std::string& Task) = 0;
+        virtual bool addTask(const std::string& Task) = 0;
     };
 } // namespace whi_rviz_plugins

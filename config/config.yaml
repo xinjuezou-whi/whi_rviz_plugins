@@ -1,2 +1,8 @@
-whi_rviz_plugins:
-  tasks_plugin: dummy
+tasks_plugin:
+  name: whi_waypoints_tasks_plugin/WaypointsTasks
+  service: /tcp_pose
+  base_frame: base_link
+  tcp_frame: camera
+  detection_topic: /yolov5/detections
+  pixel_size: 0.000003 # m
+  focal_length: 0.00193 # m
