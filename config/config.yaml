@@ -1,7 +1,7 @@
 tasks_plugin:
   name: whi_waypoints_tasks_plugin/WaypointsTasks
-  service: /tcp_pose
-  base_frame: base_link
+  service: tcp_pose
+  base_frame: ur10e_base_link
   tcp_frame: camera
   detection_topic: /yolov5/detections
   pixel_size: 0.000003 # m

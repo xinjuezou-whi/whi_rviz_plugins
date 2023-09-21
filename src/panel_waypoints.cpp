@@ -271,11 +271,11 @@ namespace whi_rviz_plugins
 			goals_map_[Namespace]->registerEatUpdater(func_visualize_eta_);
 			goals_map_[Namespace]->registerExecutionUpdater(std::bind(&WaypointsPanel::executionState,
 				this, std::placeholders::_1, std::placeholders::_2));
+		}
 
-			if (plugins_map_[task_plugin_name_])
-			{
-				goals_map_[Namespace]->setTaskPlugin(plugins_map_[task_plugin_name_]);
-			}
+		if (plugins_map_[task_plugin_name_])
+		{
+			goals_map_[Namespace]->setTaskPlugin(plugins_map_[task_plugin_name_]);
 		}
 	}
 
@@ -749,6 +749,10 @@ namespace whi_rviz_plugins
 				{
 					plugins_tasks_map_[Row] = fileName.toStdString();
 				}
+#ifdef DEBUG
+				plugins_tasks_map_[Row] = "/home/whi/tasks.yaml";
+				plugins_map_[task_plugin_name_]->addTask(plugins_tasks_map_[Row]);
+#endif
 			});
 		}
 	}

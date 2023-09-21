@@ -15,6 +15,8 @@ All text above must be included in any redistribution.
 
 #include <tf/tf.h>
 
+#include <thread>
+
 GoalsHandle::GoalsHandle(const std::string& Namespace, bool Remote/* = false*/)
 	: node_handle_(std::make_unique<ros::NodeHandle>())
 {
@@ -26,7 +28,6 @@ bool GoalsHandle::execute(const std::vector<geometry_msgs::Pose>& Waypoints, dou
 	bool Loop/* = false*/)
 {
 	std::map<int, std::string> tasks;
-	tasks.emplace(1, std::string());
 	bool res = execute(Waypoints, tasks, Loop);
 
 	point_span_ = PointSpan;
@@ -293,6 +294,15 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 #endif
 	if (goals_list_.empty())
 	{
+		// execute task if there is
+		if (!active_goal_task_.empty())
+		{
+			if (task_plugin_)
+			{
+				task_plugin_->process(active_goal_task_);
+			}
+		}
+		// then set finish state
 		if (func_execution_state_)
 		{
 			func_execution_state_(STA_DONE, nullptr);
@@ -314,7 +324,13 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 		else
 		{
 			// execute task
-
+			if (task_plugin_)
+			{
+				task_plugin_->process(active_goal_task_);
+			}
+			// then to approach the next waypoint
+			// IMPORTANT: DO NOT CALL ACTION in its own callback
+			std::thread{ &GoalsHandle::setGoal, this, std::get<0>(goals_list_.front()) }.detach();
 		}
 	}
 }
