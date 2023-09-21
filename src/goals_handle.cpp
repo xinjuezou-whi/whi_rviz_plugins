@@ -193,7 +193,10 @@ void GoalsHandle::cancelGoal() const
 	{
 		ROS_INFO("Waiting for the move_base action server to come up");
 	}
-	movebase_client_->cancelGoal();
+	if (!movebase_client_->getState().isDone())
+	{
+		movebase_client_->cancelGoal();
+	}
 
 	if (func_eta_)
 	{
@@ -295,7 +298,8 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 	if (goals_list_.empty())
 	{
 		// execute task if there is
-		if (!active_goal_task_.empty())
+		if (movebase_client_->getState().state_ == actionlib::SimpleClientGoalState::SUCCEEDED &&
+			!active_goal_task_.empty())
 		{
 			if (task_plugin_)
 			{
@@ -323,14 +327,9 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 		}
 		else
 		{
-			// execute task
-			if (task_plugin_)
-			{
-				task_plugin_->process(active_goal_task_);
-			}
-			// then to approach the next waypoint
+			// execute task then to approach the next waypoint
 			// IMPORTANT: DO NOT CALL ACTION in its own callback
-			std::thread{ &GoalsHandle::setGoal, this, std::get<0>(goals_list_.front()) }.detach();
+			std::thread{ &GoalsHandle::executeTask, this }.detach();
 		}
 	}
 }
@@ -364,8 +363,11 @@ void GoalsHandle::callbackGoalFeedback(const move_base_msgs::MoveBaseFeedbackCon
 
 void GoalsHandle::callbackTimer(const ros::TimerEvent& Event)
 {
-	setGoal(std::get<0>(goals_list_.front()));
-	std::cout << "span timeout, proceeding the next" << std::endl;	
+	if (!goals_list_.empty())
+	{
+		setGoal(std::get<0>(goals_list_.front()));
+		std::cout << "span timeout, proceeding the next" << std::endl;	
+	}
 
 	non_realtime_loop_->stop();
 	non_realtime_loop_ = nullptr;
@@ -394,6 +396,18 @@ int GoalsHandle::findBeginIndex(const std::vector<geometry_msgs::Pose>& Waypoint
 	}
 
 	return beginIndex;
+}
+
+void GoalsHandle::executeTask()
+{
+	if (task_plugin_)
+	{
+		task_plugin_->process(active_goal_task_);
+	}
+	if (!goals_list_.empty())
+	{
+		setGoal(std::get<0>(goals_list_.front()));
+	}
 }
 
 void GoalsHandle::setTaskPlugin(boost::shared_ptr<whi_rviz_plugins::BasePlugin> Plugin)

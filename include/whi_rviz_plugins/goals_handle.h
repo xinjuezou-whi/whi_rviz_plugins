@@ -76,6 +76,7 @@ private:
 	void callbackGoalFeedback(const move_base_msgs::MoveBaseFeedbackConstPtr& Feedback);
 	void callbackTimer(const ros::TimerEvent& Event);
 	int findBeginIndex(const std::vector<geometry_msgs::Pose>& Waypoints);
+	void executeTask();
 
 private:
 	static bool metDistance(const geometry_msgs::Pose& Pose1, const geometry_msgs::Pose& Pose2, double Tolerance);
