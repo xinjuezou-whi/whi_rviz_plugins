@@ -758,7 +758,7 @@ namespace whi_rviz_plugins
 						btnTask->setToolTip(plugins_tasks_map_[Row].c_str());
 						btnTask->setText("Remove");
 					}
-#ifdef DEBUG
+#ifndef DEBUG
 					plugins_tasks_map_[Row] = "/home/whi/tasks.yaml";
 					plugins_map_[task_plugin_name_]->addTask(plugins_tasks_map_[Row]);
 					btnTask->setToolTip(plugins_tasks_map_[Row].c_str());

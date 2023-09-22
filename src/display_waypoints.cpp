@@ -30,7 +30,7 @@ namespace whi_rviz_plugins
     WaypointsDisplay::WaypointsDisplay()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.19.5" << std::endl;
+        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.19.6" << std::endl;
         std::cout << "Copyright @ 2022-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         marker_size_property_ = new rviz::FloatProperty("Marker Size", 1.0, "Arrow size of waypoint mark.",
@@ -171,7 +171,7 @@ namespace whi_rviz_plugins
         eta_text_->setCaption(info);
         eta_text_->setCharacterHeight(font_size_property_->getFloat());
         eta_text_->setColor(font_color_property_->getOgreColor());
-        eta_text_->setLocalTranslation(Ogre::Vector3(-Pose.position.y, Pose.position.x, 0.0));
+        eta_text_->setGlobalTranslation(Ogre::Vector3(Pose.position.x, Pose.position.y, 0.0));
     }
 
     void WaypointsDisplay::interactiveMarkerProcessFeedback(visualization_msgs::InteractiveMarkerFeedback& Feedback)
