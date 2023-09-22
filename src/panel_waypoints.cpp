@@ -102,7 +102,8 @@ namespace whi_rviz_plugins
 		connect(ui_->pushButton_execute, &QPushButton::clicked, this, [=]()
 		{
 			// re-configure namespace
-			configureNs(ui_->comboBox_ns->currentText().toStdString());
+			std::string ns = ui_->comboBox_ns->currentText().toStdString();
+			configureNs(ns);
 
 			std::vector<geometry_msgs::PoseStamped> waypoints;
 			retrieveWaypoints(waypoints);
@@ -112,9 +113,9 @@ namespace whi_rviz_plugins
 				points.push_back(it.pose);
 			}
 
-			if (plugins_tasks_map_.empty())
+			if (tasks_map_[ns].empty())
 			{
-				if (goals_map_[ui_->comboBox_ns->currentText().toStdString()]->execute(points,
+				if (goals_map_[ns]->execute(points,
 					ui_->doubleSpinBox_point_span->value(), ui_->doubleSpinBox_stop_span->value(),
 					ui_->checkBox_loop->isChecked()))
 				{
@@ -129,8 +130,9 @@ namespace whi_rviz_plugins
 			}
 			else
 			{
-				if (goals_map_[ui_->comboBox_ns->currentText().toStdString()]->execute(points,
-					plugins_tasks_map_, ui_->checkBox_loop->isChecked()))
+				if (goals_map_[ns]->execute(points, tasks_map_[ns],
+					ui_->doubleSpinBox_point_span->value(), ui_->doubleSpinBox_stop_span->value(),
+					ui_->checkBox_loop->isChecked()))
 				{
 					ui_->label_state->setText("Executing...");
 					enableUi(false);
@@ -448,7 +450,8 @@ namespace whi_rviz_plugins
 			double originY = mapOrigin[1].as<double>();
 
 			int ret = QMessageBox::Yes;
-			geometry_msgs::Pose origin = goals_map_[ui_->comboBox_ns->currentText().toStdString()]->getMapOrigin();
+			std::string ns = ui_->comboBox_ns->currentText().toStdString();
+			geometry_msgs::Pose origin = goals_map_[ns]->getMapOrigin();
 			if (fabs(originX - origin.position.x) > 1e-2 || fabs(originY - origin.position.y) > 1e-2)
 			{
 				ret = QMessageBox::question(this, tr("Your call"),
@@ -476,6 +479,22 @@ namespace whi_rviz_plugins
 					fillWaypoint(i, false, &pose);
 					// add to map
 					storeItem2Map(i, false);
+
+					const auto& taskFile = points[i]["task_file"];
+					if (taskFile)
+					{
+						tasks_map_[ns][index] = taskFile.as<std::string>();
+						if (plugins_map_[task_plugin_name_])
+						{
+							auto btnTask = bindTaskPlugin(index);
+							if (btnTask && !tasks_map_[ns][index].empty())
+							{
+								plugins_map_[task_plugin_name_]->addTask(tasks_map_[ns][index]);
+								btnTask->setToolTip(tasks_map_[ns][index].c_str());
+								btnTask->setText("Remove");
+							}
+						}
+					}
 				}
 
 				ui_->groupBox_waypoints->setTitle(QString("Waypoints (") + QString::number(ui_->tableWidget_waypoints->rowCount())
@@ -500,16 +519,17 @@ namespace whi_rviz_plugins
 		if (ofs.good())
 		{
 			// namespace
+			std::string ns = ui_->comboBox_ns->currentText().toStdString();
 			if (!ui_->comboBox_ns->currentText().isEmpty())
 			{
-				std::string line("namespace: " + ui_->comboBox_ns->currentText().toStdString() + "\n");
+				std::string line("namespace: " + ns + "\n");
 				ofs.write(line.c_str(), line.length());
 			}
 			// use the map origin to check if the loaded points meet current map
 			geometry_msgs::Pose origin;
-			if (goals_map_[ui_->comboBox_ns->currentText().toStdString()])
+			if (goals_map_[ns])
 			{
-				origin = goals_map_[ui_->comboBox_ns->currentText().toStdString()]->getMapOrigin();
+				origin = goals_map_[ns]->getMapOrigin();
 			}
 			std::string line("map: [" + std::to_string(origin.position.x) + ", " +
 				std::to_string(origin.position.y) + "]\nwaypoints:\n");
@@ -521,6 +541,10 @@ namespace whi_rviz_plugins
 				line += "    pose: [" + ui_->tableWidget_waypoints->item(i, 0)->text().toStdString() + ", ";
 				line += ui_->tableWidget_waypoints->item(i, 1)->text().toStdString() + ", ";
 				line += ui_->tableWidget_waypoints->item(i, 2)->text().toStdString() + "]\n";
+				if (!tasks_map_[ns][i].empty())
+				{
+					line += "    task_file: " + tasks_map_[ns][i] + "\n";
+				}
 				ofs.write(line.c_str(), line.length());
 			}
 
@@ -732,7 +756,7 @@ namespace whi_rviz_plugins
         }
 	}
 
-	void WaypointsPanel::bindTaskPlugin(int Row)
+	QPushButton* WaypointsPanel::bindTaskPlugin(int Row)
 	{
 		// add task button
 		if (plugins_map_[task_plugin_name_])
@@ -746,32 +770,39 @@ namespace whi_rviz_plugins
 			hbox->setContentsMargins(0, 0, 0, 0);
 			general->setLayout(hbox);
 			ui_->tableWidget_waypoints->setCellWidget(Row, 3, general);
+
 			connect(btnTask, &QPushButton::clicked, this, [=]()
 			{
+				std::string ns = ui_->comboBox_ns->currentText().toStdString();
+
 				if (btnTask->text() == "Load")
 				{
 					QString fileName = QFileDialog::getOpenFileName(this, tr("Open tasks"), "/home/whi",
 						tr("Tasks Files (*.yaml)"));
 					if (!fileName.isNull() && plugins_map_[task_plugin_name_]->addTask(fileName.toStdString()))
 					{
-						plugins_tasks_map_[Row] = fileName.toStdString();
-						btnTask->setToolTip(plugins_tasks_map_[Row].c_str());
+						tasks_map_[ns][Row] = fileName.toStdString();
+						btnTask->setToolTip(tasks_map_[ns][Row].c_str());
 						btnTask->setText("Remove");
 					}
-#ifndef DEBUG
-					plugins_tasks_map_[Row] = "/home/whi/tasks.yaml";
-					plugins_map_[task_plugin_name_]->addTask(plugins_tasks_map_[Row]);
-					btnTask->setToolTip(plugins_tasks_map_[Row].c_str());
+#ifdef DEBUG
+					tasks_map_[ns][Row] = "/home/whi/tasks.yaml";
+					plugins_map_[task_plugin_name_]->addTask(tasks_map_[ns][Row]);
+					btnTask->setToolTip(tasks_map_[ns][Row].c_str());
 					btnTask->setText("Remove");
 #endif
 				}
 				else if (btnTask->text() == "Remove")
 				{
-					plugins_tasks_map_[Row].clear();
+					tasks_map_[ns][Row].clear();
 					btnTask->setToolTip("");
 					btnTask->setText("Load");
 				}
 			});
+
+			return btnTask;
 		}
+
+		return nullptr;
 	}
 } // end namespace whi_rviz_plugins

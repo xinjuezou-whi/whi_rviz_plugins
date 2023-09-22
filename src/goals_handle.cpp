@@ -28,16 +28,13 @@ bool GoalsHandle::execute(const std::vector<geometry_msgs::Pose>& Waypoints, dou
 	bool Loop/* = false*/)
 {
 	std::map<int, std::string> tasks;
-	bool res = execute(Waypoints, tasks, Loop);
-
-	point_span_ = PointSpan;
-	stop_span_ = StopSpan;
+	bool res = execute(Waypoints, tasks, PointSpan, StopSpan, Loop);
 
 	return res;
 }
 
 bool GoalsHandle::execute(const std::vector<geometry_msgs::Pose>& Waypoints, const std::map<int, std::string>& Tasks,
-	bool Loop/* = false*/)
+	double PointSpan, double StopSpan, bool Loop/* = false*/)
 {
 	goals_list_.clear();
 
@@ -56,8 +53,8 @@ bool GoalsHandle::execute(const std::vector<geometry_msgs::Pose>& Waypoints, con
 		}
 	}
 
-	point_span_ = 0.0;
-	stop_span_ = 0.0;
+	point_span_ = PointSpan;
+	stop_span_ = StopSpan;
 	looping_ = Loop;
 	waypoints_num_ = goals_list_.size();
 	loop_count_ = 0;
@@ -224,14 +221,17 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 	}
 	else
 	{
-		bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
-		double tolerance = isFinalOne ? -stop_span_ * current_linear_ : -point_span_ * current_linear_;
-		if (dist < tolerance)
+		if (active_goal_task_.empty())
 		{
-			setGoal(std::get<0>(goals_list_.front()));
-			updateStateInfo(isFinalOne);
+			bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
+			double tolerance = isFinalOne ? -stop_span_ * current_linear_ : -point_span_ * current_linear_;
+			if (dist < tolerance)
+			{
+				setGoal(std::get<0>(goals_list_.front()));
+				updateStateInfo(isFinalOne);
 
-			std::cout << "tolerace reached, proceeding the next. remained goals " << goals_list_.size() << "  " << tolerance << std::endl;
+				std::cout << "tolerace reached, proceeding the next. remained goals " << goals_list_.size() << "  " << tolerance << std::endl;
+			}
 		}
 	}
 
@@ -316,8 +316,10 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 	{
 		if (active_goal_task_.empty())
 		{
-			if (point_span_ > 0.0 || stop_span_ > 0.0)
+			if (int(point_span_) >= 0 || int(stop_span_) >= 0)
 			{
+				point_span_ = point_span_ < 1e-5 ? 0.1 : point_span_;
+				stop_span_ = stop_span_ < 1e-5 ? 0.1 : stop_span_;
 				bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
 				ros::Duration duration = isFinalOne ? ros::Duration(stop_span_) : ros::Duration(point_span_);
 				non_realtime_loop_ = std::make_unique<ros::Timer>(

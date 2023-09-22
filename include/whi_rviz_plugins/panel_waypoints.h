@@ -26,6 +26,7 @@ Changelog:
 #include <QWidget>
 
 class QTimer;
+class QPushButton;
 
 namespace Ui
 {
@@ -74,7 +75,7 @@ namespace whi_rviz_plugins
 		bool nsExisted(const std::string& Namespace) const;
 		bool loadPlugin(const std::string& Config);
 		bool createTaskPlugin(const YAML::Node& Node);
-		void bindTaskPlugin(int Row);
+		QPushButton* bindTaskPlugin(int Row);
 
 	private:
 		Ui::NaviWaypoints* ui_{ nullptr };
@@ -87,7 +88,8 @@ namespace whi_rviz_plugins
 		bool is_remote_{ false };
 		std::string pre_ns_;
 		std::map<std::string, boost::shared_ptr<BasePlugin>> plugins_map_;
-		std::map<int, std::string> plugins_tasks_map_;
+		using WaypointsTask = std::map<int, std::string>;
+		std::map<std::string, WaypointsTask> tasks_map_;
 		std::unique_ptr<pluginlib::ClassLoader<BasePlugin>> plugin_loader_{ nullptr };
 		std::string task_plugin_name_;
 	};
