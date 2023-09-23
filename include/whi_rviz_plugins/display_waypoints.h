@@ -32,7 +32,9 @@ namespace rviz
     class ColorProperty;
     class BoolProperty;
     class EnumProperty;
+    class TfFrameProperty;
     class MovableText;
+    class FrameManager;
 }
 
 namespace whi_rviz_plugins
@@ -59,6 +61,7 @@ namespace whi_rviz_plugins
         void updateSize();
         void updateColor();
         void updateMode();
+        void updateBaselinkFrame();
 
     private:
         static void addPositionControl(visualization_msgs::InteractiveMarker& IntMarker, bool OrientationFixed);
@@ -81,7 +84,9 @@ namespace whi_rviz_plugins
         rviz::FloatProperty* font_size_property_;
         rviz::ColorProperty* font_color_property_;
         rviz::EnumProperty* mode_property_;
+        rviz::TfFrameProperty* frame_property_;
         Ogre::SceneNode* frame_node_{ nullptr };
         bool remote_mode_{ false };
+        std::shared_ptr<rviz::FrameManager> frame_manager_{ nullptr };
     };
 } // end namespace whi_rviz_plugins

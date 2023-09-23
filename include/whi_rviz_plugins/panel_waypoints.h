@@ -52,6 +52,7 @@ namespace whi_rviz_plugins
 		void setRemoteFlag(bool Flag);
 		void updateWaypoint(int Index, const geometry_msgs::Pose& Pose);
 		void updateHeight(double Height);
+		void setBaselinkFrame(const std::string& Frame);
 
 	private:
 		void configureNs(const std::string& Namespace);
@@ -92,5 +93,6 @@ namespace whi_rviz_plugins
 		std::map<std::string, WaypointsTask> tasks_map_;
 		std::unique_ptr<pluginlib::ClassLoader<BasePlugin>> plugin_loader_{ nullptr };
 		std::string task_plugin_name_;
+		std::string baselink_frame_{ "base_link" };
 	};
 } // end namespace whi_rviz_plugins

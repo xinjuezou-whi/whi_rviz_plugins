@@ -79,6 +79,9 @@ namespace whi_rviz_plugins
 		connect(ui_->pushButton_load, &QPushButton::clicked, this, [=]()
 		{
 			QString fileName = QFileDialog::getOpenFileName(this, tr("Open Waypoints"), "/home/whi", tr("Waypoints Files (*.yaml)"));
+#ifdef DEBUG
+			fileName = "/home/whi/detection.yaml";
+#endif
 			if (!fileName.isNull())
 			{
 				loadWaypointsNs(fileName.toStdString());
@@ -89,6 +92,9 @@ namespace whi_rviz_plugins
 			if (ui_->tableWidget_waypoints->rowCount() > 0)
 			{
 				QString fileName = QFileDialog::getSaveFileName(this, tr("Save Waypoints"), "/home/whi/untitled.yaml", tr("Waypoints Files (*.yaml)"));
+#ifdef DEBUG
+				fileName = "/home/whi/detection.yaml";
+#endif
 				if (!fileName.isNull())
 				{
 					if (!fileName.contains(".yaml"))
@@ -257,6 +263,18 @@ namespace whi_rviz_plugins
 		}
 	}
 
+	void WaypointsPanel::setBaselinkFrame(const std::string& Frame)
+	{
+		baselink_frame_ = Frame;
+		for (auto& it : goals_map_)
+		{
+			if (it.second)
+			{
+				it.second->setBaselinkFrame(baselink_frame_);
+			}
+		}
+	}
+
 	void WaypointsPanel::configureNs(const std::string& Namespace)
 	{
 		if (pre_ns_ != Namespace)
@@ -272,6 +290,7 @@ namespace whi_rviz_plugins
 		if (!goals_map_[Namespace])
 		{
 			goals_map_[Namespace] = std::make_unique<GoalsHandle>(Namespace, is_remote_);
+			goals_map_[Namespace]->setBaselinkFrame(baselink_frame_);
 		}
 		else
 		{
@@ -785,12 +804,6 @@ namespace whi_rviz_plugins
 						btnTask->setToolTip(tasks_map_[ns][Row].c_str());
 						btnTask->setText("Remove");
 					}
-#ifdef DEBUG
-					tasks_map_[ns][Row] = "/home/whi/tasks.yaml";
-					plugins_map_[task_plugin_name_]->addTask(tasks_map_[ns][Row]);
-					btnTask->setToolTip(tasks_map_[ns][Row].c_str());
-					btnTask->setText("Remove");
-#endif
 				}
 				else if (btnTask->text() == "Remove")
 				{

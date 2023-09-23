@@ -19,8 +19,10 @@ All text above must be included in any redistribution.
 #include <rviz/properties/float_property.h>
 #include <rviz/properties/color_property.h>
 #include <rviz/properties/bool_property.h>
-#include "rviz/properties/enum_property.h"
+#include <rviz/properties/enum_property.h>
+#include <rviz/properties/tf_frame_property.h>
 #include <rviz/ogre_helpers/movable_text.h>
+#include <rviz/frame_manager.h>
 #include <visualization_msgs/Marker.h>
 
 #include <sstream>
@@ -30,7 +32,7 @@ namespace whi_rviz_plugins
     WaypointsDisplay::WaypointsDisplay()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.20.0" << std::endl;
+        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.20.1" << std::endl;
         std::cout << "Copyright @ 2022-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         marker_size_property_ = new rviz::FloatProperty("Marker Size", 1.0, "Arrow size of waypoint mark.",
@@ -48,6 +50,9 @@ namespace whi_rviz_plugins
         QStringList sourceList = { "Local", "Remote" };
         mode_property_ = new rviz::EnumProperty("Mode", sourceList[0], "Options of running mode",
             this, SLOT(updateMode()));
+        frame_manager_ = std::make_shared<rviz::FrameManager>();
+        frame_property_ = new rviz::TfFrameProperty("base_frame", "base_link", "Base link frame of robot",
+            this, frame_manager_.get(), false, SLOT(updateBaselinkFrame()));
         for (int i = 0; i < sourceList.size(); ++i)
         {
             mode_property_->addOption(sourceList[i], i);
@@ -66,7 +71,6 @@ namespace whi_rviz_plugins
         panel_ = new WaypointsPanel(
             std::bind(&WaypointsDisplay::visualizeWaypointsLocations, this, std::placeholders::_1, std::placeholders::_2),
             std::bind(&WaypointsDisplay::visualEta, this, std::placeholders::_1, std::placeholders::_2));
-        panel_->setRemoteFlag(remote_mode_);
         rviz::WindowManagerInterface* windowContext = context_->getWindowManager();
         if (windowContext)
         {
@@ -83,6 +87,8 @@ namespace whi_rviz_plugins
         updateSize();
         updateColor();
         updateVisibility();
+        updateMode();
+        updateBaselinkFrame();
     }
 
     void WaypointsDisplay::clearWaypointsLocationsDisplay()
@@ -210,6 +216,11 @@ namespace whi_rviz_plugins
     {
         remote_mode_ = mode_property_->getOptionInt() == 0 ? false : true;
         panel_->setRemoteFlag(remote_mode_);
+    }
+
+    void WaypointsDisplay::updateBaselinkFrame()
+    {
+        panel_->setBaselinkFrame(frame_property_->getFrame().toStdString());
     }
 
     void WaypointsDisplay::addPositionControl(visualization_msgs::InteractiveMarker& IntMarker, bool OrientationFixed)

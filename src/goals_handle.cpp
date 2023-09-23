@@ -22,6 +22,9 @@ GoalsHandle::GoalsHandle(const std::string& Namespace, bool Remote/* = false*/)
 {
 	setNamespace(Namespace);
 	init(Remote);
+
+	// tf listening
+    tf_listener_ = std::make_unique<tf2_ros::TransformListener>(buffer_);
 }
 
 bool GoalsHandle::execute(const std::vector<geometry_msgs::Pose>& Waypoints, double PointSpan, double StopSpan,
@@ -98,11 +101,14 @@ geometry_msgs::Pose GoalsHandle::getMapOrigin() const
 
 geometry_msgs::Pose GoalsHandle::getCurrentPose()
 {
-	mtx_estimated_.lock();
-	geometry_msgs::Pose estimated = estimated_;
-	mtx_estimated_.unlock();
+	auto trans = listenTf("map", baselink_frame_, ros::Time(0));
+	geometry_msgs::Pose pose;
+	pose.position.x = trans.transform.translation.x;
+	pose.position.y = trans.transform.translation.y;
+	pose.position.z = trans.transform.translation.z;
+	pose.orientation = trans.transform.rotation;
 
-	return estimated;
+	return pose;
 }
 
 void GoalsHandle::registerEatUpdater(VisualizeEta Func)
@@ -148,8 +154,6 @@ void GoalsHandle::init(bool IsRemote/* = false*/)
 	std::string topicMap = IsRemote ? "map_metadata" : namespace_ + "map_metadata";
 	sub_map_data_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<nav_msgs::MapMetaData>(
 		topicMap, 10, std::bind(&GoalsHandle::subCallbackMapData, this, std::placeholders::_1)));
-	sub_estimate_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<geometry_msgs::PoseWithCovarianceStamped>(
-		namespace_ + "amcl_pose", 10, std::bind(&GoalsHandle::subCallbackEstimated, this, std::placeholders::_1)));
 	sub_cmd_vel_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<geometry_msgs::Twist>(
 		namespace_ + "cmd_vel", 10, std::bind(&GoalsHandle::subCallbackCmdVel, this, std::placeholders::_1)));
 
@@ -199,6 +203,20 @@ void GoalsHandle::cancelGoal() const
 	{
 		func_eta_(active_goal_, -2.0);
 	}
+}
+
+geometry_msgs::TransformStamped GoalsHandle::listenTf(const std::string& DstFrame, const std::string& SrcFrame,
+    const ros::Time& Time)
+{
+    try
+    {
+        return buffer_.lookupTransform(DstFrame, SrcFrame, Time, ros::Duration(1.0));
+    }
+    catch (tf2::TransformException &e)
+    {
+        ROS_ERROR("%s", e.what());
+        return geometry_msgs::TransformStamped();
+    }
 }
 
 void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
@@ -272,17 +290,6 @@ void GoalsHandle::subCallbackMapData(const nav_msgs::MapMetaData::ConstPtr& MapD
 {
 	map_origin_ = MapData->origin;
 	map_received_ = true;
-}
-
-void GoalsHandle::subCallbackEstimated(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& Estimated)
-{
-	mtx_estimated_.lock();
-	estimated_ = Estimated->pose.pose;
-	mtx_estimated_.unlock();
-
-	tf::Quaternion quat(estimated_.orientation.x, estimated_.orientation.y, estimated_.orientation.z, estimated_.orientation.w);
-  	double roll = 0.0, pitch = 0.0, yaw = 0.0;
-  	tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
 }
 
 void GoalsHandle::subCallbackCmdVel(const geometry_msgs::Twist::ConstPtr& CmdVel)
@@ -380,7 +387,7 @@ int GoalsHandle::findBeginIndex(const std::vector<geometry_msgs::Pose>& Waypoint
 	int beginIndex = 0;
 	for (std::size_t i = 0; i < Waypoints.size(); ++i)
 	{
-		if (distance(estimated_, Waypoints[i]) > 1.0)
+		if (distance(getCurrentPose(), Waypoints[i]) > 1.0)
 		{
 			// otherwise check the aborted goal if there is
 			if (metDistance(active_goal_, Waypoints[i], 1e-3))
@@ -415,6 +422,11 @@ void GoalsHandle::executeTask()
 void GoalsHandle::setTaskPlugin(boost::shared_ptr<whi_rviz_plugins::BasePlugin> Plugin)
 {
 	task_plugin_ = Plugin;
+}
+
+void GoalsHandle::setBaselinkFrame(const std::string& Frame)
+{
+	baselink_frame_ = Frame;
 }
 
 bool GoalsHandle::metDistance(const geometry_msgs::Pose& Pose1, const geometry_msgs::Pose& Pose2, double Tolerance)
