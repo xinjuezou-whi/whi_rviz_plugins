@@ -499,19 +499,20 @@ namespace whi_rviz_plugins
 					// add to map
 					storeItem2Map(i, false);
 
-					const auto& taskFile = points[i]["task_file"];
-					if (taskFile)
+					if (plugins_map_[task_plugin_name_])
 					{
-						tasks_map_[ns][index] = taskFile.as<std::string>();
-						if (plugins_map_[task_plugin_name_])
+						auto btnTask = bindTaskPlugin(index);
+
+						const auto& taskFile = points[i]["task_file"];
+						if (taskFile)
 						{
-							auto btnTask = bindTaskPlugin(index);
-							if (btnTask && !tasks_map_[ns][index].empty())
-							{
-								plugins_map_[task_plugin_name_]->addTask(tasks_map_[ns][index]);
-								btnTask->setToolTip(tasks_map_[ns][index].c_str());
-								btnTask->setText("Remove");
-							}
+							tasks_map_[ns][index] = taskFile.as<std::string>();
+						}
+						if (btnTask && !tasks_map_[ns][index].empty())
+						{
+							plugins_map_[task_plugin_name_]->addTask(tasks_map_[ns][index]);
+							btnTask->setToolTip(tasks_map_[ns][index].c_str());
+							btnTask->setText("Remove");
 						}
 					}
 				}
