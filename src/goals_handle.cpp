@@ -331,10 +331,10 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 		{
 			if (int(point_span_) >= 0 || int(stop_span_) >= 0)
 			{
-				point_span_ = point_span_ < 1e-5 ? 0.1 : point_span_;
-				stop_span_ = stop_span_ < 1e-5 ? 0.1 : stop_span_;
+				double pointSpan = point_span_ < 0.0 ? 0.1 : point_span_;
+				double stopSpan = stop_span_ < 0.0 ? 0.1 : stop_span_;
 				bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
-				ros::Duration duration = isFinalOne ? ros::Duration(stop_span_) : ros::Duration(point_span_);
+				ros::Duration duration = isFinalOne ? ros::Duration(stopSpan) : ros::Duration(pointSpan);
 				non_realtime_loop_ = std::make_unique<ros::Timer>(
 					node_handle_->createTimer(duration,
 					std::bind(&GoalsHandle::callbackTimer, this, std::placeholders::_1)));
