@@ -79,6 +79,12 @@ void GoalsHandle::cancel()
 	goals_list_.clear();
 }
 
+void GoalsHandle::reset()
+{
+	// neutralize the active goal
+	active_goal_ = getCurrentPose();
+}
+
 void GoalsHandle::setLooping(bool Looping)
 {
 	looping_ = Looping;

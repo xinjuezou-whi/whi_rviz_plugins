@@ -215,6 +215,7 @@ namespace whi_rviz_plugins
 				poseVector.push_back(angles::to_degrees(getYawFromPose(poseList[i])));
 
 				ui_->tableWidget_waypoints->insertRow(i);
+				bindTaskPlugin(i);
 				fillWaypoint(i, false, &poseVector);
 			}
 			visualizeWaypoints(0);
@@ -435,6 +436,8 @@ namespace whi_rviz_plugins
 		ui_->groupBox_waypoints->setTitle(QString("Waypoints (") + QString::number(ui_->tableWidget_waypoints->rowCount())
 			+ QString(")"));
 
+		refreshTasksMap();
+
 		ui_->tableWidget_waypoints->setCurrentCell(highlightRow, 0);
 
 		visualizeWaypoints(highlightRow);
@@ -522,6 +525,11 @@ namespace whi_rviz_plugins
 				ui_->tableWidget_waypoints->setCurrentCell(0, 0);
 
 				visualizeWaypoints(0);
+
+				if (goals_map_[ns])
+				{
+					goals_map_[ns]->reset();
+				}
 			}
 
 			return true;
@@ -659,10 +667,9 @@ namespace whi_rviz_plugins
 	void WaypointsPanel::addWaypoint()
 	{
 		ui_->tableWidget_waypoints->insertRow(ui_->tableWidget_waypoints->rowCount());
-
 		bindTaskPlugin(ui_->tableWidget_waypoints->rowCount() - 1);
-
 		fillWaypoint(ui_->tableWidget_waypoints->rowCount() - 1, ui_->checkBox_current->isChecked());
+
 		// add to map
 		storeItem2Map(ui_->tableWidget_waypoints->rowCount() - 1, false);
 		ui_->groupBox_waypoints->setTitle(QString("Waypoints (") + QString::number(ui_->tableWidget_waypoints->rowCount())
@@ -674,10 +681,10 @@ namespace whi_rviz_plugins
 	void WaypointsPanel::insertWaypoint()
 	{
 		ui_->tableWidget_waypoints->insertRow(ui_->tableWidget_waypoints->currentRow());
-
 		bindTaskPlugin(ui_->tableWidget_waypoints->currentRow() - 1);
-
+		refreshTasksMap();
 		fillWaypoint(ui_->tableWidget_waypoints->currentRow() - 1, ui_->checkBox_current->isChecked());
+	
 		// add to map
 		storeItem2Map(ui_->tableWidget_waypoints->currentRow() - 1);
 		ui_->groupBox_waypoints->setTitle(QString("Waypoints (") + QString::number(ui_->tableWidget_waypoints->rowCount())
@@ -818,5 +825,15 @@ namespace whi_rviz_plugins
 		}
 
 		return nullptr;
+	}
+
+	void WaypointsPanel::refreshTasksMap()
+	{
+		for (int i = 0; i < ui_->tableWidget_waypoints->rowCount(); ++i)
+		{
+			auto widget = ui_->tableWidget_waypoints->cellWidget(i, 3);
+			auto btn = widget->layout()->itemAt(0)->widget();
+			tasks_map_[ui_->comboBox_ns->currentText().toStdString()][i] = btn->toolTip().toStdString();
+		}
 	}
 } // end namespace whi_rviz_plugins

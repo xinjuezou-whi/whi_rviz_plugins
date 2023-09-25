@@ -51,6 +51,7 @@ public:
 	bool execute(const std::vector<geometry_msgs::Pose>& Waypoints, const std::map<int, std::string>& Tasks,
 		double PointSpan, double StopSpan, bool Loop = false);
 	void cancel();
+	void reset();
 	void setLooping(bool Looping);
 	void setPointSpan(double Span);
 	void setStopSpan(double Span);

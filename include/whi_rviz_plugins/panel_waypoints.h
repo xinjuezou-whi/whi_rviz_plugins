@@ -77,6 +77,7 @@ namespace whi_rviz_plugins
 		bool loadPlugin(const std::string& Config);
 		bool createTaskPlugin(const YAML::Node& Node);
 		QPushButton* bindTaskPlugin(int Row);
+		void refreshTasksMap();
 
 	private:
 		Ui::NaviWaypoints* ui_{ nullptr };
