@@ -75,6 +75,8 @@ bool GoalsHandle::execute(const std::vector<geometry_msgs::Pose>& Waypoints, con
 
 void GoalsHandle::cancel()
 {
+	task_plugin_->abort();
+
 	cancelGoal();
 	goals_list_.clear();
 }
@@ -252,9 +254,9 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 			if (dist < tolerance)
 			{
 				setGoal(std::get<0>(goals_list_.front()));
-				updateStateInfo(isFinalOne);
+				updateStateInfo();
 
-				std::cout << "tolerace reached, proceeding the next. remained goals " << goals_list_.size() << "  " << tolerance << std::endl;
+				std::cout << "tolerance reached, proceeding the next. remained goals " << goals_list_.size() << "  " << tolerance << std::endl;
 			}
 		}
 	}
@@ -269,13 +271,14 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 	}
 }
 
-void GoalsHandle::updateStateInfo(bool IsFinalOne)
+void GoalsHandle::updateStateInfo()
 {
 	if (func_execution_state_)
 	{
 		if (looping_)
 		{
-			if (IsFinalOne)
+			// is final one?
+			if (metDistance(active_goal_, final_goal_, 1e-3))
 			{
 				std::shared_ptr<std::string> info = std::make_shared<std::string>(
 					std::to_string(++loop_count_) + (loop_count_ > 1 ? " loops proceed" : " loop proceed"));
@@ -301,6 +304,7 @@ void GoalsHandle::subCallbackMapData(const nav_msgs::MapMetaData::ConstPtr& MapD
 void GoalsHandle::subCallbackCmdVel(const geometry_msgs::Twist::ConstPtr& CmdVel)
 {
 	current_linear_ = CmdVel->linear.x;
+	current_angular_ = CmdVel->angular.z;
 }
 
 void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State, const move_base_msgs::MoveBaseResultConstPtr& Result)
@@ -308,43 +312,34 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 #ifdef DEBUG
 	std::cout << "goal state " << std::to_string(State.state_) << " goal left " << goals_list_.size() << std::endl;
 #endif
-	if (goals_list_.empty())
+	if (active_goal_task_.empty())
 	{
-		// execute task if there is
-		if (movebase_client_->getState().state_ == actionlib::SimpleClientGoalState::SUCCEEDED &&
-			!active_goal_task_.empty())
-		{
-			if (task_plugin_)
-			{
-				task_plugin_->process(active_goal_task_);
-			}
-		}
-		// then set finish state
-		if (func_execution_state_)
-		{
-			func_execution_state_(STA_DONE, nullptr);
-		}
+		double pointSpan = point_span_ < 0.0 ? 0.1 : point_span_;
+		double stopSpan = stop_span_ < 0.0 ? 0.1 : stop_span_;
+		bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
+		ros::Duration duration = isFinalOne ? ros::Duration(stopSpan) : ros::Duration(pointSpan);
+		non_realtime_loop_ = std::make_unique<ros::Timer>(
+			node_handle_->createTimer(duration,
+			std::bind(&GoalsHandle::callbackTimer, this, std::placeholders::_1)));
 	}
 	else
 	{
-		if (active_goal_task_.empty())
-		{
-			if (int(point_span_) >= 0 || int(stop_span_) >= 0)
-			{
-				double pointSpan = point_span_ < 0.0 ? 0.1 : point_span_;
-				double stopSpan = stop_span_ < 0.0 ? 0.1 : stop_span_;
-				bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
-				ros::Duration duration = isFinalOne ? ros::Duration(stopSpan) : ros::Duration(pointSpan);
-				non_realtime_loop_ = std::make_unique<ros::Timer>(
-					node_handle_->createTimer(duration,
-					std::bind(&GoalsHandle::callbackTimer, this, std::placeholders::_1)));
-			}
-		}
-		else
+		if (movebase_client_->getState().state_ == actionlib::SimpleClientGoalState::SUCCEEDED &&
+			metDistance(active_goal_, getCurrentPose(), 0.2))
 		{
 			// execute task then to approach the next waypoint
 			// IMPORTANT: DO NOT CALL ACTION in its own callback
 			std::thread{ &GoalsHandle::executeTask, this }.detach();
+		}
+
+		updateStateInfo();
+		if (goals_list_.empty())
+		{
+			// set finish state
+			if (func_execution_state_)
+			{
+				func_execution_state_(STA_DONE, nullptr);
+			}
 		}
 	}
 }
@@ -381,7 +376,16 @@ void GoalsHandle::callbackTimer(const ros::TimerEvent& Event)
 	if (!goals_list_.empty())
 	{
 		setGoal(std::get<0>(goals_list_.front()));
-		std::cout << "span timeout, proceeding the next" << std::endl;	
+		updateStateInfo();
+		std::cout << "span timeout, proceeding the next" << std::endl;
+	}
+	else
+	{
+		// set finish state
+		if (func_execution_state_)
+		{
+			func_execution_state_(STA_DONE, nullptr);
+		}
 	}
 
 	non_realtime_loop_->stop();
@@ -417,12 +421,32 @@ void GoalsHandle::executeTask()
 {
 	if (task_plugin_)
 	{
-		task_plugin_->process(active_goal_task_);
+		double delta = headingDelta();
+		task_plugin_->process(active_goal_task_, &delta);
 	}
 	if (!goals_list_.empty())
 	{
 		setGoal(std::get<0>(goals_list_.front()));
+		std::cout << "task executed, proceeding the next" << std::endl;
 	}
+}
+
+double GoalsHandle::headingDelta()
+{
+	auto current = getCurrentPose();
+    tf2::Quaternion curQ(current.orientation.x, current.orientation.y, current.orientation.z,
+		current.orientation.w);
+    double curRoll = 0.0, curPitch = 0.0, curYaw = 0.0;
+	tf2::Matrix3x3(curQ).getRPY(curRoll, curPitch, curYaw);
+
+	tf2::Quaternion goalQ(active_goal_.orientation.x, active_goal_.orientation.y, active_goal_.orientation.z,
+		active_goal_.orientation.w);
+    double goalRoll = 0.0, goalPitch = 0.0, goalYaw = 0.0;
+	tf2::Matrix3x3(goalQ).getRPY(goalRoll, goalPitch, goalYaw);
+
+	double delta = curYaw - goalYaw;
+	delta = fabs(delta) > M_PI ? delta - 2.0 * M_PI : delta;
+	return delta;
 }
 
 void GoalsHandle::setTaskPlugin(boost::shared_ptr<whi_rviz_plugins::BasePlugin> Plugin)

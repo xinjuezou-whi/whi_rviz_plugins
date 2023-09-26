@@ -73,7 +73,7 @@ private:
 	geometry_msgs::TransformStamped listenTf(const std::string& DstFrame, const std::string& SrcFrame,
         const ros::Time& Time);
 	void handleGoalAndState(const geometry_msgs::Pose& Pose);
-	void updateStateInfo(bool IsFinalOne);
+	void updateStateInfo();
 	void subCallbackPlanPath(const nav_msgs::Path::ConstPtr& PlanPath);
 	void subCallbackMapData(const nav_msgs::MapMetaData::ConstPtr& MapData);
 	void subCallbackCmdVel(const geometry_msgs::Twist::ConstPtr& CmdVel);
@@ -83,6 +83,7 @@ private:
 	void callbackTimer(const ros::TimerEvent& Event);
 	int findBeginIndex(const std::vector<geometry_msgs::Pose>& Waypoints);
 	void executeTask();
+	double headingDelta();
 
 private:
 	static bool metDistance(const geometry_msgs::Pose& Pose1, const geometry_msgs::Pose& Pose2, double Tolerance);
@@ -105,6 +106,7 @@ private:
 	double point_span_{ 0.3 };
 	double stop_span_{ 0.3 };
 	double current_linear_{ 0.0001 };
+	double current_angular_{ 0.0 };
 	std::unique_ptr<ros::Timer> non_realtime_loop_{ nullptr };
 	bool map_received_{ false };
 	// subscriber
