@@ -9,6 +9,7 @@ tasks_plugin:
   depth_multiplier: 1.0
   locating_duration: 1200 # ms
   locating_tolerance: 0.003 # m
-  acc_threshold: 0.9
+  locating_velocity_scale: 1.0
+  locating_acceleration_scale: 0.5
   exception_pose_group: ready
   state_topic: actuator_state
