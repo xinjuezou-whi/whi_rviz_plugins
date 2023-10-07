@@ -51,7 +51,7 @@ namespace whi_rviz_plugins
         setIndicatorIcon(ui_->label_indicator_7, INDICATOR_GREY);
         setIndicatorIcon(ui_->label_indicator_8, INDICATOR_GREY);
         setIndicatorText(ui_->label_indicator_cap_1, "inactve");
-        setIndicatorText(ui_->label_indicator_cap_2, "reserved");
+        setIndicatorText(ui_->label_indicator_cap_2, "task");
         setIndicatorText(ui_->label_indicator_cap_3, "reserved");
         setIndicatorText(ui_->label_indicator_cap_4, "reserved");
         setIndicatorText(ui_->label_indicator_cap_5, "reserved");
@@ -67,8 +67,8 @@ namespace whi_rviz_plugins
 
     void StatePanel::setVelocities(double Linear, double Angular)
     {
-        ui_->label_linear->setText(QString::number(Linear, 'g', 2));
-        ui_->label_angular->setText(QString::number(Angular, 'g', 2));
+        ui_->label_linear->setText(QString::number(Linear, 'f', 2));
+        ui_->label_angular->setText(QString::number(Angular, 'f', 2));
     }
 
     void StatePanel::setGoal(const geometry_msgs::Pose& Goal)
@@ -78,8 +78,8 @@ namespace whi_rviz_plugins
   		tf2::Matrix3x3(quaternion).getRPY(roll, pitch, yaw);
 
         QString goal;
-        goal = "x: " + QString::number(Goal.position.x, 'g', 2) + ", y:" + QString::number(Goal.position.y, 'g', 2) +
-            ", yaw: " + QString::number(angles::to_degrees(yaw), 'g', 2);
+        goal = "x: " + QString::number(Goal.position.x, 'f', 2) + ", y:" + QString::number(Goal.position.y, 'f', 2) +
+            ", yaw: " + QString::number(angles::to_degrees(yaw), 'f', 2);
         ui_->label_goal->setText(goal);
     }
 
@@ -94,6 +94,20 @@ namespace whi_rviz_plugins
         {
             setIndicatorIcon(ui_->label_indicator_1, INDICATOR_GREEN);
             setIndicatorText(ui_->label_indicator_cap_1, "standby");
+            setIndicatorIcon(ui_->label_indicator_2, INDICATOR_GREY);
+            setIndicatorText(ui_->label_indicator_cap_2, "task");
+        }
+        else if (State == whi_interfaces::WhiMotionState::STA_RUNNING)
+        {
+            setIndicatorIcon(ui_->label_indicator_1, INDICATOR_YELLOW);
+            setIndicatorText(ui_->label_indicator_cap_1, "running");
+            setIndicatorIcon(ui_->label_indicator_2, INDICATOR_GREY);
+            setIndicatorText(ui_->label_indicator_cap_2, "task");
+        }
+        else if (State == whi_interfaces::WhiMotionState::STA_OPERATING)
+        {
+            setIndicatorIcon(ui_->label_indicator_2, INDICATOR_YELLOW);
+            setIndicatorText(ui_->label_indicator_cap_2, "operating");
         }
         else if (State == whi_interfaces::WhiMotionState::STA_FAULT)
         {

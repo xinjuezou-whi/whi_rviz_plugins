@@ -9,7 +9,7 @@ Features:
 
 Written by Xinjue Zou, xinjue.zou@outlook.com
 
-GNU General Public License, check LICENSE for more information.
+Apache License Version 2.0, check LICENSE for more information.
 All text above must be included in any redistribution.
 
 Changelog:
@@ -31,8 +31,9 @@ Changelog:
 // forward declaration
 namespace rviz
 {
-    class StringProperty;
 	class RosTopicProperty;
+	class TfFrameProperty;
+	class FrameManager;
 }
 
 namespace whi_rviz_plugins
@@ -80,7 +81,8 @@ namespace whi_rviz_plugins
 		rviz::RosTopicProperty* odom_topic_property_;
         rviz::RosTopicProperty* goal_topic_property_;
         rviz::RosTopicProperty* motion_state_topic_property_;
-		rviz::StringProperty* frame_baselink_property_;
+		rviz::TfFrameProperty* frame_property_;
+		std::shared_ptr<rviz::FrameManager> frame_manager_{ nullptr };
         // subscriber
         std::unique_ptr<ros::Subscriber> sub_odom_{ nullptr };
         std::unique_ptr<ros::Subscriber> sub_goal_{ nullptr };

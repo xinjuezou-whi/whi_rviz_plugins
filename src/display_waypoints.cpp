@@ -7,7 +7,7 @@ Features:
 
 Written by Xinjue Zou, xinjue.zou@outlook.com
 
-GNU General Public License, check LICENSE for more information.
+Apache License Version 2.0, check LICENSE for more information.
 All text above must be included in any redistribution.
 
 ******************************************************************/
@@ -50,13 +50,13 @@ namespace whi_rviz_plugins
         QStringList sourceList = { "Local", "Remote" };
         mode_property_ = new rviz::EnumProperty("Mode", sourceList[0], "Options of running mode",
             this, SLOT(updateMode()));
-        frame_manager_ = std::make_shared<rviz::FrameManager>();
-        frame_property_ = new rviz::TfFrameProperty("base_frame", "base_link", "Base link frame of robot",
-            this, frame_manager_.get(), false, SLOT(updateBaselinkFrame()));
         for (int i = 0; i < sourceList.size(); ++i)
         {
             mode_property_->addOption(sourceList[i], i);
         }
+        frame_manager_ = std::make_shared<rviz::FrameManager>();
+        frame_property_ = new rviz::TfFrameProperty("base_frame", "base_link", "Base link frame of robot",
+            this, frame_manager_.get(), false, SLOT(updateBaselinkFrame()));
     }
 
     WaypointsDisplay::~WaypointsDisplay()

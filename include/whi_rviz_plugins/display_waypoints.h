@@ -7,7 +7,7 @@ Features:
 
 Written by Xinjue Zou, xinjue.zou@outlook.com
 
-GNU General Public License, check LICENSE for more information.
+Apache License Version 2.0, check LICENSE for more information.
 All text above must be included in any redistribution.
 
 Changelog:
@@ -33,8 +33,8 @@ namespace rviz
     class BoolProperty;
     class EnumProperty;
     class TfFrameProperty;
-    class MovableText;
     class FrameManager;
+    class MovableText;
 }
 
 namespace whi_rviz_plugins

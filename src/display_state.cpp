@@ -9,7 +9,7 @@ Features:
 
 Written by Xinjue Zou, xinjue.zou@outlook.com
 
-GNU General Public License, check LICENSE for more information.
+Apache License Version 2.0, check LICENSE for more information.
 All text above must be included in any redistribution.
 
 ******************************************************************/
@@ -19,8 +19,9 @@ All text above must be included in any redistribution.
 #include <rviz/display_context.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
-#include <rviz/properties/string_property.h>
 #include <rviz/properties/ros_topic_property.h>
+#include <rviz/properties/tf_frame_property.h>
+#include <rviz/frame_manager.h>
 #include <pluginlib/class_list_macros.h>
 
 namespace whi_rviz_plugins
@@ -38,7 +39,7 @@ namespace whi_rviz_plugins
         : Display()
         , node_handle_(std::make_unique<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for motion state VERSION 00.01.2" << std::endl;
+        std::cout << "\nWHI RViz plugin for motion state VERSION 00.02.0" << std::endl;
         std::cout << "Copyright @ 2023-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         tf_listener_ = std::make_unique<tf2_ros::TransformListener>(buffer_);
@@ -52,9 +53,9 @@ namespace whi_rviz_plugins
         motion_state_topic_property_ = new rviz::RosTopicProperty("Motion state topic", "motion_state",
             "whi_interfaces/WhiMotionState", "Topic of motion state",
             this, SLOT(updateMotionStateTopic()));
-        frame_baselink_property_ = new rviz::StringProperty("baselink frame", "base_link",
-            "Frame of base_link",
-            this, SLOT(updateGoalTopic()));
+        frame_manager_ = std::make_shared<rviz::FrameManager>();
+        frame_property_ = new rviz::TfFrameProperty("base_frame", "base_link", "Base link frame of robot",
+            this, frame_manager_.get(), false, SLOT(updateBaselinkFrame()));
     }
 
     DisplayState::~DisplayState()
@@ -86,16 +87,17 @@ namespace whi_rviz_plugins
 
     void DisplayState::update(const ros::TimerEvent& Event)
     {
-        if (fabs(velocities_.first) > 0.0 || fabs(velocities_.second) > 0.0)
+        std::string etaStr("no info");
+        if (fabs(velocities_.first) > 1e-4 || fabs(velocities_.second) > 1e-4)
         {
-            auto tfBase2Map = listenTf("map", frame_baselink_property_->getString().toStdString(), ros::Time(0));
+            auto tfBase2Map = listenTf("map", frame_property_->getFrame().toStdString(), ros::Time(0));
             geometry_msgs::Pose baselink;
             baselink.position.x = tfBase2Map.transform.translation.x;
             baselink.position.y = tfBase2Map.transform.translation.y;
             double dist = distance(baselink, goal_);
-            std::string etaStr = dist < 0.1 ? "arrived" : "in " + toStringWithPrecision(dist / velocities_.first, 2);
-            panel_->setEta(etaStr);
+            etaStr = dist < 0.1 ? "arrived" : "in " + toStringWithPrecision(dist / fabs(velocities_.first), 2);
         }
+        panel_->setEta(etaStr);
     }
 
     geometry_msgs::TransformStamped DisplayState::listenTf(const std::string& DstFrame, const std::string& SrcFrame,
@@ -103,12 +105,24 @@ namespace whi_rviz_plugins
     {
         try
         {
-            return buffer_.lookupTransform(DstFrame, SrcFrame, Time, ros::Duration(1.0));
+            if (buffer_.canTransform(DstFrame, SrcFrame, Time, ros::Duration(1.0)))
+            {
+                return buffer_.lookupTransform(DstFrame, SrcFrame, Time, ros::Duration(1.0));
+            }
+            else
+            {
+				auto pose = geometry_msgs::TransformStamped();
+				pose.transform.rotation.w = 1.0;
+                return pose;
+            }
         }
         catch (tf2::TransformException &e)
         {
             ROS_ERROR("%s", e.what());
-            return geometry_msgs::TransformStamped();
+
+			auto pose = geometry_msgs::TransformStamped();
+			pose.transform.rotation.w = 1.0;
+            return pose;
         }
     }
 
