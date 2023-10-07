@@ -7,9 +7,5 @@ tasks_plugin:
   pixel_size: 0.000003 # m
   focal_length: 0.00193 # m
   depth_multiplier: 1.0
-  locating_duration: 1200 # ms
-  locating_tolerance: 0.003 # m
-  locating_velocity_scale: 1.0
-  locating_acceleration_scale: 0.5
   exception_pose_group: ready
   state_topic: actuator_state
