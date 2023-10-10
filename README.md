@@ -1,5 +1,5 @@
 # whi_rviz_plugins
-Rviz plugins package for handling custom info. currently there are serveral plugins:
+Rviz plugins package for handling custom info and operations. currently there are serveral plugins:
 - [Battery](#battery)
 - [Navi_waypoints](#navi_waypoints)
 - [Teleop](#teleop)
