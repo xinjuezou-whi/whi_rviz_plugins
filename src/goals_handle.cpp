@@ -64,6 +64,12 @@ bool GoalsHandle::execute(const std::vector<geometry_msgs::Pose>& Waypoints, con
 
 	if (!goals_list_.empty())
 	{
+		if (non_realtime_loop_)
+		{
+			non_realtime_loop_->stop();
+			non_realtime_loop_ = nullptr;
+		}
+
 		final_goal_ = std::get<0>(goals_list_.back());
 		return setGoal(std::get<0>(goals_list_.front()));
 	}
@@ -421,8 +427,8 @@ void GoalsHandle::executeTask()
 {
 	if (task_plugin_)
 	{
-		double delta = headingDelta();
-		task_plugin_->process(active_goal_task_, &delta);
+		auto delta = locationDelta();
+		task_plugin_->process(active_goal_task_, delta.data(), delta.size());
 	}
 	if (!goals_list_.empty())
 	{
@@ -431,7 +437,7 @@ void GoalsHandle::executeTask()
 	}
 }
 
-double GoalsHandle::headingDelta()
+std::array<double, 3> GoalsHandle::locationDelta()
 {
 	auto current = getCurrentPose();
     tf2::Quaternion curQ(current.orientation.x, current.orientation.y, current.orientation.z,
@@ -444,8 +450,12 @@ double GoalsHandle::headingDelta()
     double goalRoll = 0.0, goalPitch = 0.0, goalYaw = 0.0;
 	tf2::Matrix3x3(goalQ).getRPY(goalRoll, goalPitch, goalYaw);
 
-	double delta = curYaw - goalYaw;
-	delta = fabs(delta) > M_PI ? delta - 2.0 * M_PI : delta;
+	std::array<double, 3> delta;
+	delta[0] = curYaw - goalYaw;
+	delta[0] = fabs(delta[0]) > M_PI ? delta[0] - 2.0 * M_PI : delta[0];
+	delta[1] = current.position.x - active_goal_.position.x;
+	delta[2] = current.position.y - active_goal_.position.y;
+
 	return delta;
 }
 

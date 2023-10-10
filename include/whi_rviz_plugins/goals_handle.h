@@ -83,7 +83,7 @@ private:
 	void callbackTimer(const ros::TimerEvent& Event);
 	int findBeginIndex(const std::vector<geometry_msgs::Pose>& Waypoints);
 	void executeTask();
-	double headingDelta();
+	std::array<double, 3> locationDelta();
 
 private:
 	static bool metDistance(const geometry_msgs::Pose& Pose1, const geometry_msgs::Pose& Pose2, double Tolerance);

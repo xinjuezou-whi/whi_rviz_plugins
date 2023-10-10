@@ -28,7 +28,7 @@ namespace whi_rviz_plugins
 
     public:
         virtual void initialize(const YAML::Node& Node) = 0;
-        virtual void process(const std::string& Task, void* Data = nullptr) = 0;
+        virtual void process(const std::string& Task, void* Data = nullptr, std::size_t Len = 0) = 0;
         virtual bool addTask(const std::string& Task) = 0;
         virtual void abort() = 0;
     };
