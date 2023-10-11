@@ -276,6 +276,17 @@ namespace whi_rviz_plugins
 		}
 	}
 
+	void WaypointsPanel::setStuckTimeout(double Timeout)
+	{
+		for (auto& it : goals_map_)
+		{
+			if (it.second)
+			{
+				it.second->setStuckTimeout(Timeout);
+			}
+		}
+	}
+
 	void WaypointsPanel::configureNs(const std::string& Namespace)
 	{
 		if (pre_ns_ != Namespace)
@@ -319,16 +330,18 @@ namespace whi_rviz_plugins
 		}
 		else
 		{
+			int colCount = plugins_map_[task_plugin_name_] ?
+				ui_->tableWidget_waypoints->columnCount() - 1 : ui_->tableWidget_waypoints->columnCount();
 			if (Point)
 			{
-				for (int i = 0; i < std::min(ui_->tableWidget_waypoints->columnCount(), int(Point->size())); ++i)
+				for (int i = 0; i < std::min(colCount, int(Point->size())); ++i)
 				{
 					ui_->tableWidget_waypoints->setItem(RowIndex, i, new QTableWidgetItem(std::to_string(Point->at(i)).c_str()));
 				}
 			}
 			else
 			{
-				for (int i = 0; i < ui_->tableWidget_waypoints->columnCount(); ++i)
+				for (int i = 0; i < colCount; ++i)
 				{
 					ui_->tableWidget_waypoints->setItem(RowIndex, i, new QTableWidgetItem("0.0"));
 				}

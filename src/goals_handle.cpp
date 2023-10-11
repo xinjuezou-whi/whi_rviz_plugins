@@ -193,6 +193,8 @@ bool GoalsHandle::setGoal(const geometry_msgs::Pose& Goal)
 	goalMsg.target_pose.header.stamp = ros::Time::now();
 	goalMsg.target_pose.pose = Goal;
 
+	state_last_ = ros::Time::now();
+
 	movebase_client_->sendGoal(goalMsg,
 		std::bind(&GoalsHandle::callbackGoalDone, this, std::placeholders::_1, std::placeholders::_2),
 		std::bind(&GoalsHandle::callbackGoalActive, this),
@@ -235,20 +237,61 @@ geometry_msgs::TransformStamped GoalsHandle::listenTf(const std::string& DstFram
 
 void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 {
+	ros::Time current = ros::Time::now();
 	double dist = distance(Pose, active_goal_);
-	if (goals_list_.empty())
+
+	if (isStill())
 	{
-		if (dist < 0.2)
+		if ((current - state_last_).toSec() > stuck_timeout_)
 		{
-			if (func_execution_state_)
+			if (goals_list_.empty())
 			{
-				func_execution_state_(STA_DONE, nullptr);
+				if (active_goal_task_.empty())
+				{
+					if (func_execution_state_)
+					{
+						func_execution_state_(STA_DONE, nullptr);
+					}
+					if (func_eta_)
+					{
+						func_eta_(active_goal_, -1.0);
+					}
+					std::cout << "all goals traversed. remained goals " << goals_list_.size() << std::endl;
+				}
+				else
+				{
+					if (!state_task_)
+					{
+						// execute task then to approach the next waypoint
+						// IMPORTANT: DO NOT CALL ACTION in its own callback
+						std::thread{ &GoalsHandle::executeTask, this }.detach();
+					}
+				}
 			}
-			if (func_eta_)
+			else
 			{
-				func_eta_(active_goal_, -1.0);
+				if (active_goal_task_.empty())
+				{
+					bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
+					double span = isFinalOne ? -stop_span_ : -point_span_;
+					if (span < stuck_timeout_)
+					{
+						setGoal(std::get<0>(goals_list_.front()));
+						updateStateInfo();
+
+						std::cout << "break from stuck. remained goals " << goals_list_.size() << std::endl;
+					}
+				}
+				else
+				{
+					if (!state_task_)
+					{
+						// execute task then to approach the next waypoint
+						// IMPORTANT: DO NOT CALL ACTION in its own callback
+						std::thread{ &GoalsHandle::executeTask, this }.detach();
+					}
+				}	
 			}
-			std::cout << "all goals traversed. remained goals " << goals_list_.size() << std::endl;
 		}
 	}
 	else
@@ -265,6 +308,8 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 				std::cout << "tolerance reached, proceeding the next. remained goals " << goals_list_.size() << "  " << tolerance << std::endl;
 			}
 		}
+
+		state_last_ = current;
 	}
 
 	// eta info shows during running state
@@ -425,6 +470,8 @@ int GoalsHandle::findBeginIndex(const std::vector<geometry_msgs::Pose>& Waypoint
 
 void GoalsHandle::executeTask()
 {
+	state_task_ = true;
+
 	if (task_plugin_)
 	{
 		auto delta = locationDelta();
@@ -435,6 +482,12 @@ void GoalsHandle::executeTask()
 		setGoal(std::get<0>(goals_list_.front()));
 		std::cout << "task executed, proceeding the next" << std::endl;
 	}
+	else
+	{
+		cancelGoal();
+	}
+
+	state_task_ = false;
 }
 
 std::array<double, 3> GoalsHandle::locationDelta()
@@ -459,6 +512,11 @@ std::array<double, 3> GoalsHandle::locationDelta()
 	return delta;
 }
 
+bool GoalsHandle::isStill() const
+{
+	return fabs(current_linear_) < 1e-4 && fabs(current_angular_) < 1e-4;
+}
+
 void GoalsHandle::setTaskPlugin(boost::shared_ptr<whi_rviz_plugins::BasePlugin> Plugin)
 {
 	task_plugin_ = Plugin;
@@ -467,6 +525,11 @@ void GoalsHandle::setTaskPlugin(boost::shared_ptr<whi_rviz_plugins::BasePlugin> 
 void GoalsHandle::setBaselinkFrame(const std::string& Frame)
 {
 	baselink_frame_ = Frame;
+}
+
+void GoalsHandle::setStuckTimeout(double Timeout)
+{
+	stuck_timeout_ = Timeout;
 }
 
 bool GoalsHandle::metDistance(const geometry_msgs::Pose& Pose1, const geometry_msgs::Pose& Pose2, double Tolerance)

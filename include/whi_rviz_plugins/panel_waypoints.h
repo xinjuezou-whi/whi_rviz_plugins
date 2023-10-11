@@ -53,6 +53,7 @@ namespace whi_rviz_plugins
 		void updateWaypoint(int Index, const geometry_msgs::Pose& Pose);
 		void updateHeight(double Height);
 		void setBaselinkFrame(const std::string& Frame);
+		void setStuckTimeout(double Timeout);
 
 	private:
 		void configureNs(const std::string& Namespace);

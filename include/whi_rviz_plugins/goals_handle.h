@@ -64,6 +64,7 @@ public:
 	bool isMapReceived();
 	void setTaskPlugin(boost::shared_ptr<whi_rviz_plugins::BasePlugin> Plugin);
 	void setBaselinkFrame(const std::string& Frame);
+	void setStuckTimeout(double Timeout);
 
 private:
 	void setNamespace(const std::string& Namespace);
@@ -84,6 +85,7 @@ private:
 	int findBeginIndex(const std::vector<geometry_msgs::Pose>& Waypoints);
 	void executeTask();
 	std::array<double, 3> locationDelta();
+	bool isStill() const;
 
 private:
 	static bool metDistance(const geometry_msgs::Pose& Pose1, const geometry_msgs::Pose& Pose2, double Tolerance);
@@ -119,4 +121,7 @@ private:
 	int loop_count_{ 0 };
 	boost::shared_ptr<whi_rviz_plugins::BasePlugin> task_plugin_{ nullptr };
 	std::string baselink_frame_{ "base_link" };
+	ros::Time state_last_;
+	bool state_task_{ false };
+	double stuck_timeout_{ 10.0 };
 };

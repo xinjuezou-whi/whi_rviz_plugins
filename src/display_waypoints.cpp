@@ -32,7 +32,7 @@ namespace whi_rviz_plugins
     WaypointsDisplay::WaypointsDisplay()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.21.1" << std::endl;
+        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.21.3" << std::endl;
         std::cout << "Copyright @ 2022-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         marker_size_property_ = new rviz::FloatProperty("Marker Size", 1.0, "Arrow size of waypoint mark.",
@@ -57,6 +57,8 @@ namespace whi_rviz_plugins
         frame_manager_ = std::make_shared<rviz::FrameManager>();
         frame_property_ = new rviz::TfFrameProperty("base_frame", "base_link", "Base link frame of robot",
             this, frame_manager_.get(), false, SLOT(updateBaselinkFrame()));
+        stuck_timeout_property_ = new rviz::FloatProperty("Stuck timeout(s)", 10.0, "Timeout for break robot from stuck",
+            this, SLOT(updateStuckTimeout()));
     }
 
     WaypointsDisplay::~WaypointsDisplay()
@@ -221,6 +223,11 @@ namespace whi_rviz_plugins
     void WaypointsDisplay::updateBaselinkFrame()
     {
         panel_->setBaselinkFrame(frame_property_->getFrame().toStdString());
+    }
+
+    void WaypointsDisplay::updateStuckTimeout()
+    {
+        panel_->setStuckTimeout(stuck_timeout_property_->getFloat());
     }
 
     void WaypointsDisplay::addPositionControl(visualization_msgs::InteractiveMarker& IntMarker, bool OrientationFixed)
