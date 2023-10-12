@@ -264,7 +264,7 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 					{
 						// execute task then to approach the next waypoint
 						// IMPORTANT: DO NOT CALL ACTION in its own callback
-						std::thread{ &GoalsHandle::executeTask, this }.detach();
+						std::thread{ &GoalsHandle::executeTask, this, true }.detach();
 					}
 				}
 			}
@@ -288,7 +288,7 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 					{
 						// execute task then to approach the next waypoint
 						// IMPORTANT: DO NOT CALL ACTION in its own callback
-						std::thread{ &GoalsHandle::executeTask, this }.detach();
+						std::thread{ &GoalsHandle::executeTask, this, true }.detach();
 					}
 				}	
 			}
@@ -380,7 +380,7 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 		{
 			// execute task then to approach the next waypoint
 			// IMPORTANT: DO NOT CALL ACTION in its own callback
-			std::thread{ &GoalsHandle::executeTask, this }.detach();
+			std::thread{ &GoalsHandle::executeTask, this, false }.detach();
 		}
 
 		updateStateInfo();
@@ -468,8 +468,13 @@ int GoalsHandle::findBeginIndex(const std::vector<geometry_msgs::Pose>& Waypoint
 	return beginIndex;
 }
 
-void GoalsHandle::executeTask()
+void GoalsHandle::executeTask(bool ForceClean/* = false*/)
 {
+	if (ForceClean)
+	{
+		cancelGoal();
+	}
+
 	state_task_ = true;
 
 	if (task_plugin_)
@@ -481,10 +486,6 @@ void GoalsHandle::executeTask()
 	{
 		setGoal(std::get<0>(goals_list_.front()));
 		std::cout << "task executed, proceeding the next" << std::endl;
-	}
-	else
-	{
-		cancelGoal();
 	}
 
 	state_task_ = false;

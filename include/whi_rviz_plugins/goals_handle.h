@@ -83,7 +83,7 @@ private:
 	void callbackGoalFeedback(const move_base_msgs::MoveBaseFeedbackConstPtr& Feedback);
 	void callbackTimer(const ros::TimerEvent& Event);
 	int findBeginIndex(const std::vector<geometry_msgs::Pose>& Waypoints);
-	void executeTask();
+	void executeTask(bool ForceClean = false);
 	std::array<double, 3> locationDelta();
 	bool isStill() const;
 
