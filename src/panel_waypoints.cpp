@@ -278,11 +278,12 @@ namespace whi_rviz_plugins
 
 	void WaypointsPanel::setStuckTimeout(double Timeout)
 	{
+		stuck_timeout_ = Timeout;
 		for (auto& it : goals_map_)
 		{
 			if (it.second)
 			{
-				it.second->setStuckTimeout(Timeout);
+				it.second->setStuckTimeout(stuck_timeout_);
 			}
 		}
 	}
@@ -303,6 +304,7 @@ namespace whi_rviz_plugins
 		{
 			goals_map_[Namespace] = std::make_unique<GoalsHandle>(Namespace, is_remote_);
 			goals_map_[Namespace]->setBaselinkFrame(baselink_frame_);
+			goals_map_[Namespace]->setStuckTimeout(stuck_timeout_);
 		}
 		else
 		{

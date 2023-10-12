@@ -96,5 +96,6 @@ namespace whi_rviz_plugins
 		std::unique_ptr<pluginlib::ClassLoader<BasePlugin>> plugin_loader_{ nullptr };
 		std::string task_plugin_name_;
 		std::string baselink_frame_{ "base_link" };
+		double stuck_timeout_{ 10.0 };
 	};
 } // end namespace whi_rviz_plugins
