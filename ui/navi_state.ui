@@ -25,7 +25,7 @@
            <item>
             <widget class="QLabel" name="label">
              <property name="text">
-              <string>Linear (mm/s):</string>
+              <string>Linear (m/s):</string>
              </property>
             </widget>
            </item>
