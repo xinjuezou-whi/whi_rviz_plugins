@@ -65,11 +65,12 @@ public:
 	void setTaskPlugin(boost::shared_ptr<whi_rviz_plugins::BasePlugin> Plugin);
 	void setBaselinkFrame(const std::string& Frame);
 	void setStuckTimeout(double Timeout);
+	void setRecoveryMaxTryCount(int Count);
 
 private:
 	void setNamespace(const std::string& Namespace);
 	void init(bool IsRemote = false);
-	bool setGoal(const geometry_msgs::Pose& Goal, bool Recover = false);
+	bool setGoal(const geometry_msgs::Pose& Goal, bool Recovery = false);
 	void cancelGoal() const;
 	geometry_msgs::TransformStamped listenTf(const std::string& DstFrame, const std::string& SrcFrame,
         const ros::Time& Time);
@@ -124,5 +125,7 @@ private:
 	ros::Time state_last_;
 	bool state_task_{ false };
 	double stuck_timeout_{ 10.0 };
-	double stuck_relocate_count_{ 3 };
+	int stuck_relocate_count_{ 3 };
+	int recovery_max_try_count_{ 3 };
+	bool is_recovery_{ false };
 };

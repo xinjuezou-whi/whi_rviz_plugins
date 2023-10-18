@@ -54,6 +54,7 @@ namespace whi_rviz_plugins
 		void updateHeight(double Height);
 		void setBaselinkFrame(const std::string& Frame);
 		void setStuckTimeout(double Timeout);
+		void setRecoveryMaxTryCount(int Count);
 
 	private:
 		void configureNs(const std::string& Namespace);
@@ -97,5 +98,6 @@ namespace whi_rviz_plugins
 		std::string task_plugin_name_;
 		std::string baselink_frame_{ "base_link" };
 		double stuck_timeout_{ 10.0 };
+		int recovery_max_try_count_{ 3 };
 	};
 } // end namespace whi_rviz_plugins

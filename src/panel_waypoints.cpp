@@ -288,6 +288,18 @@ namespace whi_rviz_plugins
 		}
 	}
 
+	void WaypointsPanel::setRecoveryMaxTryCount(int Count)
+	{
+		recovery_max_try_count_ = Count;
+		for (auto& it : goals_map_)
+		{
+			if (it.second)
+			{
+				it.second->setRecoveryMaxTryCount(recovery_max_try_count_);
+			}
+		}
+	}
+
 	void WaypointsPanel::configureNs(const std::string& Namespace)
 	{
 		if (pre_ns_ != Namespace)

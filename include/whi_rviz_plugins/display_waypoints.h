@@ -33,6 +33,7 @@ namespace rviz
     class BoolProperty;
     class EnumProperty;
     class TfFrameProperty;
+    class IntProperty;
     class FrameManager;
     class MovableText;
 }
@@ -63,6 +64,7 @@ namespace whi_rviz_plugins
         void updateMode();
         void updateBaselinkFrame();
         void updateStuckTimeout();
+        void updateRecoveryMaxTryCount();
 
     private:
         static void addPositionControl(visualization_msgs::InteractiveMarker& IntMarker, bool OrientationFixed);
@@ -87,6 +89,7 @@ namespace whi_rviz_plugins
         rviz::EnumProperty* mode_property_;
         rviz::TfFrameProperty* frame_property_;
         rviz::FloatProperty* stuck_timeout_property_;
+        rviz::IntProperty* recovery_max_try_count_property_;
         Ogre::SceneNode* frame_node_{ nullptr };
         bool remote_mode_{ false };
         std::shared_ptr<rviz::FrameManager> frame_manager_{ nullptr };

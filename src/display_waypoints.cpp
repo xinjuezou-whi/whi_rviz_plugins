@@ -21,6 +21,7 @@ All text above must be included in any redistribution.
 #include <rviz/properties/bool_property.h>
 #include <rviz/properties/enum_property.h>
 #include <rviz/properties/tf_frame_property.h>
+#include <rviz/properties/int_property.h>
 #include <rviz/ogre_helpers/movable_text.h>
 #include <rviz/frame_manager.h>
 #include <visualization_msgs/Marker.h>
@@ -32,7 +33,7 @@ namespace whi_rviz_plugins
     WaypointsDisplay::WaypointsDisplay()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.21.7" << std::endl;
+        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.21.9" << std::endl;
         std::cout << "Copyright @ 2022-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         marker_size_property_ = new rviz::FloatProperty("Marker Size", 1.0, "Arrow size of waypoint mark.",
@@ -59,6 +60,8 @@ namespace whi_rviz_plugins
             this, frame_manager_.get(), false, SLOT(updateBaselinkFrame()));
         stuck_timeout_property_ = new rviz::FloatProperty("Stuck timeout(s)", 10.0, "Timeout for break robot from stuck",
             this, SLOT(updateStuckTimeout()));
+        recovery_max_try_count_property_ = new rviz::IntProperty("Max recovery try count", 3, "Max times to try recovery.",
+            this, SLOT(updateRecoveryMaxTryCount()));
     }
 
     WaypointsDisplay::~WaypointsDisplay()
@@ -92,6 +95,7 @@ namespace whi_rviz_plugins
         updateMode();
         updateBaselinkFrame();
         updateStuckTimeout();
+        updateRecoveryMaxTryCount();
     }
 
     void WaypointsDisplay::clearWaypointsLocationsDisplay()
@@ -229,6 +233,11 @@ namespace whi_rviz_plugins
     void WaypointsDisplay::updateStuckTimeout()
     {
         panel_->setStuckTimeout(stuck_timeout_property_->getFloat());
+    }
+
+    void WaypointsDisplay::updateRecoveryMaxTryCount()
+    {
+        panel_->setRecoveryMaxTryCount(recovery_max_try_count_property_->getInt());
     }
 
     void WaypointsDisplay::addPositionControl(visualization_msgs::InteractiveMarker& IntMarker, bool OrientationFixed)

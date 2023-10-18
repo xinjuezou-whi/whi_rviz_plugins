@@ -174,7 +174,7 @@ void GoalsHandle::init(bool IsRemote/* = false*/)
 	movebase_client_ = std::make_unique<MoveBaseClient>(namespace_ + "move_base", true);
 }
 
-bool GoalsHandle::setGoal(const geometry_msgs::Pose& Goal, bool Recover/* = false*/)
+bool GoalsHandle::setGoal(const geometry_msgs::Pose& Goal, bool Recovery/* = false*/)
 {
 	// wait for the action server to come up
 	static size_t waitingCount = 0;
@@ -194,7 +194,8 @@ bool GoalsHandle::setGoal(const geometry_msgs::Pose& Goal, bool Recover/* = fals
 	goalMsg.target_pose.pose = Goal;
 
 	state_last_ = ros::Time::now();
-	stuck_relocate_count_ = Recover ? stuck_relocate_count_ : 0;
+	is_recovery_ = Recovery;
+	stuck_relocate_count_ = is_recovery_ ? stuck_relocate_count_ : 0;
 
 	movebase_client_->sendGoal(goalMsg,
 		std::bind(&GoalsHandle::callbackGoalDone, this, std::placeholders::_1, std::placeholders::_2),
@@ -245,7 +246,7 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 	{
 		if ((current - state_last_).toSec() > stuck_timeout_)
 		{
-			if (stuck_relocate_count_++ < 3)
+			if (stuck_relocate_count_++ < recovery_max_try_count_)
 			{
 				goals_list_.insert(goals_list_.begin(), std::make_tuple(active_goal_, active_goal_task_));
 				setGoal(std::get<0>(goals_list_.front()), true);
@@ -338,8 +339,9 @@ void GoalsHandle::updateStateInfo()
 			// is final one?
 			if (metDistance(getCurrentPose(), final_goal_, 0.5))
 			{
+				loop_count_ = is_recovery_ ? loop_count_ : loop_count_ + 1;
 				std::shared_ptr<std::string> info = std::make_shared<std::string>(
-					std::to_string(++loop_count_) + (loop_count_ > 1 ? " loops proceed" : " loop proceed"));
+					std::to_string(loop_count_) + (loop_count_ > 1 ? " loops proceed" : " loop proceed"));
 				func_execution_state_(STA_POINT_APPROACHED, info);
 			}
 		}
@@ -549,6 +551,11 @@ void GoalsHandle::setBaselinkFrame(const std::string& Frame)
 void GoalsHandle::setStuckTimeout(double Timeout)
 {
 	stuck_timeout_ = Timeout;
+}
+
+void GoalsHandle::setRecoveryMaxTryCount(int Count)
+{
+	recovery_max_try_count_ = Count;
 }
 
 bool GoalsHandle::metDistance(const geometry_msgs::Pose& Pose1, const geometry_msgs::Pose& Pose2, double Tolerance)
