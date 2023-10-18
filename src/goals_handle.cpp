@@ -174,7 +174,7 @@ void GoalsHandle::init(bool IsRemote/* = false*/)
 	movebase_client_ = std::make_unique<MoveBaseClient>(namespace_ + "move_base", true);
 }
 
-bool GoalsHandle::setGoal(const geometry_msgs::Pose& Goal)
+bool GoalsHandle::setGoal(const geometry_msgs::Pose& Goal, bool Recover/* = false*/)
 {
 	// wait for the action server to come up
 	static size_t waitingCount = 0;
@@ -194,6 +194,7 @@ bool GoalsHandle::setGoal(const geometry_msgs::Pose& Goal)
 	goalMsg.target_pose.pose = Goal;
 
 	state_last_ = ros::Time::now();
+	stuck_relocate_count_ = Recover ? stuck_relocate_count_ : 0;
 
 	movebase_client_->sendGoal(goalMsg,
 		std::bind(&GoalsHandle::callbackGoalDone, this, std::placeholders::_1, std::placeholders::_2),
@@ -244,53 +245,60 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 	{
 		if ((current - state_last_).toSec() > stuck_timeout_)
 		{
-			if (goals_list_.empty())
+			if (stuck_relocate_count_++ < 3)
 			{
-				if (active_goal_task_.empty())
-				{
-					if (func_execution_state_)
-					{
-						func_execution_state_(STA_DONE, nullptr);
-					}
-					if (func_eta_)
-					{
-						func_eta_(active_goal_, -1.0);
-					}
-					std::cout << "all goals traversed. remained goals " << goals_list_.size() << std::endl;
-				}
-				else
-				{
-					if (!state_task_)
-					{
-						// execute task then to approach the next waypoint
-						// IMPORTANT: DO NOT CALL ACTION in its own callback
-						std::thread{ &GoalsHandle::executeTask, this, true }.detach();
-					}
-				}
+				goals_list_.insert(goals_list_.begin(), std::make_tuple(active_goal_, active_goal_task_));
+				setGoal(std::get<0>(goals_list_.front()), true);
 			}
 			else
 			{
-				if (active_goal_task_.empty())
+				if (goals_list_.empty())
 				{
-					bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
-					double span = isFinalOne ? -stop_span_ : -point_span_;
-					if (span < stuck_timeout_)
+					if (active_goal_task_.empty())
 					{
-						setGoal(std::get<0>(goals_list_.front()));
-						updateStateInfo();
-
-						std::cout << "break from stuck. remained goals " << goals_list_.size() << std::endl;
+						if (func_execution_state_)
+						{
+							func_execution_state_(STA_DONE, nullptr);
+						}
+						if (func_eta_)
+						{
+							func_eta_(active_goal_, -1.0);
+						}
+						std::cout << "all goals traversed. remained goals " << goals_list_.size() << std::endl;
+					}
+					else
+					{
+						if (!state_task_)
+						{
+							// execute task then to approach the next waypoint
+							// IMPORTANT: DO NOT CALL ACTION in its own callback
+							std::thread{ &GoalsHandle::executeTask, this, true }.detach();
+						}
 					}
 				}
 				else
 				{
-					if (!state_task_)
+					if (active_goal_task_.empty())
 					{
-						// execute task then to approach the next waypoint
-						// IMPORTANT: DO NOT CALL ACTION in its own callback
-						std::thread{ &GoalsHandle::executeTask, this, true }.detach();
+						bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
+						double span = isFinalOne ? -stop_span_ : -point_span_;
+						if (span < stuck_timeout_)
+						{
+							setGoal(std::get<0>(goals_list_.front()));
+
+							std::cout << "break from stuck. remained goals " << goals_list_.size() << std::endl;
+						}
 					}
-				}	
+					else
+					{
+						if (!state_task_)
+						{
+							// execute task then to approach the next waypoint
+							// IMPORTANT: DO NOT CALL ACTION in its own callback
+							std::thread{ &GoalsHandle::executeTask, this, true }.detach();
+						}
+					}	
+				}
 			}
 		}
 	}
@@ -303,7 +311,6 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 			if (dist < tolerance)
 			{
 				setGoal(std::get<0>(goals_list_.front()));
-				updateStateInfo();
 
 				std::cout << "tolerance reached, proceeding the next. remained goals " << goals_list_.size() << "  " << tolerance << std::endl;
 			}
@@ -329,7 +336,7 @@ void GoalsHandle::updateStateInfo()
 		if (looping_)
 		{
 			// is final one?
-			if (metDistance(active_goal_, final_goal_, 1e-3))
+			if (metDistance(getCurrentPose(), final_goal_, 0.5))
 			{
 				std::shared_ptr<std::string> info = std::make_shared<std::string>(
 					std::to_string(++loop_count_) + (loop_count_ > 1 ? " loops proceed" : " loop proceed"));
@@ -383,7 +390,6 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 			std::thread{ &GoalsHandle::executeTask, this, false }.detach();
 		}
 
-		updateStateInfo();
 		if (goals_list_.empty())
 		{
 			// set finish state
@@ -402,7 +408,20 @@ void GoalsHandle::callbackGoalActive()
 	goals_list_.pop_front();
 	if (looping_)
 	{
-		goals_list_.push_back(std::make_tuple(active_goal_, active_goal_task_));
+		auto equal = [&](const std::tuple<geometry_msgs::Pose, std::string>& Item)
+		{
+			return fabs(active_goal_.position.x - std::get<0>(Item).position.x) < 1e-4 &&
+				fabs(active_goal_.position.x - std::get<0>(Item).position.x) < 1e-4 &&
+				fabs(active_goal_.orientation.x - std::get<0>(Item).orientation.x) < 1e-4 &&
+				fabs(active_goal_.orientation.y - std::get<0>(Item).orientation.y) < 1e-4 &&
+				fabs(active_goal_.orientation.z - std::get<0>(Item).orientation.z) < 1e-4 &&
+				fabs(active_goal_.orientation.w - std::get<0>(Item).orientation.w) < 1e-4 &&
+				active_goal_task_ == std::get<1>(Item);
+		};
+		if (std::find_if(begin(goals_list_), end(goals_list_), equal) == std::end(goals_list_))
+		{
+			goals_list_.push_back(std::make_tuple(active_goal_, active_goal_task_));
+		}
 	}
 	else
 	{
@@ -412,6 +431,9 @@ void GoalsHandle::callbackGoalActive()
 			goals_list_.clear();
 		}
 	}
+
+	updateStateInfo();
+
 #ifdef DEBUG
 	std::cout << "goal left count " << goals_list_.size() << std::endl;
 #endif
@@ -427,7 +449,6 @@ void GoalsHandle::callbackTimer(const ros::TimerEvent& Event)
 	if (!goals_list_.empty())
 	{
 		setGoal(std::get<0>(goals_list_.front()));
-		updateStateInfo();
 		std::cout << "span timeout, proceeding the next" << std::endl;
 	}
 	else
@@ -446,23 +467,20 @@ void GoalsHandle::callbackTimer(const ros::TimerEvent& Event)
 int GoalsHandle::findBeginIndex(const std::vector<geometry_msgs::Pose>& Waypoints)
 {
 	int beginIndex = 0;
+	double minDistance = std::numeric_limits<double>::max();
 	for (std::size_t i = 0; i < Waypoints.size(); ++i)
 	{
-		if (distance(getCurrentPose(), Waypoints[i]) > 1.0)
+		auto dist = distance(getCurrentPose(), Waypoints[i]);
+		if (dist < minDistance)
 		{
-			// otherwise check the aborted goal if there is
-			if (metDistance(active_goal_, Waypoints[i], 1e-3))
-			{
-				beginIndex = i;
-				break;
-			}
+			beginIndex = i;
+			minDistance = dist;
 		}
-		else
-		{
-			// choose the next one if current pose overlays the waypoint
-			beginIndex = (i + 1) % Waypoints.size();
-			break;
-		}
+	}
+	if (minDistance < 0.5)
+	{
+		// choose the next one if current pose overlays the waypoint
+		beginIndex = (beginIndex + 1) % Waypoints.size();
 	}
 
 	return beginIndex;
