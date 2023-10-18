@@ -75,7 +75,7 @@ private:
 	geometry_msgs::TransformStamped listenTf(const std::string& DstFrame, const std::string& SrcFrame,
         const ros::Time& Time);
 	void handleGoalAndState(const geometry_msgs::Pose& Pose);
-	void updateStateInfo();
+	void updateStateInfo(const geometry_msgs::Pose& Pose);
 	void subCallbackPlanPath(const nav_msgs::Path::ConstPtr& PlanPath);
 	void subCallbackMapData(const nav_msgs::MapMetaData::ConstPtr& MapData);
 	void subCallbackCmdVel(const geometry_msgs::Twist::ConstPtr& CmdVel);

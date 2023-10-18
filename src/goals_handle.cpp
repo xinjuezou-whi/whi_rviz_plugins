@@ -330,14 +330,14 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 	}
 }
 
-void GoalsHandle::updateStateInfo()
+void GoalsHandle::updateStateInfo(const geometry_msgs::Pose& Pose)
 {
 	if (func_execution_state_)
 	{
 		if (looping_)
 		{
 			// is final one?
-			if (metDistance(getCurrentPose(), final_goal_, 0.5))
+			if (metDistance(Pose, final_goal_, 0.5))
 			{
 				loop_count_ = is_recovery_ ? loop_count_ : loop_count_ + 1;
 				std::shared_ptr<std::string> info = std::make_shared<std::string>(
@@ -405,6 +405,8 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 
 void GoalsHandle::callbackGoalActive()
 {
+	static geometry_msgs::Pose lastGoal;
+
 	active_goal_ = std::get<0>(goals_list_.front());
 	active_goal_task_ = std::get<1>(goals_list_.front());
 	goals_list_.pop_front();
@@ -434,7 +436,8 @@ void GoalsHandle::callbackGoalActive()
 		}
 	}
 
-	updateStateInfo();
+	updateStateInfo(lastGoal);
+	lastGoal = active_goal_;
 
 #ifdef DEBUG
 	std::cout << "goal left count " << goals_list_.size() << std::endl;
