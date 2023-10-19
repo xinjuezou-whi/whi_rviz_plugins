@@ -33,7 +33,7 @@ namespace whi_rviz_plugins
     WaypointsDisplay::WaypointsDisplay()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.21.10" << std::endl;
+        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.21.11" << std::endl;
         std::cout << "Copyright @ 2022-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         marker_size_property_ = new rviz::FloatProperty("Marker Size", 1.0, "Arrow size of waypoint mark.",
@@ -62,6 +62,10 @@ namespace whi_rviz_plugins
             this, SLOT(updateStuckTimeout()));
         recovery_max_try_count_property_ = new rviz::IntProperty("Max recovery try count", 3, "Max times to try recovery.",
             this, SLOT(updateRecoveryMaxTryCount()));
+        xy_goal_tolerance_property_ = new rviz::FloatProperty("Goal xy tolerance", 0.15, "x and y tolerance of goal",
+            this, SLOT(updateTolerance()));
+        yaw_goal_tolerance_property_ = new rviz::FloatProperty("Goal yaw tolerance", 0.15, "yaw tolerance of goal",
+            this, SLOT(updateTolerance()));
     }
 
     WaypointsDisplay::~WaypointsDisplay()
@@ -96,6 +100,7 @@ namespace whi_rviz_plugins
         updateBaselinkFrame();
         updateStuckTimeout();
         updateRecoveryMaxTryCount();
+        updateTolerance();
     }
 
     void WaypointsDisplay::clearWaypointsLocationsDisplay()
@@ -238,6 +243,12 @@ namespace whi_rviz_plugins
     void WaypointsDisplay::updateRecoveryMaxTryCount()
     {
         panel_->setRecoveryMaxTryCount(recovery_max_try_count_property_->getInt());
+    }
+
+    void WaypointsDisplay::updateTolerance()
+    {
+        panel_->setTolerance(xy_goal_tolerance_property_->getFloat(),
+            yaw_goal_tolerance_property_->getFloat());
     }
 
     void WaypointsDisplay::addPositionControl(visualization_msgs::InteractiveMarker& IntMarker, bool OrientationFixed)

@@ -246,12 +246,7 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 	{
 		if ((current - state_last_).toSec() > stuck_timeout_)
 		{
-			if (stuck_relocate_count_++ < recovery_max_try_count_)
-			{
-				goals_list_.insert(goals_list_.begin(), std::make_tuple(active_goal_, active_goal_task_));
-				setGoal(std::get<0>(goals_list_.front()), true);
-			}
-			else
+			if (metTolerance() || stuck_relocate_count_++ >= recovery_max_try_count_)
 			{
 				if (goals_list_.empty())
 				{
@@ -300,6 +295,11 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 						}
 					}	
 				}
+			}
+			else
+			{
+				goals_list_.insert(goals_list_.begin(), std::make_tuple(active_goal_, active_goal_task_));
+				setGoal(std::get<0>(goals_list_.front()), true);
 			}
 		}
 	}
@@ -541,6 +541,24 @@ bool GoalsHandle::isStill() const
 	return fabs(current_linear_) < 1e-4 && fabs(current_angular_) < 1e-4;
 }
 
+bool GoalsHandle::metTolerance()
+{
+	const auto current = getCurrentPose();
+	tf2::Quaternion curQ(current.orientation.x, current.orientation.y, current.orientation.z,
+		current.orientation.w);
+    double curRoll = 0.0, curPitch = 0.0, curYaw = 0.0;
+	tf2::Matrix3x3(curQ).getRPY(curRoll, curPitch, curYaw);
+
+	tf2::Quaternion activeQ(active_goal_.orientation.x, active_goal_.orientation.y, active_goal_.orientation.z,
+		active_goal_.orientation.w);
+    double activeRoll = 0.0, activePitch = 0.0, activeYaw = 0.0;
+	tf2::Matrix3x3(activeQ).getRPY(activeRoll, activePitch, activeYaw);
+
+	return fabs(current.position.x - active_goal_.position.x) < xy_goal_tolerance_ &&
+		fabs(current.position.y - active_goal_.position.y) < xy_goal_tolerance_ &&
+		fabs(curYaw - activeYaw) < yaw_goal_tolerance_;
+}
+
 void GoalsHandle::setTaskPlugin(boost::shared_ptr<whi_rviz_plugins::BasePlugin> Plugin)
 {
 	task_plugin_ = Plugin;
@@ -559,6 +577,12 @@ void GoalsHandle::setStuckTimeout(double Timeout)
 void GoalsHandle::setRecoveryMaxTryCount(int Count)
 {
 	recovery_max_try_count_ = Count;
+}
+
+void GoalsHandle::setTolerance(double XyTolerance, double YawTolerance)
+{
+	xy_goal_tolerance_ = XyTolerance;
+	yaw_goal_tolerance_ = YawTolerance;
 }
 
 bool GoalsHandle::metDistance(const geometry_msgs::Pose& Pose1, const geometry_msgs::Pose& Pose2, double Tolerance)

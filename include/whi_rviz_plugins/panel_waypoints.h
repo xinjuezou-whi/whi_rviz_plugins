@@ -55,6 +55,7 @@ namespace whi_rviz_plugins
 		void setBaselinkFrame(const std::string& Frame);
 		void setStuckTimeout(double Timeout);
 		void setRecoveryMaxTryCount(int Count);
+		void setTolerance(double XyTolerance, double YawTolerance);
 
 	private:
 		void configureNs(const std::string& Namespace);
@@ -99,5 +100,7 @@ namespace whi_rviz_plugins
 		std::string baselink_frame_{ "base_link" };
 		double stuck_timeout_{ 10.0 };
 		int recovery_max_try_count_{ 3 };
+		double xy_goal_tolerance_{ 0.15 };
+		double yaw_goal_tolerance_{ 0.15 };
 	};
 } // end namespace whi_rviz_plugins

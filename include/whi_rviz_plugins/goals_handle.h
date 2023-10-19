@@ -66,6 +66,7 @@ public:
 	void setBaselinkFrame(const std::string& Frame);
 	void setStuckTimeout(double Timeout);
 	void setRecoveryMaxTryCount(int Count);
+	void setTolerance(double XyTolerance, double YawTolerance);
 
 private:
 	void setNamespace(const std::string& Namespace);
@@ -87,6 +88,7 @@ private:
 	void executeTask(bool ForceClean = false);
 	std::array<double, 3> locationDelta();
 	bool isStill() const;
+	bool metTolerance();
 
 private:
 	static bool metDistance(const geometry_msgs::Pose& Pose1, const geometry_msgs::Pose& Pose2, double Tolerance);
@@ -128,4 +130,6 @@ private:
 	int stuck_relocate_count_{ 3 };
 	int recovery_max_try_count_{ 3 };
 	bool is_recovery_{ false };
+	double xy_goal_tolerance_{ 0.15 };
+	double yaw_goal_tolerance_{ 0.15 };
 };

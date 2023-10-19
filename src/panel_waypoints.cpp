@@ -300,6 +300,19 @@ namespace whi_rviz_plugins
 		}
 	}
 
+	void WaypointsPanel::setTolerance(double XyTolerance, double YawTolerance)
+	{
+		xy_goal_tolerance_ = XyTolerance;
+		yaw_goal_tolerance_ = YawTolerance;
+		for (auto& it : goals_map_)
+		{
+			if (it.second)
+			{
+				it.second->setTolerance(xy_goal_tolerance_, yaw_goal_tolerance_);
+			}
+		}		
+	}
+
 	void WaypointsPanel::configureNs(const std::string& Namespace)
 	{
 		if (pre_ns_ != Namespace)

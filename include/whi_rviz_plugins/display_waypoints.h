@@ -65,6 +65,7 @@ namespace whi_rviz_plugins
         void updateBaselinkFrame();
         void updateStuckTimeout();
         void updateRecoveryMaxTryCount();
+        void updateTolerance();
 
     private:
         static void addPositionControl(visualization_msgs::InteractiveMarker& IntMarker, bool OrientationFixed);
@@ -90,6 +91,8 @@ namespace whi_rviz_plugins
         rviz::TfFrameProperty* frame_property_;
         rviz::FloatProperty* stuck_timeout_property_;
         rviz::IntProperty* recovery_max_try_count_property_;
+        rviz::FloatProperty* xy_goal_tolerance_property_;
+	    rviz::FloatProperty* yaw_goal_tolerance_property_;
         Ogre::SceneNode* frame_node_{ nullptr };
         bool remote_mode_{ false };
         std::shared_ptr<rviz::FrameManager> frame_manager_{ nullptr };
