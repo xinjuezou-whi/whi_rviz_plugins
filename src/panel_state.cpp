@@ -116,6 +116,14 @@ namespace whi_rviz_plugins
         }
     }
 
+    void StatePanel::setBatteryInfo(int Soc, int Soh)
+    {
+        ui_->label_soc->setText(QString::number(Soc) + "%");
+        ui_->label_soh->setText(QString::number(Soh) + "%");
+
+        setBatteryIcon(ui_->label_battery, Soc);
+    }
+
     std::string StatePanel::getPackagePath() const
     {
         boost::filesystem::path path(ros::package::getPath("whi_rviz_plugins"));
@@ -127,6 +135,9 @@ namespace whi_rviz_plugins
         std::string iconFile("/icons/classes/indicator_");
         switch (Type)
         {
+        case INDICATOR_RED:
+            iconFile += "red.png";
+            break;
         case INDICATOR_ORANGE:
             iconFile += "orange.png";
             break;
@@ -141,16 +152,48 @@ namespace whi_rviz_plugins
             break;
         }
 
-        QImage indicator;
-        if (indicator.load(QString(getPackagePath().c_str()) + iconFile.c_str()))
-		{
-            QImage scaled = indicator.scaledToHeight(24);
-			Label->setPixmap(QPixmap::fromImage(scaled));
-		}
+        setLabelIcon(Label, iconFile, 24);
     }
 
     void StatePanel::setIndicatorText(QLabel* Label, const std::string& Text)
     {
         Label->setText(Text.c_str());
+    }
+
+    void StatePanel::setBatteryIcon(QLabel* Label, int Soc)
+    {
+        std::string iconFile("/icons/classes/bat_");
+        if (Soc > 80)
+        {
+            iconFile += "100.png";
+        }
+        else if (Soc > 60 && Soc <= 80)
+        {
+            iconFile += "80.png";
+        }
+        else if (Soc > 40 && Soc <= 60)
+        {
+            iconFile += "60.png";
+        }
+        else if (Soc > 20 && Soc <= 40)
+        {
+            iconFile += "40.png";
+        }
+        else
+        {
+            iconFile += "20.png";
+        }
+
+        setLabelIcon(Label, iconFile, 24);
+    }
+
+    void StatePanel::setLabelIcon(QLabel* Label, const std::string& IconFile, int Scale)
+    {
+        QImage indicator;
+        if (indicator.load(QString(getPackagePath().c_str()) + IconFile.c_str()))
+		{
+            QImage scaled = indicator.scaledToHeight(Scale);
+			Label->setPixmap(QPixmap::fromImage(scaled));
+		}
     }
 } // end namespace whi_rviz_plugins

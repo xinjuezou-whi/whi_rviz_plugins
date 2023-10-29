@@ -39,14 +39,17 @@ namespace whi_rviz_plugins
         void setGoal(const geometry_msgs::Pose& Goal);
         void setEta(const std::string& Eta);
 		void setMotionState(int State);
+		void setBatteryInfo(int Soc, int Soh);
 
 	private:
         std::string getPackagePath() const;
         void setIndicatorIcon(QLabel* Label, int Type);
 		void setIndicatorText(QLabel* Label, const std::string& Text);
+		void setBatteryIcon(QLabel* Label, int Soc);
+		void setLabelIcon(QLabel* Label, const std::string& IconFile, int Scale);
 
 	private:
-        enum IndicatorType { INDICATOR_GREY = 0, INDICATOR_ORANGE, INDICATOR_YELLOW, INDICATOR_GREEN };
+        enum IndicatorType { INDICATOR_GREY = 0, INDICATOR_RED, INDICATOR_ORANGE, INDICATOR_YELLOW, INDICATOR_GREEN };
 		Ui::NaviState* ui_{ nullptr };
 	};
 } // end namespace whi_rviz_plugins

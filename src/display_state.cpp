@@ -39,7 +39,7 @@ namespace whi_rviz_plugins
         : Display()
         , node_handle_(std::make_unique<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for motion state VERSION 00.02.1" << std::endl;
+        std::cout << "\nWHI RViz plugin for motion state VERSION 00.03.0" << std::endl;
         std::cout << "Copyright @ 2023-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         tf_listener_ = std::make_unique<tf2_ros::TransformListener>(buffer_);
@@ -53,6 +53,9 @@ namespace whi_rviz_plugins
         motion_state_topic_property_ = new rviz::RosTopicProperty("Motion state topic", "motion_state",
             "whi_interfaces/WhiMotionState", "Topic of motion state",
             this, SLOT(updateMotionStateTopic()));
+        battery_topic_property_ = new rviz::RosTopicProperty("Battery info topic", "battery_data",
+            "whi_interfaces/WhiBattery", "Topic of battery info",
+            this, SLOT(updateBatteryTopic()));
         frame_manager_ = std::make_shared<rviz::FrameManager>();
         frame_property_ = new rviz::TfFrameProperty("base_frame", "base_link", "Base link frame of robot",
             this, frame_manager_.get(), false, SLOT(updateBaselinkFrame()));
@@ -77,6 +80,8 @@ namespace whi_rviz_plugins
 
         updateOdomTopic();
         updateGoalTopic();
+        updateMotionStateTopic();
+        updateBatteryTopic();
         updateBaselinkFrame();
 
         // tf listener
@@ -149,6 +154,11 @@ namespace whi_rviz_plugins
         panel_->setMotionState(MotionState->state);
     }
 
+    void DisplayState::subCallbackBattery(const whi_interfaces::WhiBattery::ConstPtr& Battery)
+    {
+        panel_->setBatteryInfo(Battery->soc, Battery->soh);
+    }
+
     void DisplayState::updateOdomTopic()
     {
         sub_odom_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<nav_msgs::Odometry>(
@@ -169,6 +179,14 @@ namespace whi_rviz_plugins
             node_handle_->subscribe<whi_interfaces::WhiMotionState>(
 		    motion_state_topic_property_->getTopicStd(), 10,
             std::bind(&DisplayState::subCallbackMotionState, this, std::placeholders::_1)));
+    }
+
+    void DisplayState::updateBatteryTopic()
+    {
+        sub_battery_ = std::make_unique<ros::Subscriber>(
+            node_handle_->subscribe<whi_interfaces::WhiBattery>(
+		    battery_topic_property_->getTopicStd(), 10,
+            std::bind(&DisplayState::subCallbackBattery, this, std::placeholders::_1)));
     }
 
     void DisplayState::updateBaselinkFrame()
