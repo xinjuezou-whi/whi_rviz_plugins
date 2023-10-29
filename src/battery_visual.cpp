@@ -97,7 +97,7 @@ namespace whi_rviz_plugins
 	void BatteryVisual::setOffsets(const Ogre::Vector3& Offsets)
 	{
 		*offsets_ = Offsets;
-		battery_info_->setLocalTranslation(Ogre::Vector3(-offsets_->y, offsets_->z, -offsets_->x));
+		battery_info_->setGlobalTranslation(Ogre::Vector3(offsets_->x, offsets_->y, -offsets_->z));
 	}
 
 	void BatteryVisual::setOrientation(const Ogre::Vector3& Orientation)
