@@ -391,13 +391,15 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 			// IMPORTANT: DO NOT CALL ACTION in its own callback
 			std::thread{ &GoalsHandle::executeTask, this, false }.detach();
 		}
-
-		if (goals_list_.empty())
+		else
 		{
-			// set finish state
-			if (func_execution_state_)
+			if (goals_list_.empty())
 			{
-				func_execution_state_(STA_DONE, nullptr);
+				// set finish state
+				if (func_execution_state_)
+				{
+					func_execution_state_(STA_DONE, nullptr);
+				}
 			}
 		}
 	}
@@ -509,6 +511,14 @@ void GoalsHandle::executeTask(bool ForceClean/* = false*/)
 	{
 		setGoal(std::get<0>(goals_list_.front()));
 		std::cout << "task executed, proceeding the next" << std::endl;
+	}
+	else
+	{
+		// set finish state
+		if (func_execution_state_)
+		{
+			func_execution_state_(STA_DONE, nullptr);
+		}
 	}
 
 	state_task_ = false;
