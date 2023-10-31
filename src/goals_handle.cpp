@@ -305,10 +305,11 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 	}
 	else
 	{
-		if (active_goal_task_.empty())
+		bool isFinal = metDistance(active_goal_, final_goal_, 1e-3);
+		if (active_goal_task_.empty() &&
+			(!isFinal && point_span_ < 0.0 || isFinal && stop_span_ < 0.0))
 		{
-			bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
-			double tolerance = isFinalOne ? -stop_span_ * current_linear_ : -point_span_ * current_linear_;
+			double tolerance = isFinal ? -stop_span_ * current_linear_ : -point_span_ * current_linear_;
 			if (dist < tolerance)
 			{
 				setGoal(std::get<0>(goals_list_.front()));
