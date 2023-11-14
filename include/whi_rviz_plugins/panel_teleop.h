@@ -19,6 +19,8 @@ Changelog:
 #include <rviz/panel.h>
 #include <memory>
 
+#include <whi_interfaces/WhiMotionState.h>
+
 namespace Ui
 {
 class NaviTeleop;
@@ -48,11 +50,14 @@ namespace whi_rviz_plugins
 		void moveLinear(int Dir);
 		void moveAngular(int Dir);
 		void halt();
+		void setMotionStateTopic(const std::string& Topic);
 
 	private:
 		void keyPressEvent(QKeyEvent* Event) override;
 		void focusOutEvent(QFocusEvent* Event) override;
 		void focusInEvent(QFocusEvent* Event) override;
+
+		void subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState);
 
 	private:
 		Ui::NaviTeleop* ui_{ nullptr };
@@ -65,5 +70,6 @@ namespace whi_rviz_plugins
 		std::string topic_;
 		float linear_{ 0.0 };
 		float angular_{ 0.0 };
+		std::unique_ptr<ros::Subscriber> sub_motion_state_{ nullptr };
 	};
 } // end namespace whi_rviz_plugins

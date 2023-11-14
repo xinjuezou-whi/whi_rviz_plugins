@@ -26,6 +26,7 @@ namespace rviz
 	class BoolProperty;
     class FloatProperty;
     class StringProperty;
+	class RosTopicProperty;
 }
 
 namespace whi_rviz_plugins
@@ -59,6 +60,7 @@ namespace whi_rviz_plugins
 		void updateAngularMin();
 		void updateAngularMax();
 		void updateAngularStep();
+		void updateMotionStateTopic();
 
 	private:
         rviz::PanelDockWidget* frame_dock_{ nullptr };
@@ -74,5 +76,6 @@ namespace whi_rviz_plugins
 		rviz::FloatProperty* angular_min_;
 		rviz::FloatProperty* angular_max_;
 		rviz::FloatProperty* angular_step_;
+		rviz::RosTopicProperty* motion_state_topic_property_;
 	};
 } // end namespace whi_rviz_plugins

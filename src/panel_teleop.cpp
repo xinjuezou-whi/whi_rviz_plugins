@@ -213,6 +213,16 @@ namespace whi_rviz_plugins
         ui_->label_angular->setText("0.0");
     }
 
+	void TeleopPanel::setMotionStateTopic(const std::string& Topic)
+	{
+		if (!Topic.empty())
+		{
+        	sub_motion_state_ = std::make_unique<ros::Subscriber>(
+            	node_handle_->subscribe<whi_interfaces::WhiMotionState>(Topic, 10,
+            	std::bind(&TeleopPanel::subCallbackMotionState, this, std::placeholders::_1)));
+		}
+	}
+
     void TeleopPanel::keyPressEvent(QKeyEvent* Event)
     {
         switch (Event->key())
@@ -246,5 +256,13 @@ namespace whi_rviz_plugins
     void TeleopPanel::focusInEvent(QFocusEvent* Event)
     {
         ui_->label_key_active->setStyleSheet("background-color: rgb(146, 208, 80);");
+    }
+
+    void TeleopPanel::subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState)
+    {
+		if (MotionState->state == whi_interfaces::WhiMotionState::STA_CRITICAL_COLLISION)
+		{
+			halt();
+		}
     }
 } // end namespace whi_rviz_plugins

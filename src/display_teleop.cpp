@@ -17,6 +17,7 @@ All text above must be included in any redistribution.
 #include <rviz/properties/bool_property.h>
 #include <rviz/properties/float_property.h>
 #include <rviz/properties/string_property.h>
+#include <rviz/properties/ros_topic_property.h>
 #include <rviz/window_manager_interface.h>
 #include <rviz/display_context.h>
 
@@ -25,7 +26,7 @@ namespace whi_rviz_plugins
     DisplayTeleop::DisplayTeleop()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for teleop VERSION 00.02" << std::endl;
+        std::cout << "\nWHI RViz plugin for teleop VERSION 00.03.0" << std::endl;
         std::cout << "Copyright @ 2022-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         enable_property_ = new rviz::BoolProperty("Enable teleop", true, "Toggle the functionality of teleop",
@@ -53,6 +54,9 @@ namespace whi_rviz_plugins
         angular_step_ = new rviz::FloatProperty("Angular step", 0.1, "Delta of angular per jog",
             this, SLOT(updateAngularStep()));
         angular_step_->setMin(0.01);
+        motion_state_topic_property_ = new rviz::RosTopicProperty("Motion state topic", "motion_state",
+            "whi_interfaces/WhiMotionState", "Topic of motion state",
+            this, SLOT(updateMotionStateTopic()));
     }
 
     DisplayTeleop::~DisplayTeleop()
@@ -126,6 +130,11 @@ namespace whi_rviz_plugins
 	void DisplayTeleop::updateAngularStep()
     {
         panel_->setAngularStep(angular_step_->getFloat());
+    }
+
+    void DisplayTeleop::updateMotionStateTopic()
+    {
+        panel_->setMotionStateTopic(motion_state_topic_property_->getTopicStd());
     }
 
     PLUGINLIB_EXPORT_CLASS(whi_rviz_plugins::DisplayTeleop, rviz::Display)
