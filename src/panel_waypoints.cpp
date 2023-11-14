@@ -152,13 +152,7 @@ namespace whi_rviz_plugins
 		});
 		connect(ui_->pushButton_abort, &QPushButton::clicked, this, [=]()
 		{
-			if (goals_map_[ui_->comboBox_ns->currentText().toStdString()])
-			{
-				goals_map_[ui_->comboBox_ns->currentText().toStdString()]->cancel();
-			}
-
-			ui_->label_state->setText("Standby");
-			enableUi(true);
+			abort();
 		});
 		connect(ui_->checkBox_loop, &QCheckBox::stateChanged, this, [=](int State)
 		{
@@ -311,6 +305,17 @@ namespace whi_rviz_plugins
 				it.second->setTolerance(xy_goal_tolerance_, yaw_goal_tolerance_);
 			}
 		}		
+	}
+
+	void WaypointsPanel::setMotionStateTopic(const std::string& Topic)
+	{
+		if (!Topic.empty())
+		{
+			node_handle_ = std::make_unique<ros::NodeHandle>();
+        	sub_motion_state_ = std::make_unique<ros::Subscriber>(
+            	node_handle_->subscribe<whi_interfaces::WhiMotionState>(Topic, 10,
+            	std::bind(&WaypointsPanel::subCallbackMotionState, this, std::placeholders::_1)));
+		}
 	}
 
 	void WaypointsPanel::configureNs(const std::string& Namespace)
@@ -875,5 +880,24 @@ namespace whi_rviz_plugins
 			auto btn = widget->layout()->itemAt(0)->widget();
 			tasks_map_[ui_->comboBox_ns->currentText().toStdString()][i] = btn->toolTip().toStdString();
 		}
+	}
+
+	void WaypointsPanel::subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState)
+    {
+		if (MotionState->state == whi_interfaces::WhiMotionState::STA_CRITICAL_COLLISION)
+		{
+			abort();
+		}
+    }
+
+	void WaypointsPanel::abort()
+	{
+		if (goals_map_[ui_->comboBox_ns->currentText().toStdString()])
+		{
+			goals_map_[ui_->comboBox_ns->currentText().toStdString()]->cancel();
+		}
+
+		ui_->label_state->setText("Standby");
+		enableUi(true);
 	}
 } // end namespace whi_rviz_plugins

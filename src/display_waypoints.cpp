@@ -22,6 +22,7 @@ All text above must be included in any redistribution.
 #include <rviz/properties/enum_property.h>
 #include <rviz/properties/tf_frame_property.h>
 #include <rviz/properties/int_property.h>
+#include <rviz/properties/ros_topic_property.h>
 #include <rviz/ogre_helpers/movable_text.h>
 #include <rviz/frame_manager.h>
 #include <visualization_msgs/Marker.h>
@@ -33,7 +34,7 @@ namespace whi_rviz_plugins
     WaypointsDisplay::WaypointsDisplay()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.21.13" << std::endl;
+        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.21.14" << std::endl;
         std::cout << "Copyright @ 2022-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         marker_size_property_ = new rviz::FloatProperty("Marker Size", 1.0, "Arrow size of waypoint mark.",
@@ -66,6 +67,9 @@ namespace whi_rviz_plugins
             this, SLOT(updateTolerance()));
         yaw_goal_tolerance_property_ = new rviz::FloatProperty("Goal yaw tolerance", 0.15, "yaw tolerance of goal",
             this, SLOT(updateTolerance()));
+        motion_state_topic_property_ = new rviz::RosTopicProperty("Motion state topic", "motion_state",
+            "whi_interfaces/WhiMotionState", "Topic of motion state",
+            this, SLOT(updateMotionStateTopic()));
     }
 
     WaypointsDisplay::~WaypointsDisplay()
@@ -101,6 +105,7 @@ namespace whi_rviz_plugins
         updateStuckTimeout();
         updateRecoveryMaxTryCount();
         updateTolerance();
+        updateMotionStateTopic();
     }
 
     void WaypointsDisplay::clearWaypointsLocationsDisplay()
@@ -249,6 +254,11 @@ namespace whi_rviz_plugins
     {
         panel_->setTolerance(xy_goal_tolerance_property_->getFloat(),
             yaw_goal_tolerance_property_->getFloat());
+    }
+
+    void WaypointsDisplay::updateMotionStateTopic()
+    {
+        panel_->setMotionStateTopic(motion_state_topic_property_->getTopicStd());
     }
 
     void WaypointsDisplay::addPositionControl(visualization_msgs::InteractiveMarker& IntMarker, bool OrientationFixed)

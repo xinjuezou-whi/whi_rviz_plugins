@@ -18,6 +18,7 @@ Changelog:
 #pragma once
 #include "goals_handle.h"
 #include "base_plugin.h"
+#include <whi_interfaces/WhiMotionState.h>
 
 #include <rviz/panel.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -56,6 +57,7 @@ namespace whi_rviz_plugins
 		void setStuckTimeout(double Timeout);
 		void setRecoveryMaxTryCount(int Count);
 		void setTolerance(double XyTolerance, double YawTolerance);
+		void setMotionStateTopic(const std::string& Topic);
 
 	private:
 		void configureNs(const std::string& Namespace);
@@ -81,6 +83,8 @@ namespace whi_rviz_plugins
 		bool createTaskPlugin(const YAML::Node& Node);
 		QPushButton* bindTaskPlugin(int Row);
 		void refreshTasksMap();
+		void subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState);
+		void abort();
 
 	private:
 		Ui::NaviWaypoints* ui_{ nullptr };
@@ -102,5 +106,7 @@ namespace whi_rviz_plugins
 		int recovery_max_try_count_{ 3 };
 		double xy_goal_tolerance_{ 0.15 };
 		double yaw_goal_tolerance_{ 0.15 };
+		std::unique_ptr<ros::Subscriber> sub_motion_state_{ nullptr };
+		std::unique_ptr<ros::NodeHandle> node_handle_{ nullptr };
 	};
 } // end namespace whi_rviz_plugins
