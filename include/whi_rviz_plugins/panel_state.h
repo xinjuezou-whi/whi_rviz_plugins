@@ -18,6 +18,8 @@ Changelog:
 #include <rviz/panel.h>
 #include <geometry_msgs/Pose.h>
 
+#include <whi_interfaces/WhiMotionState.h>
+
 namespace Ui
 {
 class NaviState;
@@ -38,7 +40,7 @@ namespace whi_rviz_plugins
         void setVelocities(double Linear, double Angular);
         void setGoal(const geometry_msgs::Pose& Goal);
         void setEta(const std::string& Eta);
-		void setMotionState(int State);
+		void setMotionState(const whi_interfaces::WhiMotionState::ConstPtr& State);
 		void setBatteryInfo(int Soc, int Soh);
 
 	private:
@@ -51,5 +53,6 @@ namespace whi_rviz_plugins
 	private:
         enum IndicatorType { INDICATOR_GREY = 0, INDICATOR_RED, INDICATOR_ORANGE, INDICATOR_YELLOW, INDICATOR_GREEN };
 		Ui::NaviState* ui_{ nullptr };
+		whi_interfaces::WhiMotionState first_state_msg_;
 	};
 } // end namespace whi_rviz_plugins

@@ -12,7 +12,6 @@ All text above must be included in any redistribution.
 
 ******************************************************************/
 #include "whi_rviz_plugins/panel_state.h"
-#include <whi_interfaces/WhiMotionState.h>
 #include "ui_navi_state.h"
 
 #include <ros/package.h>
@@ -27,6 +26,8 @@ namespace whi_rviz_plugins
     StatePanel::StatePanel(QWidget* Parent/* = nullptr*/)
 		: QWidget(Parent), ui_(new Ui::NaviState())
 	{
+        first_state_msg_.header.seq = std::numeric_limits<uint32_t>::max();
+
 		// set up the GUI
 		ui_->setupUi(this);
 
@@ -88,31 +89,50 @@ namespace whi_rviz_plugins
         ui_->label_eta->setText(Eta.c_str());
     }
 
-    void StatePanel::setMotionState(int State)
+    void StatePanel::setMotionState(const whi_interfaces::WhiMotionState::ConstPtr& State)
     {
-        if (State == whi_interfaces::WhiMotionState::STA_STANDBY)
+        if (State->header.seq < first_state_msg_.header.seq)
+        {
+            first_state_msg_.header.seq = State->header.seq;
+            first_state_msg_.header.stamp = ros::Time::now();
+        }
+        std::time_t rawTime = static_cast<time_t>(first_state_msg_.header.stamp.toSec());
+        struct tm* timeInfo = localtime(&rawTime);
+        const int LEN = 64;
+        char output[LEN];
+        std::strftime(output, LEN, "%Y.%m.%d-%H:%M:%S", timeInfo);
+        ui_->label_started->setText(output);
+        ui_->label_running_hours->setText(
+            QString::number((State->header.stamp.toSec() - first_state_msg_.header.stamp.toSec()) / 3600.0, 'f', 2));
+
+        if (State->state == whi_interfaces::WhiMotionState::STA_STANDBY)
         {
             setIndicatorIcon(ui_->label_indicator_1, INDICATOR_GREEN);
             setIndicatorText(ui_->label_indicator_cap_1, "standby");
             setIndicatorIcon(ui_->label_indicator_2, INDICATOR_GREY);
             setIndicatorText(ui_->label_indicator_cap_2, "task");
         }
-        else if (State == whi_interfaces::WhiMotionState::STA_RUNNING)
+        else if (State->state == whi_interfaces::WhiMotionState::STA_RUNNING)
         {
             setIndicatorIcon(ui_->label_indicator_1, INDICATOR_YELLOW);
             setIndicatorText(ui_->label_indicator_cap_1, "running");
             setIndicatorIcon(ui_->label_indicator_2, INDICATOR_GREY);
             setIndicatorText(ui_->label_indicator_cap_2, "task");
         }
-        else if (State == whi_interfaces::WhiMotionState::STA_OPERATING)
+        else if (State->state == whi_interfaces::WhiMotionState::STA_OPERATING)
         {
             setIndicatorIcon(ui_->label_indicator_2, INDICATOR_YELLOW);
             setIndicatorText(ui_->label_indicator_cap_2, "operating");
         }
-        else if (State == whi_interfaces::WhiMotionState::STA_FAULT)
+        else if (State->state == whi_interfaces::WhiMotionState::STA_FAULT)
+        {
+            setIndicatorIcon(ui_->label_indicator_1, INDICATOR_RED);
+            setIndicatorText(ui_->label_indicator_cap_1, "fault");
+        }
+        else if (State->state == whi_interfaces::WhiMotionState::STA_CRITICAL_COLLISION)
         {
             setIndicatorIcon(ui_->label_indicator_1, INDICATOR_ORANGE);
-            setIndicatorText(ui_->label_indicator_cap_1, "fault");
+            setIndicatorText(ui_->label_indicator_cap_1, "collision");
         }
     }
 

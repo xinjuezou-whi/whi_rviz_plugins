@@ -39,7 +39,7 @@ namespace whi_rviz_plugins
         : Display()
         , node_handle_(std::make_unique<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for motion state VERSION 00.03.0" << std::endl;
+        std::cout << "\nWHI RViz plugin for motion state VERSION 00.03.1" << std::endl;
         std::cout << "Copyright @ 2023-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         tf_listener_ = std::make_unique<tf2_ros::TransformListener>(buffer_);
@@ -151,7 +151,7 @@ namespace whi_rviz_plugins
 
     void DisplayState::subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState)
     {
-        panel_->setMotionState(MotionState->state);
+        panel_->setMotionState(MotionState);
     }
 
     void DisplayState::subCallbackBattery(const whi_interfaces::WhiBattery::ConstPtr& Battery)
