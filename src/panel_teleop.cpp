@@ -188,9 +188,10 @@ namespace whi_rviz_plugins
 
     void TeleopPanel::moveLinear(int Dir)
     {
-        if (remote_mode_.load())
+        if (toggle_collision_.load() || remote_mode_.load())
         {
-            QMessageBox::information(this, tr("Info"), tr("vehicle is in remote mode, command is ignored"));
+            QString reason = toggle_collision_.load() ? tr("critical collision") : tr("remote mode");
+            QMessageBox::information(this, tr("Info"), tr("vehicle is in ") + reason + tr(" command is ignored"));
 
             return;
         }
@@ -205,9 +206,10 @@ namespace whi_rviz_plugins
 
 	void TeleopPanel::moveAngular(int Dir)
     {
-        if (remote_mode_.load())
+        if (toggle_collision_.load() || remote_mode_.load())
         {
-            QMessageBox::information(this, tr("Info"), tr("vehicle is in remote mode, command is ignored"));
+            QString reason = toggle_collision_.load() ? tr("critical collision") : tr("remote mode");
+            QMessageBox::information(this, tr("Info"), tr("vehicle is in ") + reason + tr(" command is ignored"));
 
             return;
         }
@@ -222,9 +224,10 @@ namespace whi_rviz_plugins
 
     void TeleopPanel::halt()
     {
-        if (remote_mode_.load())
+        if (toggle_collision_.load() || remote_mode_.load())
         {
-            QMessageBox::information(this, tr("Info"), tr("vehicle is in remote mode, command is ignored"));
+            QString reason = toggle_collision_.load() ? tr("critical collision") : tr("remote mode");
+            QMessageBox::information(this, tr("Info"), tr("vehicle is in ") + reason + tr(" command is ignored"));
 
             return;
         }

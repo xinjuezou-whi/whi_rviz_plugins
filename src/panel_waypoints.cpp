@@ -107,6 +107,14 @@ namespace whi_rviz_plugins
 		});
 		connect(ui_->pushButton_execute, &QPushButton::clicked, this, [=]()
 		{
+			if (toggle_collision_.load() || remote_mode_.load())
+			{
+				QString reason = toggle_collision_.load() ? tr("critical collision") : tr("remote mode");
+				QMessageBox::information(this, tr("Info"), tr("vehicle is in ") + reason + tr(" command is ignored"));
+
+				return;
+			}
+
 			// re-configure namespace
 			std::string ns = ui_->comboBox_ns->currentText().toStdString();
 			configureNs(ns);
@@ -152,7 +160,15 @@ namespace whi_rviz_plugins
 		});
 		connect(ui_->pushButton_abort, &QPushButton::clicked, this, [=]()
 		{
-			abort();
+			if (toggle_collision_.load() || remote_mode_.load())
+			{
+				QString reason = toggle_collision_.load() ? tr("critical collision") : tr("remote mode");
+				QMessageBox::information(this, tr("Info"), tr("vehicle is in ") + reason + tr(" command is ignored"));
+			}
+			else
+			{
+				abort();
+			}
 		});
 		connect(ui_->checkBox_loop, &QCheckBox::stateChanged, this, [=](int State)
 		{
@@ -884,10 +900,31 @@ namespace whi_rviz_plugins
 
 	void WaypointsPanel::subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState)
     {
-		if (MotionState->state == whi_interfaces::WhiMotionState::STA_CRITICAL_COLLISION)
-		{
-			abort();
-		}
+        if (MotionState->state == whi_interfaces::WhiMotionState::STA_CRITICAL_COLLISION)
+	    {
+		    if (!toggle_collision_.load())
+		    {
+			    abort();
+		    }
+		    toggle_collision_.store(true);
+	    }
+	    else if (MotionState->state == whi_interfaces::WhiMotionState::STA_CRITICAL_COLLISION_CLEAR)
+	    {
+		    toggle_collision_.store(false);
+	    }
+
+        if (MotionState->state == whi_interfaces::WhiMotionState::STA_REMOTE)
+        {
+            if (!remote_mode_.load())
+            {
+                abort();
+            }
+            remote_mode_.store(true);
+        }
+        else if (MotionState->state == whi_interfaces::WhiMotionState::STA_AUTO)
+        {
+            remote_mode_.store(false);
+        }
     }
 
 	void WaypointsPanel::abort()
