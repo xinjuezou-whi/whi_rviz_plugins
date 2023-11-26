@@ -71,5 +71,7 @@ namespace whi_rviz_plugins
 		float linear_{ 0.0 };
 		float angular_{ 0.0 };
 		std::unique_ptr<ros::Subscriber> sub_motion_state_{ nullptr };
+		std::atomic_bool toggle_collision_{ false };
+		std::atomic_bool remote_mode_{ false };
 	};
 } // end namespace whi_rviz_plugins

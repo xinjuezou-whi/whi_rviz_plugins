@@ -23,6 +23,7 @@ All text above must be included in any redistribution.
 #include <ros/package.h>
 #include <QKeyEvent>
 #include <QTimer>
+#include <QMessageBox>
 
 namespace whi_rviz_plugins
 {
@@ -152,13 +153,16 @@ namespace whi_rviz_plugins
                 timer_pub_ = new QTimer(this);
                 connect(timer_pub_, &QTimer::timeout, this, [=]()
                 {
-                    twist_widget_->toggleIndicator(toggle_publishing_, true);
-                    toggle_publishing_ = !toggle_publishing_;
+                    if (!remote_mode_.load() && !toggle_collision_.load())
+                    {
+                        twist_widget_->toggleIndicator(toggle_publishing_, true);
+                        toggle_publishing_ = !toggle_publishing_;
 
-                    geometry_msgs::Twist msgTwist;
-                    msgTwist.linear.x = linear_;
-                    msgTwist.angular.z = angular_;
-                    pub_->publish(std::move(msgTwist));
+                        geometry_msgs::Twist msgTwist;
+                        msgTwist.linear.x = linear_;
+                        msgTwist.angular.z = angular_;
+                        pub_->publish(std::move(msgTwist));
+                    }
                 });
                 timer_pub_->start(interval_pub_);
             }
@@ -184,6 +188,13 @@ namespace whi_rviz_plugins
 
     void TeleopPanel::moveLinear(int Dir)
     {
+        if (remote_mode_.load())
+        {
+            QMessageBox::information(this, tr("Info"), tr("vehicle is in remote mode, command is ignored"));
+
+            return;
+        }
+
         linear_ = twist_widget_->getLinear() + Dir * twist_widget_->getLinearStep();
         linear_ = fabs(linear_) < twist_widget_->getLinearMin() ? Dir * twist_widget_->getLinearMin() : linear_;
         linear_ = fabs(linear_) > twist_widget_->getLinearMax() ? twist_widget_->getLinearMax() : linear_;
@@ -194,6 +205,13 @@ namespace whi_rviz_plugins
 
 	void TeleopPanel::moveAngular(int Dir)
     {
+        if (remote_mode_.load())
+        {
+            QMessageBox::information(this, tr("Info"), tr("vehicle is in remote mode, command is ignored"));
+
+            return;
+        }
+
         angular_ = twist_widget_->getAngular() + Dir * twist_widget_->getAngularStep();
         angular_ = fabs(angular_) < twist_widget_->getAngularMin() ? Dir * twist_widget_->getAngularMin() : angular_;
         angular_ = fabs(angular_) > twist_widget_->getAngularMax() ? twist_widget_->getAngularMax() : angular_;
@@ -204,6 +222,13 @@ namespace whi_rviz_plugins
 
     void TeleopPanel::halt()
     {
+        if (remote_mode_.load())
+        {
+            QMessageBox::information(this, tr("Info"), tr("vehicle is in remote mode, command is ignored"));
+
+            return;
+        }
+
         linear_ = 0.0;
         angular_ = 0.0;
         twist_widget_->setLinear(linear_);
@@ -260,9 +285,30 @@ namespace whi_rviz_plugins
 
     void TeleopPanel::subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState)
     {
-		if (MotionState->state == whi_interfaces::WhiMotionState::STA_CRITICAL_COLLISION)
-		{
-			halt();
-		}
+        if (MotionState->state == whi_interfaces::WhiMotionState::STA_CRITICAL_COLLISION)
+	    {
+		    if (!toggle_collision_.load())
+		    {
+			    halt();
+		    }
+		    toggle_collision_.store(true);
+	    }
+	    else if (MotionState->state == whi_interfaces::WhiMotionState::STA_CRITICAL_COLLISION_CLEAR)
+	    {
+		    toggle_collision_.store(false);
+	    }
+
+        if (MotionState->state == whi_interfaces::WhiMotionState::STA_REMOTE)
+        {
+            if (!remote_mode_.load())
+            {
+                halt();
+            }
+            remote_mode_.store(true);
+        }
+        else if (MotionState->state == whi_interfaces::WhiMotionState::STA_AUTO)
+        {
+            remote_mode_.store(false);
+        }
     }
 } // end namespace whi_rviz_plugins
