@@ -17,9 +17,12 @@ Changelog:
 ******************************************************************/
 #pragma once
 #include "panel_navi_namespace.h"
+#include <whi_interfaces/WhiMotionState.h>
+
 #include <rviz/default_plugin/tools/pose_tool.h>
 #include <rviz/panel_dock_widget.h>
 #include <rviz/properties/float_property.h>
+#include <rviz/properties/ros_topic_property.h>
 
 #include <memory>
 
@@ -42,9 +45,11 @@ namespace whi_rviz_plugins
         void setNs(const std::string& Namespace);
         void load(const rviz::Config& Config) override;
         void save(rviz::Config Config) const override;
+        void subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState);
 
     private Q_SLOTS:
         void updateTopic();
+        void updateMotionStateTopic();
 
     private:
         std::unique_ptr<ros::NodeHandle> node_handle_{ nullptr };
@@ -56,5 +61,9 @@ namespace whi_rviz_plugins
         rviz::FloatProperty* std_dev_x_;
         rviz::FloatProperty* std_dev_y_;
         rviz::FloatProperty* std_dev_theta_;
+        rviz::RosTopicProperty* motion_state_topic_property_;
+        std::unique_ptr<ros::Subscriber> sub_motion_state_{ nullptr };
+        std::atomic_bool critical_collision_{ false };
+		std::atomic_bool remote_mode_{ false };
     };
 } // end namespace whi_rviz_plugins

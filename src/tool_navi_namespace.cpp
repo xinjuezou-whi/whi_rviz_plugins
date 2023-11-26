@@ -21,15 +21,16 @@ All text above must be included in any redistribution.
 #include <rviz/window_manager_interface.h>
 #include <rviz/display_context.h>
 #include <rviz/ogre_helpers/arrow.h>
-
 #include <pluginlib/class_list_macros.h>
+
+#include <QMessageBox>
 
 namespace whi_rviz_plugins
 {
     NaviNsTool::NaviNsTool()
         : node_handle_(std::make_unique<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for navigation goal with namespace VERSION 00.04" << std::endl;
+        std::cout << "\nWHI RViz plugin for navigation goal with namespace VERSION 00.05" << std::endl;
         std::cout << "Copyright @ 2023-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         shortcut_key_ = 'n';
@@ -43,6 +44,9 @@ namespace whi_rviz_plugins
         std_dev_x_->setMin(0);
         std_dev_y_->setMin(0);
         std_dev_theta_->setMin(0);
+        motion_state_topic_property_ = new rviz::RosTopicProperty("Motion state topic", "motion_state",
+            "whi_interfaces/WhiMotionState", "Topic of motion state",
+            getPropertyContainer(), SLOT(updateMotionStateTopic()), this);
     }
 
     NaviNsTool::~NaviNsTool()
@@ -89,6 +93,14 @@ namespace whi_rviz_plugins
         }
         else if (type_ == TYPE_GOAL)
         {
+            if (critical_collision_.load() || remote_mode_.load())
+			{
+				QString reason = critical_collision_.load() ? tr("critical collision") : tr("remote mode");
+				QMessageBox::information(nullptr, tr("Info"), tr("vehicle is in ") + reason + tr(" command is ignored"));
+
+				return;
+			}
+
             tf2::Quaternion quat;
             quat.setRPY(0.0, 0.0, Theta);
             geometry_msgs::PoseStamped goal;
@@ -139,6 +151,27 @@ namespace whi_rviz_plugins
         panel_->save(Config);
     }
 
+	void NaviNsTool::subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState)
+    {
+        if (MotionState->state == whi_interfaces::WhiMotionState::STA_CRITICAL_COLLISION)
+	    {
+            critical_collision_.store(true);
+	    }
+	    else if (MotionState->state == whi_interfaces::WhiMotionState::STA_CRITICAL_COLLISION_CLEAR)
+	    {
+            critical_collision_.store(false);
+	    }
+
+        if (MotionState->state == whi_interfaces::WhiMotionState::STA_REMOTE)
+        {
+            remote_mode_.store(true);
+        }
+        else if (MotionState->state == whi_interfaces::WhiMotionState::STA_AUTO)
+        {
+            remote_mode_.store(false);
+        }
+    }
+
     void NaviNsTool::updateTopic()
     {
         try
@@ -158,6 +191,13 @@ namespace whi_rviz_plugins
         {
             ROS_ERROR_STREAM_NAMED("WHI Navi tool with ns", e.what());
         }
+    }
+
+    void NaviNsTool::updateMotionStateTopic()
+    {
+        sub_motion_state_ = std::make_unique<ros::Subscriber>(
+            node_handle_->subscribe<whi_interfaces::WhiMotionState>(motion_state_topic_property_->getTopicStd(), 10,
+            std::bind(&NaviNsTool::subCallbackMotionState, this, std::placeholders::_1)));
     }
 
     PLUGINLIB_EXPORT_CLASS(whi_rviz_plugins::NaviNsTool, rviz::Tool)
