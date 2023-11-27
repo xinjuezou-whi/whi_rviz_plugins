@@ -52,8 +52,8 @@ namespace whi_rviz_plugins
         setIndicatorIcon(ui_->label_indicator_7, INDICATOR_GREY);
         setIndicatorIcon(ui_->label_indicator_8, INDICATOR_GREY);
         setIndicatorText(ui_->label_indicator_cap_1, "inactve");
-        setIndicatorText(ui_->label_indicator_cap_2, "task");
-        setIndicatorText(ui_->label_indicator_cap_3, "reserved");
+        setIndicatorText(ui_->label_indicator_cap_2, "auto");
+        setIndicatorText(ui_->label_indicator_cap_3, "task");
         setIndicatorText(ui_->label_indicator_cap_4, "reserved");
         setIndicatorText(ui_->label_indicator_cap_5, "reserved");
         setIndicatorText(ui_->label_indicator_cap_6, "reserved");
@@ -102,27 +102,30 @@ namespace whi_rviz_plugins
         char output[LEN];
         std::strftime(output, LEN, "%Y.%m.%d-%H:%M:%S", timeInfo);
         ui_->label_started->setText(output);
-        ui_->label_running_hours->setText(
-            QString::number((State->header.stamp.toSec() - first_state_msg_.header.stamp.toSec()) / 3600.0, 'f', 2));
+        double sec = (State->header.stamp.toSec() - first_state_msg_.header.stamp.toSec()) / 3600.0;
+        if (sec > 0.0)
+        {
+            ui_->label_running_hours->setText(QString::number(sec, 'f', 2));
+        }
 
         if (State->state == whi_interfaces::WhiMotionState::STA_STANDBY)
         {
             setIndicatorIcon(ui_->label_indicator_1, INDICATOR_GREEN);
             setIndicatorText(ui_->label_indicator_cap_1, "standby");
-            setIndicatorIcon(ui_->label_indicator_2, INDICATOR_GREY);
-            setIndicatorText(ui_->label_indicator_cap_2, "task");
+            setIndicatorIcon(ui_->label_indicator_3, INDICATOR_GREY);
+            setIndicatorText(ui_->label_indicator_cap_3, "task");
         }
         else if (State->state == whi_interfaces::WhiMotionState::STA_RUNNING)
         {
             setIndicatorIcon(ui_->label_indicator_1, INDICATOR_YELLOW);
             setIndicatorText(ui_->label_indicator_cap_1, "running");
-            setIndicatorIcon(ui_->label_indicator_2, INDICATOR_GREY);
-            setIndicatorText(ui_->label_indicator_cap_2, "task");
+            setIndicatorIcon(ui_->label_indicator_3, INDICATOR_GREY);
+            setIndicatorText(ui_->label_indicator_cap_3, "task");
         }
         else if (State->state == whi_interfaces::WhiMotionState::STA_OPERATING)
         {
-            setIndicatorIcon(ui_->label_indicator_2, INDICATOR_YELLOW);
-            setIndicatorText(ui_->label_indicator_cap_2, "operating");
+            setIndicatorIcon(ui_->label_indicator_3, INDICATOR_YELLOW);
+            setIndicatorText(ui_->label_indicator_cap_3, "operating");
         }
         else if (State->state == whi_interfaces::WhiMotionState::STA_FAULT)
         {
@@ -133,6 +136,16 @@ namespace whi_rviz_plugins
         {
             setIndicatorIcon(ui_->label_indicator_1, INDICATOR_ORANGE);
             setIndicatorText(ui_->label_indicator_cap_1, "collision");
+        }
+        else if (State->state == whi_interfaces::WhiMotionState::STA_AUTO)
+        {
+            setIndicatorIcon(ui_->label_indicator_2, INDICATOR_GREEN);
+            setIndicatorText(ui_->label_indicator_cap_2, "auto");
+        }
+        else if (State->state == whi_interfaces::WhiMotionState::STA_REMOTE)
+        {
+            setIndicatorIcon(ui_->label_indicator_2, INDICATOR_BLUE);
+            setIndicatorText(ui_->label_indicator_cap_2, "remote");
         }
     }
 
@@ -166,6 +179,9 @@ namespace whi_rviz_plugins
             break;
         case INDICATOR_GREEN:
             iconFile += "green.png";
+            break;
+        case INDICATOR_BLUE:
+            iconFile += "blue.png";
             break;
         default:
             iconFile += "grey.png";

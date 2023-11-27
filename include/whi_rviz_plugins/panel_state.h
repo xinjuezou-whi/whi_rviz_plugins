@@ -51,7 +51,8 @@ namespace whi_rviz_plugins
 		void setLabelIcon(QLabel* Label, const std::string& IconFile, int Scale);
 
 	private:
-        enum IndicatorType { INDICATOR_GREY = 0, INDICATOR_RED, INDICATOR_ORANGE, INDICATOR_YELLOW, INDICATOR_GREEN };
+        enum IndicatorType { INDICATOR_GREY = 0, INDICATOR_RED, INDICATOR_ORANGE,
+			INDICATOR_YELLOW, INDICATOR_GREEN, INDICATOR_BLUE };
 		Ui::NaviState* ui_{ nullptr };
 		whi_interfaces::WhiMotionState first_state_msg_;
 	};
