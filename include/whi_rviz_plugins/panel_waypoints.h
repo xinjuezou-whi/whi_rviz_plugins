@@ -85,6 +85,7 @@ namespace whi_rviz_plugins
 		void refreshTasksMap();
 		void subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState);
 		void abort();
+		bool isBypassed();
 
 	private:
 		Ui::NaviWaypoints* ui_{ nullptr };
@@ -108,6 +109,7 @@ namespace whi_rviz_plugins
 		double yaw_goal_tolerance_{ 0.15 };
 		std::unique_ptr<ros::Subscriber> sub_motion_state_{ nullptr };
 		std::unique_ptr<ros::NodeHandle> node_handle_{ nullptr };
+		std::atomic_bool toggle_estop_{ false };
 		std::atomic_bool toggle_collision_{ false };
 		std::atomic_bool remote_mode_{ false };
 	};

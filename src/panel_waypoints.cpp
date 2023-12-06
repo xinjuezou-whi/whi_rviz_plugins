@@ -107,11 +107,8 @@ namespace whi_rviz_plugins
 		});
 		connect(ui_->pushButton_execute, &QPushButton::clicked, this, [=]()
 		{
-			if (toggle_collision_.load() || remote_mode_.load())
+			if (isBypassed())
 			{
-				QString reason = toggle_collision_.load() ? tr("critical collision") : tr("remote mode");
-				QMessageBox::information(this, tr("Info"), tr("vehicle is in ") + reason + tr(" command is ignored"));
-
 				return;
 			}
 
@@ -160,12 +157,7 @@ namespace whi_rviz_plugins
 		});
 		connect(ui_->pushButton_abort, &QPushButton::clicked, this, [=]()
 		{
-			if (toggle_collision_.load() || remote_mode_.load())
-			{
-				QString reason = toggle_collision_.load() ? tr("critical collision") : tr("remote mode");
-				QMessageBox::information(this, tr("Info"), tr("vehicle is in ") + reason + tr(" command is ignored"));
-			}
-			else
+			if (!isBypassed())
 			{
 				abort();
 			}
@@ -900,6 +892,19 @@ namespace whi_rviz_plugins
 
 	void WaypointsPanel::subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState)
     {
+        if (MotionState->state == whi_interfaces::WhiMotionState::STA_ESTOP)
+	    {
+		    if (!toggle_estop_.load())
+		    {
+			    abort();
+		    }
+		    toggle_estop_.store(true);
+	    }
+	    else if (MotionState->state == whi_interfaces::WhiMotionState::STA_ESTOP_CLEAR)
+	    {
+		    toggle_estop_.store(false);
+	    }
+
         if (MotionState->state == whi_interfaces::WhiMotionState::STA_CRITICAL_COLLISION)
 	    {
 		    if (!toggle_collision_.load())
@@ -937,4 +942,26 @@ namespace whi_rviz_plugins
 		ui_->label_state->setText("Standby");
 		enableUi(true);
 	}
+
+	bool WaypointsPanel::isBypassed()
+    {
+        if (toggle_estop_.load())
+        {
+            QMessageBox::information(this, tr("Info"), tr("E-Stop detected, command is ignored"));
+        }
+        else if (toggle_collision_.load())
+        {
+            QMessageBox::information(this, tr("Info"), tr("critical collision detected, command is ignored"));
+        }
+        else if (remote_mode_.load())
+        {
+            QMessageBox::information(this, tr("Info"), tr("vehicle is in remote mode, command is ignored"));
+        }
+        else
+        {
+            return false;
+        }
+
+        return true;
+    }
 } // end namespace whi_rviz_plugins

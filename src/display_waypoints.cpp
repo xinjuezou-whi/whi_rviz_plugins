@@ -34,7 +34,7 @@ namespace whi_rviz_plugins
     WaypointsDisplay::WaypointsDisplay()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.22" << std::endl;
+        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.23" << std::endl;
         std::cout << "Copyright @ 2022-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         marker_size_property_ = new rviz::FloatProperty("Marker Size", 1.0, "Arrow size of waypoint mark.",
