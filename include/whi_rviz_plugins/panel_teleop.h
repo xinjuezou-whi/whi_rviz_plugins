@@ -58,6 +58,7 @@ namespace whi_rviz_plugins
 		void focusInEvent(QFocusEvent* Event) override;
 
 		void subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState);
+		bool isBypassed();
 
 	private:
 		Ui::NaviTeleop* ui_{ nullptr };

@@ -153,7 +153,7 @@ namespace whi_rviz_plugins
                 timer_pub_ = new QTimer(this);
                 connect(timer_pub_, &QTimer::timeout, this, [=]()
                 {
-                    if (!remote_mode_.load() && !toggle_collision_.load())
+                    if (!toggle_estop_.load() && !remote_mode_.load() && !toggle_collision_.load())
                     {
                         twist_widget_->toggleIndicator(toggle_publishing_, true);
                         toggle_publishing_ = !toggle_publishing_;
@@ -188,11 +188,8 @@ namespace whi_rviz_plugins
 
     void TeleopPanel::moveLinear(int Dir)
     {
-        if (toggle_collision_.load() || remote_mode_.load())
+        if (isBypassed())
         {
-            QString reason = toggle_collision_.load() ? tr("critical collision") : tr("remote mode");
-            QMessageBox::information(this, tr("Info"), tr("vehicle is in ") + reason + tr(" command is ignored"));
-
             return;
         }
 
@@ -206,19 +203,8 @@ namespace whi_rviz_plugins
 
 	void TeleopPanel::moveAngular(int Dir)
     {
-        if (toggle_estop_.load())
+        if (isBypassed())
         {
-            QMessageBox::information(this, tr("Info"), tr("E-Stop detected, command is ignored"));
-            return;
-        }
-        else if (toggle_collision_.load())
-        {
-            QMessageBox::information(this, tr("Info"), tr("critical collision detected, command is ignored"));
-            return;
-        }
-        else if (remote_mode_.load())
-        {
-            QMessageBox::information(this, tr("Info"), tr("vehicle is in remote mode, command is ignored"));
             return;
         }
 
@@ -232,11 +218,8 @@ namespace whi_rviz_plugins
 
     void TeleopPanel::halt()
     {
-        if (toggle_collision_.load() || remote_mode_.load())
+        if (isBypassed())
         {
-            QString reason = toggle_collision_.load() ? tr("critical collision") : tr("remote mode");
-            QMessageBox::information(this, tr("Info"), tr("vehicle is in ") + reason + tr(" command is ignored"));
-
             return;
         }
 
@@ -334,5 +317,27 @@ namespace whi_rviz_plugins
         {
             remote_mode_.store(false);
         }
+    }
+
+    bool TeleopPanel::isBypassed()
+    {
+        if (toggle_estop_.load())
+        {
+            QMessageBox::information(this, tr("Info"), tr("E-Stop detected, command is ignored"));
+        }
+        else if (toggle_collision_.load())
+        {
+            QMessageBox::information(this, tr("Info"), tr("critical collision detected, command is ignored"));
+        }
+        else if (remote_mode_.load())
+        {
+            QMessageBox::information(this, tr("Info"), tr("vehicle is in remote mode, command is ignored"));
+        }
+        else
+        {
+            return false;
+        }
+
+        return true;
     }
 } // end namespace whi_rviz_plugins
