@@ -206,11 +206,19 @@ namespace whi_rviz_plugins
 
 	void TeleopPanel::moveAngular(int Dir)
     {
-        if (toggle_collision_.load() || remote_mode_.load())
+        if (toggle_estop_.load())
         {
-            QString reason = toggle_collision_.load() ? tr("critical collision") : tr("remote mode");
-            QMessageBox::information(this, tr("Info"), tr("vehicle is in ") + reason + tr(" command is ignored"));
-
+            QMessageBox::information(this, tr("Info"), tr("E-Stop detected, command is ignored"));
+            return;
+        }
+        else if (toggle_collision_.load())
+        {
+            QMessageBox::information(this, tr("Info"), tr("critical collision detected, command is ignored"));
+            return;
+        }
+        else if (remote_mode_.load())
+        {
+            QMessageBox::information(this, tr("Info"), tr("vehicle is in remote mode, command is ignored"));
             return;
         }
 
@@ -288,6 +296,19 @@ namespace whi_rviz_plugins
 
     void TeleopPanel::subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState)
     {
+        if (MotionState->state == whi_interfaces::WhiMotionState::STA_ESTOP)
+	    {
+		    if (!toggle_estop_.load())
+		    {
+			    halt();
+		    }
+		    toggle_estop_.store(true);
+	    }
+	    else if (MotionState->state == whi_interfaces::WhiMotionState::STA_ESTOP_CLEAR)
+	    {
+		    toggle_estop_.store(false);
+	    }
+
         if (MotionState->state == whi_interfaces::WhiMotionState::STA_CRITICAL_COLLISION)
 	    {
 		    if (!toggle_collision_.load())
