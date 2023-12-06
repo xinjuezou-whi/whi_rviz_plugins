@@ -132,6 +132,11 @@ namespace whi_rviz_plugins
             setIndicatorIcon(ui_->label_indicator_1, INDICATOR_RED);
             setIndicatorText(ui_->label_indicator_cap_1, "fault");
         }
+        else if (State->state == whi_interfaces::WhiMotionState::STA_ESTOP)
+        {
+            setIndicatorIcon(ui_->label_indicator_1, INDICATOR_ORANGE);
+            setIndicatorText(ui_->label_indicator_cap_1, "E-Stop");
+        }
         else if (State->state == whi_interfaces::WhiMotionState::STA_CRITICAL_COLLISION)
         {
             setIndicatorIcon(ui_->label_indicator_1, INDICATOR_ORANGE);
