@@ -48,7 +48,7 @@ namespace whi_rviz_plugins
 		}
 
 		// plugins
-		loadPlugin(path.string() + "/config/config.yaml");
+		loadPlugin(path.string() + "/config/config.yaml", ui_->comboBox_ns->currentText().toStdString());
 
 		// widget behaviour
 		ui_->label_state->setText("Standby");
@@ -353,6 +353,7 @@ namespace whi_rviz_plugins
 			this, std::placeholders::_1, std::placeholders::_2));
 		if (plugins_map_[task_plugin_name_])
 		{
+			plugins_map_[task_plugin_name_]->updateNamespace(Namespace);
 			goals_map_[Namespace]->setTaskPlugin(plugins_map_[task_plugin_name_]);
 		}
 	}
@@ -780,7 +781,7 @@ namespace whi_rviz_plugins
 		return ui_->comboBox_ns->findText(Namespace.c_str()) >= 0;
 	}
 
-	bool WaypointsPanel::loadPlugin(const std::string& Config)
+	bool WaypointsPanel::loadPlugin(const std::string& Config, const std::string& Namespace)
 	{
 		try
     	{
@@ -793,7 +794,7 @@ namespace whi_rviz_plugins
 				if (name)
 				{
 					task_plugin_name_ = name.as<std::string>();
-					createTaskPlugin(taskPlugin);
+					createTaskPlugin(taskPlugin, Namespace);
 				}
 				else
 				{
@@ -810,7 +811,7 @@ namespace whi_rviz_plugins
     	}
 	}
 
-	bool WaypointsPanel::createTaskPlugin(const YAML::Node& Node)
+	bool WaypointsPanel::createTaskPlugin(const YAML::Node& Node, const std::string& Namespace)
 	{
         try
         {
@@ -819,7 +820,7 @@ namespace whi_rviz_plugins
 				plugin_loader_ = std::make_unique<pluginlib::ClassLoader<BasePlugin>>
 					("whi_rviz_plugins", "whi_rviz_plugins::BasePlugin");
 				plugins_map_[task_plugin_name_] = plugin_loader_->createInstance(task_plugin_name_);
-				plugins_map_[task_plugin_name_]->initialize(Node);
+				plugins_map_[task_plugin_name_]->initialize(Node, Namespace);
 			}
             
             ROS_INFO_STREAM("created plugin " << task_plugin_name_);

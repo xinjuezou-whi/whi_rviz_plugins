@@ -79,8 +79,8 @@ namespace whi_rviz_plugins
 		double getYawFromPose(const geometry_msgs::Pose& Pose) const;
 		void enableUi(bool Flag);
 		bool nsExisted(const std::string& Namespace) const;
-		bool loadPlugin(const std::string& Config);
-		bool createTaskPlugin(const YAML::Node& Node);
+		bool loadPlugin(const std::string& Config, const std::string& Namespace);
+		bool createTaskPlugin(const YAML::Node& Node, const std::string& Namespace);
 		QPushButton* bindTaskPlugin(int Row);
 		void refreshTasksMap();
 		void subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState);
