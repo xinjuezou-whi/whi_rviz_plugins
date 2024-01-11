@@ -1,5 +1,5 @@
 # whi_rviz_plugins
-Rviz plugins package for handling custom info and operations. currently there are serveral plugins:
+Rviz plugins package for handling custom info and operations. currently there are several plugins:
 - [Battery](#battery)
 - [Navi_waypoints](#navi_waypoints)
 - [Teleop](#teleop)
@@ -8,9 +8,9 @@ Rviz plugins package for handling custom info and operations. currently there ar
 - [Navi_namespace](#navi_namespace)
 - [Navi_robot_model_viewer](#navi_robot_model_viewer)
 
-The Battery which shows the battery's left charge in text and symbolizing battery; the Navi_waypoints which allows user add multiple navigation targets with interactive markers; the Teleop which publishes the twist message through GUI; the panel Map_saver which helps user to save map directly by RViz without typing command in terminal; the Video_stream which derived from default image plugin with extended stream sources like webcam, IP stream, and video file; the tool Navi_namespace, under multiple robots scenario, allows user to specify target robot target through GUI without laboring edit in tool property; the Navi_robot_model_viewer is an auxiliary OGRE view for showing the URDF of robot
+The Battery shows the battery's left charge in text and symbolizes the battery; the Navi_waypoints allows user to add multiple navigation targets with interactive markers; the Teleop which publishes the twist message through GUI; the panel Map_saver helps user to save map directly by RViz without typing command in terminal; the Video_stream which derived from default image plugin with extended stream sources like webcam, IP stream, and video file; the tool Navi_namespace, under multiple robots scenario, allows user to specify target robot target through GUI without laboring edit in tool property; the Navi_robot_model_viewer is an auxiliary OGRE view for showing the URDF of robot
 
-Refering build section fo setup the package:
+Referring build section for setup the package:
 - [Build](#build)
 
 Following the brief introduction for the usage of each plugin:
@@ -38,7 +38,7 @@ uint8 STA_NEED_CHARGING=2
 int8 state
 ```
 
-The base of the charge text will be at the frame listed in the header of the WhiBattery message, which let the charge info stick to robot and move with it. Besides under multiple robots senario, frame with namespace enable each robot bearing its own charge info.
+The base of the charge text will be at the frame listed in the header of the WhiBattery message, which lets the charge info stick to the robot and move with it. Besides under multiple robots scenario, frame with namespace enables each robot to bear its charge info.
 
 ## Navi_waypoints
 Plugin Navi_waypoints derives from class rviz::Display, and creates a panel for waypoints interaction logic:
@@ -48,7 +48,7 @@ From version 00.09 it supports the namespace for manipulating multiple robots si
 ![multiple_waypoints](https://user-images.githubusercontent.com/72239958/233375738-db73c3f4-9613-462e-8808-ec631c5aef5d.gif)
 
 ## Teleop
-Teleop's function is same as the one operated through terminal but with graphic interaction which can be more convenient in senario like mapping. User can navigate the robot directly through the mapping's RViz window without opening another terminal:
+Teleop's function is the same as the one operated through terminal but with graphic interaction which can be more convenient in scenario like mapping. User can navigate the robot directly through the mapping's RViz window without opening another terminal:
 ![teleop](https://user-images.githubusercontent.com/72239958/202849722-3b94f105-314e-4de9-b6fb-4c0973ace9c4.gif)
 
 ## Map_saver
@@ -60,11 +60,11 @@ This plugin derived from the default image plugin with extended stream sources i
 ![stream](https://user-images.githubusercontent.com/72239958/204996337-f5bc2fae-bb17-4306-b71b-8beb10904a62.gif)
 
 ## Navi_namespace
-This plugin dervied from the PoseTool, and extended to functionalities with both 2D Pose Estimate and 2D Nav goal. With this plugin user can navigate specified robot by GUI rather than laborious texting by Tool Properties:
+This plugin derived from the PoseTool, and extended to functionalities with both 2D Pose Estimate and 2D Nav goal. With this plugin user can navigate specified robot by GUI rather than laborious texting by Tool Properties:
 ![multiple](https://user-images.githubusercontent.com/72239958/232202523-065316e1-c1eb-497a-9a42-6731e7f24d40.gif)
 
 ## Navi_robot_model_viewer
-This plugin is an additional OGRE view for showing the URDF of robot, which is requested from our end-user. It is derived from rviz::Display with user interaction in 3D scene:
+This plugin is an additional OGRE view for showing the URDF of robot, which is requested by our end-user. It is derived from rviz::Display with user interaction in the 3D scene:
 ![robot_model_viewer](https://github.com/xinjuezou-whi/whi_rviz_plugins/assets/72239958/27de3ed2-b725-44f6-bff7-ac2ed428383d)
 
 ## Build
@@ -86,7 +86,7 @@ source <your_workspace>/devel/setup.bash
 ## Use battery
 1. Publish the WhiBattery message
 
-  For a quick check, there is a test script, named `send_test_msgs.py` under folder `scripts` to publish simulated charge info interatively. Before running it, please make sure roscore is active:
+  For a quick check, there is a test script, named `send_test_msgs.py` under folder `scripts` to publish simulated charge info interactively. Before running it, please make sure roscore is active:
   ```
   roscore
   ```
@@ -95,13 +95,13 @@ source <your_workspace>/devel/setup.bash
   python src/whi_rviz_plugins/scripts/send_test_msgs.py 
   ```
 
-2. Run rviz to add the Battery plugin
+2. Run RViz to add the Battery plugin
 
-  Click the "Add" button at the bottom of the "Displays" panel, then scrolling down through the available displays until you see "Battery" under package name "whi_rviz_plugins":
+  Click the "Add" button at the bottom of the "Displays" panel, then scroll down through the available displays until you see "Battery" under package name "whi_rviz_plugins":
 
 ![image](https://user-images.githubusercontent.com/72239958/182015665-fd271ba8-7fbb-4b4c-b479-73f90e24b48d.png)
 
-  Once the Battery display is added to rviz, set the topic name of the display to a source of "whi_interfaces::WhiBattery". The topic is "test_bat" if you are running the "send_test_msgs.py".
+  Once the Battery display is added to RViz, set the topic name of the display to a source of "whi_interfaces::WhiBattery". The topic is "test_bat" if you are running the "send_test_msgs.py".
   
 ![image](https://user-images.githubusercontent.com/72239958/182015784-2942af09-8773-464b-87ce-e31522cf21ec.png)
 
@@ -115,28 +115,28 @@ Modify the offsets to the center of frame to adjust its local position:
 
 ### Local orientation
 
-Modify the orientation to the frame to adjust the direction of battery symbol, this is helpfull in navigation senario which is 2D view of XY plane:
+Modify the orientation to the frame to adjust the direction of the battery symbol, this is helpful in navigation scenario which is a 2D view of XY plane:
 
 ![orientaion](https://user-images.githubusercontent.com/72239958/187387702-172637b1-0e06-4356-9259-c1d16afceebc.gif)
 
 ![image](https://user-images.githubusercontent.com/72239958/187388565-0340d940-fc04-4a1f-aca6-e193c1c8feaa.png)
 
-> Navigation robot should have a static TF link that directs to map. The belowing gif shows the static TF in robot's URDF(battery->base_link->map)
+> Navigation robot should have a static TF link that directs to map. The below gif shows the static TF in robot's URDF(battery->base_link->map)
 
 ![bat](https://user-images.githubusercontent.com/72239958/197972731-3d453537-44c4-4a22-9038-617c21d2711d.gif)
 
 ## Use Navi_waypoints
 1. Add the Navi_waypoints plugin to RViz
 
-Click the "Add" button at the bottom of the "Displays" panel, then scrolling down through the available displays until you see "Navi_waypoints" under package name "whi_rviz_plugins":
+Click the "Add" button at the bottom of the "Displays" panel, then scroll down through the available displays until you see "Navi_waypoints" under package name "whi_rviz_plugins":
 
 ![image](https://user-images.githubusercontent.com/72239958/198869331-34ce45d3-8879-4535-a3ff-5046b597dca4.png)
 
-2. Add waypoints and adjust its position and orientation through interfactive marker
+2. Add waypoints and adjust its position and orientation through interactive marker
 
 ![waypoints_add](https://user-images.githubusercontent.com/72239958/198868281-a7e562d9-c85d-4ec5-ab89-87e6f34de6eb.gif)
 
-> Remember to switch the mode from "Move Camera" to "Interact" to grand the accessiblity of waypoint marker
+> Remember to switch the mode from "Move Camera" to "Interact" to grand the accessibility of waypoint marker
 
 
 3. Click "Execute" to start the multiple goal's navigation
@@ -146,28 +146,28 @@ Click the "Add" button at the bottom of the "Displays" panel, then scrolling dow
 
 ### Marker Height property
 
-Since the view orientation is top-down in navigation, multiple info are projected on map and overlay each other. If the interactive marker is happen to be overlaid by other info, it could not be accessed by user. Therefore the property marker height is introduced to make sure it is on the top of other info, so to be accessible.
+Since the view orientation is top-down in navigation, multiple info are projected on map and overlay each other. If the interactive marker is happen to be overlaid by other info, it could not be accessed by user. Therefore the property marker height is introduced to make sure it is on top of other info, so to be accessible.
 
-It is suggested to set its height over the max of your robot, default is 1 meter
+It is suggested to set its height over the max of your robot, the default is 1 meter
 
 ### Point/Stop Span params
 
 These two params on Navi_waypoints panel are used to set the duration between two adjacent goals. If the execution is set as loop mode, the stop span stands for the duration between the last goal and the first goal.
 
-The duration is measured as time, so these two's unit are second. Both are within range -10800 to 10800. Negative duration means there is no stop between goals, and the current goal will be preempted x seconds ahead its arrival by the next goal. The positive means the stop duration between goals.
+The duration is measured as time, so these two's units are second. Both are within range -10800 to 10800. Negative duration means there is no stop between goals, and the current goal will be preempted x seconds ahead its arrival by the next goal. The positive means the stop duration between goals.
 
 ### Save and Load
 
-For the convenience, you can save the waypoints by clicking save button, and re-use them by button load. The waypoints file is saved as yaml format.
+For convenience, you can save the waypoints by clicking the save button, and re-use them by button load. The waypoints file is saved in yaml format.
 
 ### Namespace
 
-Under multiple robots senario, using the namespace drop list to set the namespace for specified robot.
+Under multiple robots scenario, using the namespace drop list to set the namespace for specified robot.
 
 ## Use Teleop
 1. Add the Navi_waypoints plugin to RViz
 
-Click the "Add" button at the bottom of the "Displays" panel, then scrolling down through the available displays until you see "Teleop" under package name "whi_rviz_plugins":
+Click the "Add" button at the bottom of the "Displays" panel, then scroll down through the available displays until you see "Teleop" under package name "whi_rviz_plugins":
 
 ![image](https://user-images.githubusercontent.com/72239958/202850781-d94e9f6d-91d2-4520-a68a-a1fc409d4675.png)
 
@@ -181,7 +181,7 @@ keys definition
 > ![activate](https://user-images.githubusercontent.com/72239958/202852068-e9f2c921-3cc8-46ae-880f-5bece0c381a1.gif)
 
 ### Enable Teleop property
-This property toggles the publish of twist message. It is helpfull to avoid the collsion of cmd_vel while the plugin is added in navigation's configuration.
+This property toggles the publish of twist message. It is helpful to avoid the collision of cmd_vel while the plugin is added in navigation's configuration.
 
 ## Use Map_saver
 Add the Teleop panel by opening the "Panels" menu and then "Add New Panel" within that. This should bring up a Panel class chooser dialog, and select the "Map_saver" within whi_rviz_plugins":
@@ -195,7 +195,7 @@ Once the map is satified to you, just click the "Save" button to save it:
 ## Use Video_stream
 1. Add the Video_stream plugin to RViz
 
-Click the "Add" button at the bottom of the "Displays" panel, then scrolling down through the available displays until you see "Video_stream" under package name "whi_rviz_plugins":
+Click the "Add" button at the bottom of the "Displays" panel, then scroll down through the available displays until you see "Video_stream" under package name "whi_rviz_plugins":
 
 ![image](https://user-images.githubusercontent.com/72239958/204996785-4818279d-578f-4d36-83e2-96a58c5bc580.png)
 
@@ -210,7 +210,7 @@ Click the "Add" button at the bottom of the "Displays" panel, then scrolling dow
 ## Use Navi_namespace
 1. Add the Navi_namespace plugin to RViz
 
-Click the "+" icon at the tool bar, then scrolling down through the available tools until your see "Navi_namespace" under package name "whi_rviz_plugins":
+Click the "+" icon at the toolbar, then scrolling down through the available tools until your see "Navi_namespace" under package name "whi_rviz_plugins":
 
 ![image](https://user-images.githubusercontent.com/72239958/232203203-955d5f4c-b5d8-47fa-9cee-de7cb9702ca8.png)
 
@@ -221,7 +221,7 @@ Input namespace in combox, then click button "Add". If namespace is added succes
 ![image](https://user-images.githubusercontent.com/72239958/232203413-5bad7ee2-7f95-415a-8ab5-15c9fe91170f.png)
 ![image](https://user-images.githubusercontent.com/72239958/232203575-be620bb2-596e-4cce-a9c2-6084ba0a2977.png)
 
-3. Toggle between Initial Pose and Navi Goal for setting initial pose and sending out navigation goal:
+3. Toggle between Initial Pose and Navi Goal for setting the initial pose and sending out the navigation goal:
 
 ![toggle](https://user-images.githubusercontent.com/72239958/232205172-eebd5188-f570-41bc-87d2-c040ff8fd5a3.gif)
 
@@ -230,15 +230,15 @@ Input namespace in combox, then click button "Add". If namespace is added succes
 > 
 > When using the Navi_waypoints plugin in the master to perform multi-point path navigation operations, the current target timestamp recorded in the robot's actionlib is the current time of the master. If a navigation target operation is sent again using 2D Navi Goal (whether from the master or the client itself), navigation cannot be performed. This is because the plugin Navi_waypoints uses the simple action client to send navigation targets, and the timestamp used by this method is the master's own time. When actionlib receives the target, it will assign this target as its internal current target. On the other hand, 2D Navi Goal uses the message method with the topic move_base_simple/goal to send navigation targets. Under this method, when move_base receives the target message (type geometry_msgs::PoseStamped), it converts the target into move_base's target message move_base_msgs::MoveBaseActionGoal, and assigns its own time to it before forwarding the message to actionlib. Therefore, there may be a situation where the timestamp of the new navigation target is earlier than the current target timestamp recorded by actionlib. In this case, actionlib will consider it an invalid target and abandon its execution.
 > 
-> There are already plenty of well-established methods for timestamp synchronization, among them we recommend NTP. Please google it for setting up
+> There are already plenty of well-established methods for timestamp synchronization, among them we recommend NTP. Please google it for the setting-up
 
 ## Use Navi_robot_model_viewer
 1. Add the Video_stream plugin to RViz
 
-Click the "Add" button at the bottom of the "Displays" panel, then scrolling down through the available displays until you see "Navi_robot_model_viewer" under package name "whi_rviz_plugins":
+Click the "Add" button at the bottom of the "Displays" panel, then scroll down through the available displays until you see "Navi_robot_model_viewer" under package name "whi_rviz_plugins":
 ![image](https://github.com/xinjuezou-whi/whi_rviz_plugins/assets/72239958/063872f0-a80a-46ee-a7b6-b82aa7ca8368)
 
 2. Specify the frame of URDF
 
-Usually the frame of URDF is "base_link", you can set it through property "Fixed Frame". While the URDF is showing, user can interacte the model with mouse as same as the main view of RViz:
+Usually the frame of URDF is "base_link", you can set it through the property "Fixed Frame". While the URDF is showing, user can interact the model with mouse as same as the main view of RViz:
 ![robot_model_viewer_use](https://github.com/xinjuezou-whi/whi_rviz_plugins/assets/72239958/cedddc0b-e70c-4142-b126-98d19960af7f)
