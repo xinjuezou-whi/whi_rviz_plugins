@@ -25,6 +25,7 @@ namespace whi_rviz_plugins
 {
     StatePanel::StatePanel(QWidget* Parent/* = nullptr*/)
 		: QWidget(Parent), ui_(new Ui::NaviState())
+        , node_handle_(std::make_unique<ros::NodeHandle>())
 	{
         first_state_msg_.header.seq = std::numeric_limits<uint32_t>::max();
 
@@ -59,6 +60,8 @@ namespace whi_rviz_plugins
         setIndicatorText(ui_->label_indicator_cap_6, "reserved");
         setIndicatorText(ui_->label_indicator_cap_7, "reserved");
         setIndicatorText(ui_->label_indicator_cap_8, "reserved");
+        // signals
+		connect(ui_->pushButton_clear, &QPushButton::clicked, this, [=]() { clearButtonClicked(); });
     }
 
     StatePanel::~StatePanel()
@@ -158,6 +161,12 @@ namespace whi_rviz_plugins
         }
     }
 
+    void StatePanel::setRcStateTopic(const std::string& Topic)
+    {
+        pub_rc_state_ = std::make_unique<ros::Publisher>(
+            node_handle_->advertise<whi_interfaces::WhiRcState>(Topic, 50));
+    }
+
     void StatePanel::setBatteryInfo(int Soc, int Soh)
     {
         ui_->label_soc->setText(QString::number(Soc) + "%");
@@ -240,5 +249,12 @@ namespace whi_rviz_plugins
             QImage scaled = indicator.scaledToHeight(Scale);
 			Label->setPixmap(QPixmap::fromImage(scaled));
 		}
+    }
+
+    void StatePanel::clearButtonClicked()
+    {
+        whi_interfaces::WhiRcState msgState;
+        msgState.state = whi_interfaces::WhiRcState::STA_CLEAR_FAULT;
+        pub_rc_state_->publish(msgState);
     }
 } // end namespace whi_rviz_plugins

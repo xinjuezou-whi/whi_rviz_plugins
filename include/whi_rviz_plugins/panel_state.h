@@ -15,6 +15,7 @@ Changelog:
 2022-xx-xx: xxx
 ******************************************************************/
 #pragma once
+#include <ros/ros.h>
 #include <rviz/panel.h>
 #include <geometry_msgs/Pose.h>
 
@@ -43,6 +44,7 @@ namespace whi_rviz_plugins
         void setEta(const std::string& Eta);
 		void setMotionState(const whi_interfaces::WhiMotionState::ConstPtr& State);
 		void setRcState(const whi_interfaces::WhiRcState::ConstPtr& State);
+		void setRcStateTopic(const std::string& Topic);
 		void setBatteryInfo(int Soc, int Soh);
 
 	private:
@@ -51,11 +53,15 @@ namespace whi_rviz_plugins
 		void setIndicatorText(QLabel* Label, const std::string& Text);
 		void setBatteryIcon(QLabel* Label, int Soc);
 		void setLabelIcon(QLabel* Label, const std::string& IconFile, int Scale);
+		void clearButtonClicked();
 
 	private:
         enum IndicatorType { INDICATOR_GREY = 0, INDICATOR_RED, INDICATOR_ORANGE,
 			INDICATOR_YELLOW, INDICATOR_GREEN, INDICATOR_BLUE };
 		Ui::NaviState* ui_{ nullptr };
 		whi_interfaces::WhiMotionState first_state_msg_;
+		std::unique_ptr<ros::NodeHandle> node_handle_{ nullptr };
+		std::unique_ptr<ros::Publisher> pub_rc_state_{ nullptr };
+		std::string rc_state_topic_{ "rc_state" };
 	};
 } // end namespace whi_rviz_plugins

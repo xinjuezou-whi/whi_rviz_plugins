@@ -39,7 +39,7 @@ namespace whi_rviz_plugins
         : Display()
         , node_handle_(std::make_unique<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for motion state VERSION 00.06" << std::endl;
+        std::cout << "\nWHI RViz plugin for motion state VERSION 00.06.1" << std::endl;
         std::cout << "Copyright @ 2023-2025 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         tf_listener_ = std::make_unique<tf2_ros::TransformListener>(buffer_);
@@ -204,6 +204,7 @@ namespace whi_rviz_plugins
             node_handle_->subscribe<whi_interfaces::WhiRcState>(
 		    rc_state_topic_property_->getTopicStd(), 10,
             std::bind(&DisplayState::subCallbackRcState, this, std::placeholders::_1)));
+        panel_->setRcStateTopic(rc_state_topic_property_->getTopicStd());
     }
 
     void DisplayState::updateBaselinkFrame()

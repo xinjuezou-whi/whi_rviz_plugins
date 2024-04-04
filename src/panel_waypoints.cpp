@@ -34,6 +34,7 @@ namespace whi_rviz_plugins
 		QWidget* Parent/* = nullptr*/)
 		: QWidget(Parent), ui_(new Ui::NaviWaypoints())
 		, func_visualize_waypoints_(FuncWaypoints), func_visualize_eta_(FuncEta)
+		, node_handle_(std::make_unique<ros::NodeHandle>())
 	{
 		// set up the GUI
 		ui_->setupUi(this);
@@ -319,7 +320,6 @@ namespace whi_rviz_plugins
 	{
 		if (!Topic.empty())
 		{
-			node_handle_ = std::make_unique<ros::NodeHandle>();
         	sub_motion_state_ = std::make_unique<ros::Subscriber>(
             	node_handle_->subscribe<whi_interfaces::WhiMotionState>(Topic, 10,
             	std::bind(&WaypointsPanel::subCallbackMotionState, this, std::placeholders::_1)));
@@ -330,7 +330,6 @@ namespace whi_rviz_plugins
 	{
 		if (!Topic.empty())
 		{
-			node_handle_ = std::make_unique<ros::NodeHandle>();
         	sub_rc_state_ = std::make_unique<ros::Subscriber>(
             	node_handle_->subscribe<whi_interfaces::WhiRcState>(Topic, 10,
             	std::bind(&WaypointsPanel::subCallbackRcState, this, std::placeholders::_1)));
