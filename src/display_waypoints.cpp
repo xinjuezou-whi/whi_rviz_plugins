@@ -34,8 +34,8 @@ namespace whi_rviz_plugins
     WaypointsDisplay::WaypointsDisplay()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.23.1" << std::endl;
-        std::cout << "Copyright @ 2022-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
+        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.24" << std::endl;
+        std::cout << "Copyright @ 2022-2025 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         marker_size_property_ = new rviz::FloatProperty("Marker Size", 1.0, "Arrow size of waypoint mark.",
             this, SLOT(updateMarks()));
@@ -70,6 +70,9 @@ namespace whi_rviz_plugins
         motion_state_topic_property_ = new rviz::RosTopicProperty("Motion state topic", "motion_state",
             "whi_interfaces/WhiMotionState", "Topic of motion state",
             this, SLOT(updateMotionStateTopic()));
+        rc_state_topic_property_ = new rviz::RosTopicProperty("Remote controller state topic", "rc_state",
+            "whi_interfaces/WhiRcState", "Topic of remote controller state",
+            this, SLOT(updateRcStateTopic()));
     }
 
     WaypointsDisplay::~WaypointsDisplay()
@@ -106,6 +109,7 @@ namespace whi_rviz_plugins
         updateRecoveryMaxTryCount();
         updateTolerance();
         updateMotionStateTopic();
+        updateRcStateTopic();
     }
 
     void WaypointsDisplay::clearWaypointsLocationsDisplay()
@@ -259,6 +263,11 @@ namespace whi_rviz_plugins
     void WaypointsDisplay::updateMotionStateTopic()
     {
         panel_->setMotionStateTopic(motion_state_topic_property_->getTopicStd());
+    }
+
+    void WaypointsDisplay::updateRcStateTopic()
+    {
+        panel_->setRcStateTopic(rc_state_topic_property_->getTopicStd());
     }
 
     void WaypointsDisplay::addPositionControl(visualization_msgs::InteractiveMarker& IntMarker, bool OrientationFixed)

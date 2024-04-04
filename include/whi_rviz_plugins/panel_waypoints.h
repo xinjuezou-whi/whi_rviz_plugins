@@ -19,6 +19,7 @@ Changelog:
 #include "goals_handle.h"
 #include "base_plugin.h"
 #include <whi_interfaces/WhiMotionState.h>
+#include <whi_interfaces/WhiRcState.h>
 
 #include <rviz/panel.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -58,6 +59,7 @@ namespace whi_rviz_plugins
 		void setRecoveryMaxTryCount(int Count);
 		void setTolerance(double XyTolerance, double YawTolerance);
 		void setMotionStateTopic(const std::string& Topic);
+		void setRcStateTopic(const std::string& Topic);
 
 	private:
 		void configureNs(const std::string& Namespace);
@@ -84,6 +86,7 @@ namespace whi_rviz_plugins
 		QPushButton* bindTaskPlugin(int Row);
 		void refreshTasksMap();
 		void subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState);
+		void subCallbackRcState(const whi_interfaces::WhiRcState::ConstPtr& RcState);
 		void abort();
 		bool isBypassed();
 
@@ -108,6 +111,7 @@ namespace whi_rviz_plugins
 		double xy_goal_tolerance_{ 0.15 };
 		double yaw_goal_tolerance_{ 0.15 };
 		std::unique_ptr<ros::Subscriber> sub_motion_state_{ nullptr };
+		std::unique_ptr<ros::Subscriber> sub_rc_state_{ nullptr };
 		std::unique_ptr<ros::NodeHandle> node_handle_{ nullptr };
 		std::atomic_bool toggle_estop_{ false };
 		std::atomic_bool toggle_collision_{ false };

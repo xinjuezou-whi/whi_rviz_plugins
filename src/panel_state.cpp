@@ -142,12 +142,16 @@ namespace whi_rviz_plugins
             setIndicatorIcon(ui_->label_indicator_1, INDICATOR_ORANGE);
             setIndicatorText(ui_->label_indicator_cap_1, "collision");
         }
-        else if (State->state == whi_interfaces::WhiMotionState::STA_AUTO)
+    }
+
+    void StatePanel::setRcState(const whi_interfaces::WhiRcState::ConstPtr& State)
+    {
+        if (State->state == whi_interfaces::WhiRcState::STA_AUTO)
         {
             setIndicatorIcon(ui_->label_indicator_2, INDICATOR_GREEN);
             setIndicatorText(ui_->label_indicator_cap_2, "auto");
         }
-        else if (State->state == whi_interfaces::WhiMotionState::STA_REMOTE)
+        else if (State->state == whi_interfaces::WhiRcState::STA_REMOTE)
         {
             setIndicatorIcon(ui_->label_indicator_2, INDICATOR_BLUE);
             setIndicatorText(ui_->label_indicator_cap_2, "remote");

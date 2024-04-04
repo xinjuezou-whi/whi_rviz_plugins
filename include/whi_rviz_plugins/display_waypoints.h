@@ -68,6 +68,7 @@ namespace whi_rviz_plugins
         void updateRecoveryMaxTryCount();
         void updateTolerance();
         void updateMotionStateTopic();
+        void updateRcStateTopic();
 
     private:
         static void addPositionControl(visualization_msgs::InteractiveMarker& IntMarker, bool OrientationFixed);
@@ -96,6 +97,7 @@ namespace whi_rviz_plugins
         rviz::FloatProperty* xy_goal_tolerance_property_;
 	    rviz::FloatProperty* yaw_goal_tolerance_property_;
         rviz::RosTopicProperty* motion_state_topic_property_;
+        rviz::RosTopicProperty* rc_state_topic_property_;
         Ogre::SceneNode* frame_node_{ nullptr };
         bool remote_mode_{ false };
         std::shared_ptr<rviz::FrameManager> frame_manager_{ nullptr };

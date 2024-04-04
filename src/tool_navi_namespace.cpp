@@ -30,8 +30,8 @@ namespace whi_rviz_plugins
     NaviNsTool::NaviNsTool()
         : node_handle_(std::make_unique<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for navigation goal with namespace VERSION 00.05" << std::endl;
-        std::cout << "Copyright @ 2023-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
+        std::cout << "\nWHI RViz plugin for navigation goal with namespace VERSION 00.06" << std::endl;
+        std::cout << "Copyright @ 2023-2025 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         shortcut_key_ = 'n';
         // properties for initial pose
@@ -47,6 +47,9 @@ namespace whi_rviz_plugins
         motion_state_topic_property_ = new rviz::RosTopicProperty("Motion state topic", "motion_state",
             "whi_interfaces/WhiMotionState", "Topic of motion state",
             getPropertyContainer(), SLOT(updateMotionStateTopic()), this);
+        rc_state_topic_property_ = new rviz::RosTopicProperty("Remote controller state topic", "rc_state",
+            "whi_interfaces/WhiRcState", "Topic of remote controller",
+            getPropertyContainer(), SLOT(updateRcStateTopic()), this);
     }
 
     NaviNsTool::~NaviNsTool()
@@ -161,12 +164,15 @@ namespace whi_rviz_plugins
 	    {
             critical_collision_.store(false);
 	    }
+    }
 
-        if (MotionState->state == whi_interfaces::WhiMotionState::STA_REMOTE)
+    void NaviNsTool::subCallbackRcState(const whi_interfaces::WhiRcState::ConstPtr& RcState)
+    {
+        if (RcState->state == whi_interfaces::WhiRcState::STA_REMOTE)
         {
             remote_mode_.store(true);
         }
-        else if (MotionState->state == whi_interfaces::WhiMotionState::STA_AUTO)
+        else if (RcState->state == whi_interfaces::WhiRcState::STA_AUTO)
         {
             remote_mode_.store(false);
         }
@@ -198,6 +204,13 @@ namespace whi_rviz_plugins
         sub_motion_state_ = std::make_unique<ros::Subscriber>(
             node_handle_->subscribe<whi_interfaces::WhiMotionState>(motion_state_topic_property_->getTopicStd(), 10,
             std::bind(&NaviNsTool::subCallbackMotionState, this, std::placeholders::_1)));
+    }
+
+    void NaviNsTool::updateRcStateTopic()
+    {
+        sub_rc_state_ = std::make_unique<ros::Subscriber>(
+            node_handle_->subscribe<whi_interfaces::WhiRcState>(rc_state_topic_property_->getTopicStd(), 10,
+            std::bind(&NaviNsTool::subCallbackRcState, this, std::placeholders::_1)));
     }
 
     PLUGINLIB_EXPORT_CLASS(whi_rviz_plugins::NaviNsTool, rviz::Tool)

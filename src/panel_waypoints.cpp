@@ -326,6 +326,17 @@ namespace whi_rviz_plugins
 		}
 	}
 
+	void WaypointsPanel::setRcStateTopic(const std::string& Topic)
+	{
+		if (!Topic.empty())
+		{
+			node_handle_ = std::make_unique<ros::NodeHandle>();
+        	sub_rc_state_ = std::make_unique<ros::Subscriber>(
+            	node_handle_->subscribe<whi_interfaces::WhiRcState>(Topic, 10,
+            	std::bind(&WaypointsPanel::subCallbackRcState, this, std::placeholders::_1)));
+		}
+	}
+
 	void WaypointsPanel::configureNs(const std::string& Namespace)
 	{
 		if (pre_ns_ != Namespace)
@@ -918,8 +929,11 @@ namespace whi_rviz_plugins
 	    {
 		    toggle_collision_.store(false);
 	    }
+    }
 
-        if (MotionState->state == whi_interfaces::WhiMotionState::STA_REMOTE)
+	void WaypointsPanel::subCallbackRcState(const whi_interfaces::WhiRcState::ConstPtr& RcState)
+	{
+        if (RcState->state == whi_interfaces::WhiRcState::STA_REMOTE)
         {
             if (!remote_mode_.load())
             {
@@ -927,11 +941,11 @@ namespace whi_rviz_plugins
             }
             remote_mode_.store(true);
         }
-        else if (MotionState->state == whi_interfaces::WhiMotionState::STA_AUTO)
+        else if (RcState->state == whi_interfaces::WhiRcState::STA_AUTO)
         {
             remote_mode_.store(false);
         }
-    }
+	}
 
 	void WaypointsPanel::abort()
 	{

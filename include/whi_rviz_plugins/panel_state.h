@@ -19,6 +19,7 @@ Changelog:
 #include <geometry_msgs/Pose.h>
 
 #include <whi_interfaces/WhiMotionState.h>
+#include <whi_interfaces/WhiRcState.h>
 
 namespace Ui
 {
@@ -41,6 +42,7 @@ namespace whi_rviz_plugins
         void setGoal(const geometry_msgs::Pose& Goal);
         void setEta(const std::string& Eta);
 		void setMotionState(const whi_interfaces::WhiMotionState::ConstPtr& State);
+		void setRcState(const whi_interfaces::WhiRcState::ConstPtr& State);
 		void setBatteryInfo(int Soc, int Soh);
 
 	private:

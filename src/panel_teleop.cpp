@@ -242,6 +242,16 @@ namespace whi_rviz_plugins
 		}
 	}
 
+    void TeleopPanel::setRcStateTopic(const std::string& Topic)
+    {
+		if (!Topic.empty())
+		{
+        	sub_rc_state_ = std::make_unique<ros::Subscriber>(
+            	node_handle_->subscribe<whi_interfaces::WhiRcState>(Topic, 10,
+            	std::bind(&TeleopPanel::subCallbackRcState, this, std::placeholders::_1)));
+		}
+    }
+
     void TeleopPanel::keyPressEvent(QKeyEvent* Event)
     {
         switch (Event->key())
@@ -304,8 +314,11 @@ namespace whi_rviz_plugins
 	    {
 		    toggle_collision_.store(false);
 	    }
-
-        if (MotionState->state == whi_interfaces::WhiMotionState::STA_REMOTE)
+    }
+    
+    void TeleopPanel::subCallbackRcState(const whi_interfaces::WhiRcState::ConstPtr& RcState)
+    {
+        if (RcState->state == whi_interfaces::WhiRcState::STA_REMOTE)
         {
             if (!remote_mode_.load())
             {
@@ -313,7 +326,7 @@ namespace whi_rviz_plugins
             }
             remote_mode_.store(true);
         }
-        else if (MotionState->state == whi_interfaces::WhiMotionState::STA_AUTO)
+        else if (RcState->state == whi_interfaces::WhiRcState::STA_AUTO)
         {
             remote_mode_.store(false);
         }
