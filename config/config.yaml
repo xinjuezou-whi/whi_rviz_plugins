@@ -1,6 +1,8 @@
 tasks_plugin:
   name: whi_waypoints_tasks_plugin/WaypointsTasks
   service: tcp_pose
+  alignment_service: /whi_qrcode_pose/qrcode_pose
+  alignment_timeout: 15 # unit second
   base_frame: ur10e_base_link
   tcp_frame: camera
   detection_topic: /yolov5/detections
@@ -9,3 +11,4 @@ tasks_plugin:
   depth_multiplier: 1.0
   exception_pose_group: ready
   state_topic: actuator_state
+  installation: [0, 0, 0] # degrees
