@@ -161,6 +161,20 @@ namespace whi_rviz_plugins
         }
     }
 
+    void StatePanel::setArmState(const whi_interfaces::WhiMotionState::ConstPtr& State)
+    {
+        if (State->state == whi_interfaces::WhiMotionState::STA_STANDBY)
+        {
+            setIndicatorIcon(ui_->label_indicator_4, INDICATOR_GREEN);
+            setIndicatorText(ui_->label_indicator_cap_4, "arm standby");
+        }
+        else if (State->state == whi_interfaces::WhiMotionState::STA_FAULT)
+        {
+            setIndicatorIcon(ui_->label_indicator_4, INDICATOR_RED);
+            setIndicatorText(ui_->label_indicator_cap_4, "arm fault");
+        }
+    }
+
     void StatePanel::setRcStateTopic(const std::string& Topic)
     {
         pub_rc_state_ = std::make_unique<ros::Publisher>(

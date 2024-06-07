@@ -68,6 +68,7 @@ namespace whi_rviz_plugins
 		void subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState);
 		void subCallbackBattery(const whi_interfaces::WhiBattery::ConstPtr& Battery);
 		void subCallbackRcState(const whi_interfaces::WhiRcState::ConstPtr& RcState);
+		void subCallbackArmState(const whi_interfaces::WhiMotionState::ConstPtr& ArmState);
 
 	private Q_SLOTS:
 		// these Qt slots get connected to signals indicating changes in the user-editable properties
@@ -76,6 +77,7 @@ namespace whi_rviz_plugins
 		void updateMotionStateTopic();
 		void updateBatteryTopic();
 		void updateRcStateTopic();
+		void updateArmStateTopic();
         void updateBaselinkFrame();
 
 	private:
@@ -89,6 +91,7 @@ namespace whi_rviz_plugins
         rviz::RosTopicProperty* motion_state_topic_property_;
 		rviz::RosTopicProperty* battery_topic_property_;
 		rviz::RosTopicProperty* rc_state_topic_property_;
+		rviz::RosTopicProperty* arm_state_topic_property_;
 		rviz::TfFrameProperty* frame_property_;
 		std::shared_ptr<rviz::FrameManager> frame_manager_{ nullptr };
         // subscriber
@@ -97,6 +100,7 @@ namespace whi_rviz_plugins
 		std::unique_ptr<ros::Subscriber> sub_motion_state_{ nullptr };
 		std::unique_ptr<ros::Subscriber> sub_battery_{ nullptr };
 		std::unique_ptr<ros::Subscriber> sub_rc_state_{ nullptr };
+		std::unique_ptr<ros::Subscriber> sub_arm_state_{ nullptr };
         std::pair<double, double> velocities_;
         geometry_msgs::Pose goal_;
 		tf2_ros::Buffer buffer_;

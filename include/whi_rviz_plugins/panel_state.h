@@ -44,6 +44,7 @@ namespace whi_rviz_plugins
         void setEta(const std::string& Eta);
 		void setMotionState(const whi_interfaces::WhiMotionState::ConstPtr& State);
 		void setRcState(const whi_interfaces::WhiRcState::ConstPtr& State);
+		void setArmState(const whi_interfaces::WhiMotionState::ConstPtr& State);
 		void setRcStateTopic(const std::string& Topic);
 		void setBatteryInfo(int Soc, int Soh);
 
