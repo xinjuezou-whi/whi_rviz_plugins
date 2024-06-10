@@ -163,7 +163,12 @@ namespace whi_rviz_plugins
 
     void StatePanel::setArmState(const whi_interfaces::WhiMotionState::ConstPtr& State)
     {
-        if (State->state == whi_interfaces::WhiMotionState::STA_STANDBY)
+        if (State->state == whi_interfaces::WhiMotionState::STA_BOOTING)
+        {
+            setIndicatorIcon(ui_->label_indicator_4, INDICATOR_YELLOW);
+            setIndicatorText(ui_->label_indicator_cap_4, "arm booting");
+        }
+        else if (State->state == whi_interfaces::WhiMotionState::STA_STANDBY)
         {
             setIndicatorIcon(ui_->label_indicator_4, INDICATOR_GREEN);
             setIndicatorText(ui_->label_indicator_cap_4, "arm standby");
