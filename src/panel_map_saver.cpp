@@ -15,6 +15,7 @@ All text above must be included in any redistribution.
 
 #include <ros/package.h>
 #include <ros/service.h>
+#include <rviz/visualization_manager.h>
 #include <iostream>
 #include <boost/filesystem.hpp>
 #include <QVBoxLayout>
@@ -32,7 +33,7 @@ namespace whi_rviz_plugins
     MapSaverPanel::MapSaverPanel(QWidget* Parent/* = nullptr*/)
         : rviz::Panel(Parent)
     {
-        std::cout << "\nWHI RViz plugin for saving map VERSION 00.01" << std::endl;
+        std::cout << "\nWHI RViz plugin for saving map VERSION 00.02" << std::endl;
         std::cout << "Copyright @ 2022-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         initLayout();
@@ -73,8 +74,11 @@ namespace whi_rviz_plugins
             ros::Duration duration = ros::Time::now() - map_received_;
             if (duration.toSec() < 5)
             {
-                QString fileName = QFileDialog::getSaveFileName(this, tr("Save map"), "/home/whi/untitled", tr("Map Files (*.pgm *.yaml)"));
-			    if (!fileName.isNull())
+                vis_manager_->stopUpdate();
+                QString fileName = QFileDialog::getSaveFileName(this, tr("Save map"),
+                    "/home/whi/untitled", tr("Map Files (*.pgm *.yaml)"));
+			    vis_manager_->startUpdate();
+                if (!fileName.isEmpty())
 			    {
                     if (fileName.contains(".pgm"))
                     {

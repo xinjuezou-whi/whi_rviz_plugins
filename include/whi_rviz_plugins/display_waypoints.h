@@ -41,7 +41,7 @@ namespace rviz
 
 namespace whi_rviz_plugins
 {
-    class WaypointsDisplay : public rviz::Display 
+    class WaypointsDisplay : public rviz::Display
     {
         Q_OBJECT
     public:

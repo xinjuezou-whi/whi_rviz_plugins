@@ -9,6 +9,7 @@ tasks_plugin:
   pixel_size: 0.000003 # m
   focal_length: 0.00193 # m
   depth_multiplier: 1.0
-  exception_pose_group: ready
   state_topic: actuator_state
   installation: [0, 0, 0] # degrees
+  debug:
+    print_locating_error: true

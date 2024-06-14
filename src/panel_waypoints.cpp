@@ -31,8 +31,8 @@ All text above must be included in any redistribution.
 namespace whi_rviz_plugins
 {
 	WaypointsPanel::WaypointsPanel(VisualizeWaypoints FuncWaypoints, VisualizeEta FuncEta,
-		QWidget* Parent/* = nullptr*/)
-		: QWidget(Parent), ui_(new Ui::NaviWaypoints())
+		rviz::VisualizationManager* VisualManager, QWidget* Parent/* = nullptr*/)
+		: QWidget(Parent), ui_(new Ui::NaviWaypoints()), visual_manager_(VisualManager)
 		, func_visualize_waypoints_(FuncWaypoints), func_visualize_eta_(FuncEta)
 		, node_handle_(std::make_unique<ros::NodeHandle>())
 	{
@@ -79,10 +79,9 @@ namespace whi_rviz_plugins
     	connect(ui_->tableWidget_waypoints, &QTableWidget::currentCellChanged, this, [=](int Row, int Column) { visualizeWaypoints(Row); });
 		connect(ui_->pushButton_load, &QPushButton::clicked, this, [=]()
 		{
+			visual_manager_->stopUpdate();
 			QString fileName = QFileDialog::getOpenFileName(this, tr("Open Waypoints"), "/home/whi", tr("Waypoints Files (*.yaml)"));
-#ifdef DEBUG
-			fileName = "/home/whi/detection.yaml";
-#endif
+			visual_manager_->startUpdate();
 			if (!fileName.isNull())
 			{
 				loadWaypointsNs(fileName.toStdString());
@@ -92,10 +91,9 @@ namespace whi_rviz_plugins
 		{
 			if (ui_->tableWidget_waypoints->rowCount() > 0)
 			{
+				visual_manager_->stopUpdate();
 				QString fileName = QFileDialog::getSaveFileName(this, tr("Save Waypoints"), "/home/whi/untitled.yaml", tr("Waypoints Files (*.yaml)"));
-#ifdef DEBUG
-				fileName = "/home/whi/detection.yaml";
-#endif
+				visual_manager_->startUpdate();
 				if (!fileName.isNull())
 				{
 					if (!fileName.contains(".yaml"))
@@ -868,8 +866,10 @@ namespace whi_rviz_plugins
 
 				if (btnTask->text() == "Load")
 				{
+					visual_manager_->stopUpdate();
 					QString fileName = QFileDialog::getOpenFileName(this, tr("Open tasks"), "/home/whi",
 						tr("Tasks Files (*.yaml)"));
+					visual_manager_->startUpdate();
 					if (!fileName.isNull() && plugins_map_[task_plugin_name_]->addTask(fileName.toStdString()))
 					{
 						tasks_map_[ns][Row] = fileName.toStdString();

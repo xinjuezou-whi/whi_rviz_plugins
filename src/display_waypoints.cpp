@@ -25,6 +25,7 @@ All text above must be included in any redistribution.
 #include <rviz/properties/ros_topic_property.h>
 #include <rviz/ogre_helpers/movable_text.h>
 #include <rviz/frame_manager.h>
+#include <rviz/visualization_frame.h>
 #include <visualization_msgs/Marker.h>
 
 #include <sstream>
@@ -34,7 +35,7 @@ namespace whi_rviz_plugins
     WaypointsDisplay::WaypointsDisplay()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.24" << std::endl;
+        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 00.25" << std::endl;
         std::cout << "Copyright @ 2022-2025 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         marker_size_property_ = new rviz::FloatProperty("Marker Size", 1.0, "Arrow size of waypoint mark.",
@@ -84,14 +85,20 @@ namespace whi_rviz_plugins
     {
         Display::onInitialize();
 
-        panel_ = new WaypointsPanel(
-            std::bind(&WaypointsDisplay::visualizeWaypointsLocations, this, std::placeholders::_1, std::placeholders::_2),
-            std::bind(&WaypointsDisplay::visualEta, this, std::placeholders::_1, std::placeholders::_2));
         rviz::WindowManagerInterface* windowContext = context_->getWindowManager();
         if (windowContext)
         {
+            panel_ = new WaypointsPanel(
+                std::bind(&WaypointsDisplay::visualizeWaypointsLocations, this, std::placeholders::_1, std::placeholders::_2),
+                std::bind(&WaypointsDisplay::visualEta, this, std::placeholders::_1, std::placeholders::_2),
+                ((rviz::VisualizationFrame*)windowContext)->getManager());
             frame_dock_ = windowContext->addPane("Navi_waypoints", panel_); // getName() return "" ???
             frame_dock_->setIcon(getIcon()); // set the image name as same as the name of plugin
+        }
+        else
+        {
+            ROS_FATAL_STREAM("failed to get window manager");
+            return;
         }
 
         eta_text_.reset(new rviz::MovableText("."));
