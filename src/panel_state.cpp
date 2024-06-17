@@ -379,7 +379,7 @@ namespace whi_rviz_plugins
         std::string name("whi_imu_node");
         if (killProcedure(name))
         {
-            ROS_INFO_STREAM("whi_imu_node was successfully terminated");
+            ROS_INFO_STREAM(name << " was successfully terminated");
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             launchProcedure(name);
         }
@@ -391,7 +391,17 @@ namespace whi_rviz_plugins
 
 	void StatePanel::resetRcButtonClicked()
     {
-
+        std::string name("whi_rc_bridge_node");
+        if (killProcedure(name))
+        {
+            ROS_INFO_STREAM(name << " was successfully terminated");
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            launchProcedure(name);
+        }
+        else
+        {
+            QMessageBox::information(nullptr, tr("Info"), tr("No RC node is running"));
+        }
     }
 
     void StatePanel::update(const ros::TimerEvent& Event)
