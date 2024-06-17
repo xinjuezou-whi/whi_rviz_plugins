@@ -20,6 +20,9 @@ All text above must be included in any redistribution.
 #include <angles/angles.h>
 #include <boost/filesystem.hpp>
 #include <iostream>
+#include <sstream>
+#include <thread>
+#include <QMessageBox>
 
 namespace whi_rviz_plugins
 {
@@ -62,6 +65,8 @@ namespace whi_rviz_plugins
         setIndicatorText(ui_->label_indicator_cap_8, "reserved");
         // signals
 		connect(ui_->pushButton_clear, &QPushButton::clicked, this, [=]() { clearButtonClicked(); });
+        connect(ui_->pushButton_reset_imu, &QPushButton::clicked, this, [=]() { resetImuButtonClicked(); });
+        connect(ui_->pushButton_reset_rc, &QPushButton::clicked, this, [=]() { resetRcButtonClicked(); });
     }
 
     StatePanel::~StatePanel()
@@ -180,6 +185,21 @@ namespace whi_rviz_plugins
         }
     }
 
+    void StatePanel::setImuState()
+    {
+        if (!non_realtime_loop_)
+        {
+            ros::Duration updateFreq = ros::Duration(0.2);
+            non_realtime_loop_ = std::make_unique<ros::Timer>(node_handle_->createTimer(
+                updateFreq, std::bind(&StatePanel::update, this, std::placeholders::_1)));
+        }
+        
+        setIndicatorIcon(ui_->label_indicator_5, INDICATOR_GREEN);
+        setIndicatorText(ui_->label_indicator_cap_5, "IMU");
+
+        last_updated_imu_ = ros::Time::now();
+    }
+
     void StatePanel::setRcStateTopic(const std::string& Topic)
     {
         pub_rc_state_ = std::make_unique<ros::Publisher>(
@@ -275,5 +295,111 @@ namespace whi_rviz_plugins
         whi_interfaces::WhiRcState msgState;
         msgState.state = whi_interfaces::WhiRcState::STA_CLEAR_FAULT;
         pub_rc_state_->publish(msgState);
+    }
+
+    static std::vector<std::string> pipeExecute(const char* Cmd)
+    {
+        std::vector<std::string> results;
+
+        const size_t BUF_LEN = 512;
+        char buf[BUF_LEN] = { 0 };
+
+        FILE* pipe = NULL;
+        if ((pipe = popen(Cmd, "r")) != NULL)
+        {
+            while (fgets(buf, BUF_LEN, pipe) != NULL)
+            {
+                results.push_back(buf);
+                results.back().pop_back(); // remove \n character
+            }
+            pclose(pipe);
+            pipe = NULL;
+        }
+
+        return results;
+    }
+
+    static std::vector<std::string> splitStringBySpace(const std::string& Src)
+    {
+        std::vector<std::string> vec;
+
+        std::istringstream is(Src);
+        std::string dummy;
+        while (is >> dummy)
+        {
+            vec.push_back(dummy);
+        }
+
+        return vec;
+    }
+
+    static bool killProcedure(const std::string& Name)
+    {
+        std::string cmd("ps aux | grep " + Name);
+		std::vector<std::string> res = pipeExecute(cmd.c_str());
+        if (res.size() > 1)
+        {
+            if (res[0].find(" Ss") != std::string::npos)
+            {
+                std::vector<std::string> separated = splitStringBySpace(res[0]);
+#ifdef DEBUG
+                for (const auto& it : res)
+                {
+                    std::cout << "----------------" << std::endl;
+                    std::cout << it << std::endl;
+                }
+                std::cout << "===================" << std::endl;
+                for (const auto& it : separated)
+                {
+                    std::cout << it << ",";
+                }
+                std::cout << std::endl;
+#endif
+                if (!separated.empty())
+                {
+                    std::string cmd("sudo kill -9 " + separated[1]);
+                    system(cmd.c_str());
+
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    static void launchProcedure(const std::string& Name)
+    {
+        std::string cmd("${HOME}/catkin_workspace/./" + Name + ".sh &");
+        system(cmd.c_str());
+    }
+
+	void StatePanel::resetImuButtonClicked()
+    {
+        std::string name("whi_imu_node");
+        if (killProcedure(name))
+        {
+            ROS_INFO_STREAM("whi_imu_node was successfully terminated");
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            launchProcedure(name);
+        }
+        else
+        {
+            QMessageBox::information(nullptr, tr("Info"), tr("Not in IMU fuse mode"));
+        }
+    }
+
+	void StatePanel::resetRcButtonClicked()
+    {
+
+    }
+
+    void StatePanel::update(const ros::TimerEvent& Event)
+    {
+        if (ros::Duration(Event.current_real - last_updated_imu_).toSec() > 0.1)
+        {
+            setIndicatorIcon(ui_->label_indicator_5, INDICATOR_RED);
+            setIndicatorText(ui_->label_indicator_cap_5, "IMU");
+        }
     }
 } // end namespace whi_rviz_plugins

@@ -45,6 +45,7 @@ namespace whi_rviz_plugins
 		void setMotionState(const whi_interfaces::WhiMotionState::ConstPtr& State);
 		void setRcState(const whi_interfaces::WhiRcState::ConstPtr& State);
 		void setArmState(const whi_interfaces::WhiMotionState::ConstPtr& State);
+		void setImuState();
 		void setRcStateTopic(const std::string& Topic);
 		void setBatteryInfo(int Soc, int Soh);
 
@@ -55,6 +56,9 @@ namespace whi_rviz_plugins
 		void setBatteryIcon(QLabel* Label, int Soc);
 		void setLabelIcon(QLabel* Label, const std::string& IconFile, int Scale);
 		void clearButtonClicked();
+		void resetImuButtonClicked();
+		void resetRcButtonClicked();
+		void update(const ros::TimerEvent& Event);
 
 	private:
         enum IndicatorType { INDICATOR_GREY = 0, INDICATOR_RED, INDICATOR_ORANGE,
@@ -64,5 +68,7 @@ namespace whi_rviz_plugins
 		std::unique_ptr<ros::NodeHandle> node_handle_{ nullptr };
 		std::unique_ptr<ros::Publisher> pub_rc_state_{ nullptr };
 		std::string rc_state_topic_{ "rc_state" };
+		std::unique_ptr<ros::Timer> non_realtime_loop_{ nullptr };
+		ros::Time last_updated_imu_;
 	};
 } // end namespace whi_rviz_plugins
