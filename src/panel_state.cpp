@@ -339,28 +339,31 @@ namespace whi_rviz_plugins
 		std::vector<std::string> res = pipeExecute(cmd.c_str());
         if (res.size() > 1)
         {
-            if (res[0].find(" Ss") != std::string::npos)
+            for (const auto& it : res)
             {
-                std::vector<std::string> separated = splitStringBySpace(res[0]);
+                if (it.find(" Ss") != std::string::npos)
+                {
+                    std::vector<std::string> separated = splitStringBySpace(it);
 #ifdef DEBUG
-                for (const auto& it : res)
-                {
-                    std::cout << "----------------" << std::endl;
-                    std::cout << it << std::endl;
-                }
-                std::cout << "===================" << std::endl;
-                for (const auto& it : separated)
-                {
-                    std::cout << it << ",";
-                }
-                std::cout << std::endl;
+                    for (const auto& itd : res)
+                    {
+                        std::cout << "----------------" << std::endl;
+                        std::cout << itd << std::endl;
+                    }
+                    std::cout << "===================" << std::endl;
+                    for (const auto& itd : separated)
+                    {
+                        std::cout << itd << ",";
+                    }
+                    std::cout << std::endl;
 #endif
-                if (!separated.empty())
-                {
-                    std::string cmd("sudo kill -9 " + separated[1]);
-                    system(cmd.c_str());
+                    if (!separated.empty())
+                    {
+                        std::string cmd("sudo kill -9 " + separated[1]);
+                        system(cmd.c_str());
 
-                    return true;
+                        return true;
+                    }
                 }
             }
         }
