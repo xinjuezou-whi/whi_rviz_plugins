@@ -70,5 +70,6 @@ namespace whi_rviz_plugins
 		std::string rc_state_topic_{ "rc_state" };
 		std::unique_ptr<ros::Timer> non_realtime_loop_{ nullptr };
 		ros::Time last_updated_imu_;
+		ros::Time last_updated_rc_;
 	};
 } // end namespace whi_rviz_plugins

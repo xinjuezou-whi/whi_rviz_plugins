@@ -154,6 +154,13 @@ namespace whi_rviz_plugins
 
     void StatePanel::setRcState(const whi_interfaces::WhiRcState::ConstPtr& State)
     {
+        if (!non_realtime_loop_)
+        {
+            ros::Duration updateFreq = ros::Duration(0.2);
+            non_realtime_loop_ = std::make_unique<ros::Timer>(node_handle_->createTimer(
+                updateFreq, std::bind(&StatePanel::update, this, std::placeholders::_1)));
+        }
+
         if (State->state == whi_interfaces::WhiRcState::STA_AUTO)
         {
             setIndicatorIcon(ui_->label_indicator_2, INDICATOR_GREEN);
@@ -164,6 +171,8 @@ namespace whi_rviz_plugins
             setIndicatorIcon(ui_->label_indicator_2, INDICATOR_BLUE);
             setIndicatorText(ui_->label_indicator_cap_2, "remote");
         }
+
+        last_updated_rc_ = ros::Time::now();
     }
 
     void StatePanel::setArmState(const whi_interfaces::WhiMotionState::ConstPtr& State)
@@ -413,6 +422,13 @@ namespace whi_rviz_plugins
         {
             setIndicatorIcon(ui_->label_indicator_5, INDICATOR_RED);
             setIndicatorText(ui_->label_indicator_cap_5, "IMU");
+        }
+        if (ros::Duration(Event.current_real - last_updated_rc_).toSec() > 0.1)
+        {
+            if (ui_->label_indicator_cap_2->text() == "remote")
+            {
+                setIndicatorIcon(ui_->label_indicator_2, INDICATOR_RED);
+            }
         }
     }
 } // end namespace whi_rviz_plugins
