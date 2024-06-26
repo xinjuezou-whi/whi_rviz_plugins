@@ -192,6 +192,8 @@ namespace whi_rviz_plugins
             setIndicatorIcon(ui_->label_indicator_4, INDICATOR_RED);
             setIndicatorText(ui_->label_indicator_cap_4, "arm fault");
         }
+
+        last_updated_arm_ = ros::Time::now();
     }
 
     void StatePanel::setImuState()
@@ -429,6 +431,11 @@ namespace whi_rviz_plugins
             {
                 setIndicatorIcon(ui_->label_indicator_2, INDICATOR_RED);
             }
+        }
+        if (ros::Duration(Event.current_real - last_updated_arm_).toSec() > 0.1)
+        {
+            setIndicatorIcon(ui_->label_indicator_4, INDICATOR_RED);
+            setIndicatorText(ui_->label_indicator_cap_4, "arm fault");
         }
     }
 } // end namespace whi_rviz_plugins
