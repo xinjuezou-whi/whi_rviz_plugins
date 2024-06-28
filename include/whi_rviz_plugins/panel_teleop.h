@@ -18,6 +18,7 @@ Changelog:
 #include <ros/ros.h>
 #include <rviz/panel.h>
 #include <memory>
+#include <thread>
 
 #include <whi_interfaces/WhiMotionState.h>
 #include <whi_interfaces/WhiRcState.h>
@@ -66,7 +67,8 @@ namespace whi_rviz_plugins
 	private:
 		Ui::NaviTeleop* ui_{ nullptr };
         TwistWidget* twist_widget_{ nullptr };
-		QTimer* timer_pub_{ nullptr };
+		QTimer* timer_toggle_{ nullptr };
+		int interval_toggle_{ 500 };
 		int interval_pub_{ 200 };
 		bool toggle_publishing_{ true };
 		std::unique_ptr<ros::NodeHandle> node_handle_{ nullptr };
@@ -79,5 +81,7 @@ namespace whi_rviz_plugins
 		std::atomic_bool toggle_estop_{ false };
 		std::atomic_bool toggle_collision_{ false };
 		std::atomic_bool remote_mode_{ false };
+		std::atomic_bool activated_{ true };
+		std::thread th_publish_;
 	};
 } // end namespace whi_rviz_plugins

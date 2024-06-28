@@ -85,7 +85,12 @@ namespace whi_rviz_plugins
 
     TeleopPanel::~TeleopPanel()
 	{
-        timer_pub_->stop();
+        activated_.store(true);
+        if (th_publish_.joinable())
+        {
+            th_publish_.join();
+        }
+        timer_toggle_->stop();
 		delete ui_;
 	}
 
@@ -124,54 +129,70 @@ namespace whi_rviz_plugins
         if (topic_ != Topic)
         {
             topic_ = Topic;
-            // check if the timer is running
-            if (timer_pub_ && timer_pub_->isActive())
+
+            activated_.store(false);
+            if (th_publish_.joinable())
             {
-                timer_pub_->stop();
-                pub_ = std::make_unique<ros::Publisher>(node_handle_->advertise<geometry_msgs::Twist>(topic_, 50));
-                timer_pub_->start(interval_pub_);
+                th_publish_.join();
             }
+            activated_.store(true);
+
+            pub_ = std::make_unique<ros::Publisher>(node_handle_->advertise<geometry_msgs::Twist>(topic_, 50));
+
+            th_publish_ = std::thread
+            {
+                [this]() -> void
+                {
+                    while (activated_.load())
+                    {
+                        if (!toggle_estop_.load() && !remote_mode_.load() && !toggle_collision_.load())
+                        {
+                            geometry_msgs::Twist msgTwist;
+                            msgTwist.linear.x = linear_;
+                            msgTwist.angular.z = angular_;
+                            pub_->publish(msgTwist);
+                        }
+
+                        std::this_thread::sleep_for(std::chrono::milliseconds(interval_pub_));
+                    }
+                }
+            };
         }
     }
 
     void TeleopPanel::setPubFunctionality(bool Active)
     {
+        activated_.store(Active);
+
         if (Active)
         {
-            pub_ = std::make_unique<ros::Publisher>(node_handle_->advertise<geometry_msgs::Twist>(topic_, 50));
-            
-            if (timer_pub_)
+            if (timer_toggle_)
             {
-                if (!timer_pub_->isActive())
+                if (!timer_toggle_->isActive())
                 {
-                    timer_pub_->start(interval_pub_);
+                    timer_toggle_->start(interval_toggle_);
                 }
             }
             else
             {
-                // publish timer
-                timer_pub_ = new QTimer(this);
-                connect(timer_pub_, &QTimer::timeout, this, [=]()
+                // toggle timer
+                timer_toggle_ = new QTimer(this);
+                connect(timer_toggle_, &QTimer::timeout, this, [=]()
                 {
                     if (!toggle_estop_.load() && !remote_mode_.load() && !toggle_collision_.load())
                     {
                         twist_widget_->toggleIndicator(toggle_publishing_, true);
                         toggle_publishing_ = !toggle_publishing_;
-
-                        geometry_msgs::Twist msgTwist;
-                        msgTwist.linear.x = linear_;
-                        msgTwist.angular.z = angular_;
-                        pub_->publish(std::move(msgTwist));
                     }
                 });
-                timer_pub_->start(interval_pub_);
+                timer_toggle_->start(interval_toggle_);
             }
         }
         else
         {
-            if (timer_pub_)
+            if (timer_toggle_)
             {
-                timer_pub_->stop();
+                timer_toggle_->stop();
             }
             twist_widget_->toggleIndicator(true, false);
         }
@@ -180,10 +201,6 @@ namespace whi_rviz_plugins
     void TeleopPanel::setPubFrequency(float Frequency)
     {
         interval_pub_ = int(1000.0 / Frequency);
-        if (timer_pub_)
-        {
-            timer_pub_->setInterval(interval_pub_);
-        }
     }
 
     void TeleopPanel::moveLinear(int Dir)
