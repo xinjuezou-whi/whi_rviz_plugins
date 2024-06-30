@@ -39,7 +39,7 @@ namespace whi_rviz_plugins
         : Display()
         , node_handle_(std::make_unique<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for motion state VERSION 00.07.3" << std::endl;
+        std::cout << "\nWHI RViz plugin for motion state VERSION 00.07.4" << std::endl;
         std::cout << "Copyright @ 2023-2025 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         tf_listener_ = std::make_unique<tf2_ros::TransformListener>(buffer_);
@@ -227,10 +227,17 @@ namespace whi_rviz_plugins
 
     void DisplayState::updateArmStateTopic()
     {
-        sub_arm_state_ = std::make_unique<ros::Subscriber>(
-            node_handle_->subscribe<whi_interfaces::WhiMotionState>(
-		    arm_state_topic_property_->getTopicStd(), 10,
-            std::bind(&DisplayState::subCallbackArmState, this, std::placeholders::_1)));
+        if (arm_state_topic_property_->getTopicStd().empty())
+        {
+            panel_->setArmState(nullptr);
+        }
+        else
+        {
+            sub_arm_state_ = std::make_unique<ros::Subscriber>(
+                node_handle_->subscribe<whi_interfaces::WhiMotionState>(
+                arm_state_topic_property_->getTopicStd(), 10,
+                std::bind(&DisplayState::subCallbackArmState, this, std::placeholders::_1)));
+        }
     }
 
     void DisplayState::updateImuTopic()

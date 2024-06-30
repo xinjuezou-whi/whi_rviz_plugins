@@ -82,6 +82,7 @@ namespace whi_rviz_plugins
 		std::atomic_bool toggle_collision_{ false };
 		std::atomic_bool remote_mode_{ false };
 		std::atomic_bool activated_{ true };
+		std::atomic_bool terminated_{ false };
 		std::thread th_publish_;
 	};
 } // end namespace whi_rviz_plugins

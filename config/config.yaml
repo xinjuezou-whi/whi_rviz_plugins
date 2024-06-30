@@ -5,7 +5,7 @@ tasks_plugin:
   alignment_timeout: 15 # unit second
   base_frame: ur10e_base_link
   tcp_frame: camera
-  detection_topic: /yolov5/detections
+  detection_topic: /pgnd_inspection
   pixel_size: 0.000003 # m
   focal_length: 0.00193 # m
   depth_multiplier: 1.0

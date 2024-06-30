@@ -177,23 +177,38 @@ namespace whi_rviz_plugins
 
     void StatePanel::setArmState(const whi_interfaces::WhiMotionState::ConstPtr& State)
     {
-        if (State->state == whi_interfaces::WhiMotionState::STA_BOOTING)
+        if (State != nullptr)
         {
-            setIndicatorIcon(ui_->label_indicator_4, INDICATOR_YELLOW);
-            setIndicatorText(ui_->label_indicator_cap_4, "arm booting");
-        }
-        else if (State->state == whi_interfaces::WhiMotionState::STA_STANDBY)
-        {
-            setIndicatorIcon(ui_->label_indicator_4, INDICATOR_GREEN);
-            setIndicatorText(ui_->label_indicator_cap_4, "arm standby");
-        }
-        else if (State->state == whi_interfaces::WhiMotionState::STA_FAULT)
-        {
-            setIndicatorIcon(ui_->label_indicator_4, INDICATOR_RED);
-            setIndicatorText(ui_->label_indicator_cap_4, "arm fault");
-        }
+            if (State->state == whi_interfaces::WhiMotionState::STA_BOOTING)
+            {
+                setIndicatorIcon(ui_->label_indicator_4, INDICATOR_YELLOW);
+                setIndicatorText(ui_->label_indicator_cap_4, "arm booting");
+            }
+            else if (State->state == whi_interfaces::WhiMotionState::STA_STANDBY)
+            {
+                setIndicatorIcon(ui_->label_indicator_4, INDICATOR_GREEN);
+                setIndicatorText(ui_->label_indicator_cap_4, "arm standby");
+            }
+            else if (State->state == whi_interfaces::WhiMotionState::STA_FAULT)
+            {
+                setIndicatorIcon(ui_->label_indicator_4, INDICATOR_RED);
+                setIndicatorText(ui_->label_indicator_cap_4, "arm fault");
+            }
 
-        last_updated_arm_ = ros::Time::now();
+            if (last_updated_arm_ == nullptr)
+            {
+                last_updated_arm_ = std::make_unique<ros::Time>(ros::Time::now());
+            }
+            else
+            {
+                *last_updated_arm_ = ros::Time::now();
+            }
+        }
+        else
+        {
+            setIndicatorIcon(ui_->label_indicator_4, INDICATOR_GREY);
+            setIndicatorText(ui_->label_indicator_cap_4, "reserved");
+        }
     }
 
     void StatePanel::setImuState()
@@ -432,7 +447,7 @@ namespace whi_rviz_plugins
                 setIndicatorIcon(ui_->label_indicator_2, INDICATOR_RED);
             }
         }
-        if (ros::Duration(Event.current_real - last_updated_arm_).toSec() > 0.1)
+        if (last_updated_arm_ && ros::Duration(Event.current_real - *last_updated_arm_).toSec() > 0.1)
         {
             setIndicatorIcon(ui_->label_indicator_4, INDICATOR_RED);
             setIndicatorText(ui_->label_indicator_cap_4, "arm fault");

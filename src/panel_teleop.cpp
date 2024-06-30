@@ -85,7 +85,7 @@ namespace whi_rviz_plugins
 
     TeleopPanel::~TeleopPanel()
 	{
-        activated_.store(true);
+        terminated_.store(true);
         if (th_publish_.joinable())
         {
             th_publish_.join();
@@ -130,12 +130,12 @@ namespace whi_rviz_plugins
         {
             topic_ = Topic;
 
-            activated_.store(false);
+            terminated_.store(true);
             if (th_publish_.joinable())
             {
                 th_publish_.join();
             }
-            activated_.store(true);
+            terminated_.store(false);
 
             pub_ = std::make_unique<ros::Publisher>(node_handle_->advertise<geometry_msgs::Twist>(topic_, 50));
 
@@ -143,9 +143,9 @@ namespace whi_rviz_plugins
             {
                 [this]() -> void
                 {
-                    while (activated_.load())
+                    while (!terminated_.load())
                     {
-                        if (!toggle_estop_.load() && !remote_mode_.load() && !toggle_collision_.load())
+                        if (activated_ && !toggle_estop_.load() && !remote_mode_.load() && !toggle_collision_.load())
                         {
                             geometry_msgs::Twist msgTwist;
                             msgTwist.linear.x = linear_;
