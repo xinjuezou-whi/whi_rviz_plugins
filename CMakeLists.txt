@@ -155,6 +155,7 @@ qt_wrap_ui(UIC_FILES
   ui/navi_battery.ui
   ui/navi_state.ui
   ui/navi_robot_model_viewer.ui
+  ui/line_chart_2D.ui
 )
 
 find_package(OpenCV)
@@ -162,6 +163,7 @@ find_package(OpenCV)
 include_directories(
   ${QT_INCLUDE_DIR}
   ${OpenCV_INCLUDE_DIRS}
+  /usr/include/qwt/
 )
 
 ## I prefer the Qt signals and slots to avoid defining "emit", "slots",
@@ -174,6 +176,9 @@ file(GLOB_RECURSE WHI_SDK_SRC
 )
 file(GLOB_RECURSE WHI_SDK_H
   "${CMAKE_CURRENT_SOURCE_DIR}/include/${PROJECT_NAME}/*.h"
+)
+file(GLOB QWT_LIBRARIES
+  "/usr/lib/libqwt*"
 )
 add_library(${PROJECT_NAME}
   ${WHI_SDK_H}
@@ -207,6 +212,7 @@ target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${QT_LIBRARIES}
   ${OpenCV_LIBRARIES}
+  ${QWT_LIBRARIES}
 )
 
 #############
