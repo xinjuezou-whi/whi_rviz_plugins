@@ -14,10 +14,10 @@ All text above must be included in any redistribution.
 #include "whi_rviz_plugins/display_2D_line_chart.h"
 
 #include <pluginlib/class_list_macros.h>
-#include <rviz/properties/bool_property.h>
-#include <rviz/properties/float_property.h>
-#include <rviz/properties/string_property.h>
 #include <rviz/properties/ros_topic_property.h>
+#include <rviz/properties/int_property.h>
+#include <rviz/properties/float_property.h>
+#include <rviz/properties/color_property.h>
 #include <rviz/window_manager_interface.h>
 #include <rviz/display_context.h>
 
@@ -26,40 +26,29 @@ namespace whi_rviz_plugins
     Display2DLineChart::Display2DLineChart()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for 2D line chart VERSION 00.01.0" << std::endl;
+        std::cout << "\nWHI RViz plugin for 2D line chart VERSION 00.2.1" << std::endl;
         std::cout << "Copyright @ 2024-2025 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
-        // enable_property_ = new rviz::BoolProperty("Enable teleop", true, "Toggle the functionality of teleop",
-        //     this, SLOT(updateEnable()));
-        // pub_frequency_property_ = new rviz::FloatProperty("Publish frequency(Hz)", 5.0, "Frequency of publishing the twist message",
-        //     this, SLOT(updatePubFrequency()));
-        // pub_frequency_property_->setMin(0.1);
-        // pub_topic_property_ = new rviz::StringProperty("Twist message topic", "cmd_vel", "Topic of twist message",
-        //     this, SLOT(updatePubTopic()));
-        // linear_min_ = new rviz::FloatProperty("Min linear", 0.08, "Min limit of linear velocity",
-        //     this, SLOT(updateLinearMin()));
-        // linear_min_->setMin(0.0);
-        // linear_max_ = new rviz::FloatProperty("Max linear", 1.5, "Max limit of linear velocity",
-        //     this, SLOT(updateLinearMax()));
-        // linear_max_->setMin(0.0);
-        // linear_step_ = new rviz::FloatProperty("Linear step", 0.01, "Delta of linear per jog",
-        //     this, SLOT(updateLinearStep()));
-        // linear_step_->setMin(0.01);
-        // angular_min_ = new rviz::FloatProperty("Min angular", 0.01, "Min limit of angular velocity",
-        //     this, SLOT(updateAngularMin()));
-        // angular_min_->setMin(0.0);
-        // angular_max_ = new rviz::FloatProperty("Max angular", 1.57, "Max limit of angular velocity",
-        //     this, SLOT(updateAngularMax()));
-        // angular_max_->setMin(0.0);
-        // angular_step_ = new rviz::FloatProperty("Angular step", 0.1, "Delta of angular per jog",
-        //     this, SLOT(updateAngularStep()));
-        // angular_step_->setMin(0.01);
-        // motion_state_topic_property_ = new rviz::RosTopicProperty("Motion state topic", "motion_state",
-        //     "whi_interfaces/WhiMotionState", "Topic of motion state",
-        //     this, SLOT(updateMotionStateTopic()));
         data_topic_property_ = new rviz::RosTopicProperty("Data topic", "line_data_2D",
             "whi_interfaces/WhiLineChart2D", "Topic of 2D data",
             this, SLOT(updateDataTopic()));
+        max_data_length_property_ = new rviz::IntProperty("Max data length", 100, "Maxium data length that recoreded for plotting",
+            this, SLOT(updateMaxDataLength()));
+        max_data_length_property_->setMin(1);
+        data_size_property_ = new rviz::FloatProperty("Data size", 2.0, "Data grid size",
+            this, SLOT(updateGridDataSize()));
+        data_color_property_ = new rviz::ColorProperty("Data grid color", Qt::yellow, "Data grid color.",
+            this, SLOT(updateDataColor()));
+        grid_major_size_property_ = new rviz::FloatProperty("Major grid size", 0.5, "Major grid size",
+            this, SLOT(updateGridMajorSize()));
+        grid_major_color_property_ = new rviz::ColorProperty("Major grid color", Qt::cyan, "Major grid color.",
+            this, SLOT(updateMajorColor()));
+        grid_minor_size_property_ = new rviz::FloatProperty("Minor grid size", 0.2, "Minor grid size",
+            this, SLOT(updateGridMinorSize()));
+        grid_minor_color_property_ = new rviz::ColorProperty("Minor grid color", Qt::gray, "Minor grid color.",
+            this, SLOT(updateMinorColor()));
+        canvas_color_property_ = new rviz::ColorProperty("Canvas color", QColor(38, 64, 115), "Canvas grid color.",
+            this, SLOT(updateCanvasColor()));
     }
 
     Display2DLineChart::~Display2DLineChart()
@@ -80,61 +69,59 @@ namespace whi_rviz_plugins
         }
 
         updateDataTopic();
+        updateMaxDataLength();
+		updateGridDataSize();
+		updateGridMajorSize();
+		updateGridMinorSize();
+		updateDataColor();
+		updateMajorColor();
+		updateMinorColor();
+		updateCanvasColor();
     }
-
-    // void DisplayTeleop::updateEnable()
-    // {
-    //     panel_->setPubFunctionality(enable_property_->getBool());
-    // }
-
-	// void DisplayTeleop::updatePubFrequency()
-    // {
-    //     panel_->setPubFrequency(pub_frequency_property_->getFloat());
-    // }
-
-	// void DisplayTeleop::updatePubTopic()
-    // {
-    //     panel_->setPubTopic(pub_topic_property_->getString().toStdString());
-    // }
-
-    // void DisplayTeleop::updateLinearMin()
-    // {
-    //     panel_->setLinearMin(linear_min_->getFloat());
-    // }
-
-    // void DisplayTeleop::updateLinearMax()
-    // {
-    //     panel_->setLinearMax(linear_max_->getFloat());
-    // }
-
-	// void DisplayTeleop::updateLinearStep()
-    // {
-    //     panel_->setLinearStep(linear_step_->getFloat());
-    // }
-
-    // void DisplayTeleop::updateAngularMin()
-    // {
-    //     panel_->setAngularMin(angular_min_->getFloat());
-    // }
-
-	// void DisplayTeleop::updateAngularMax()
-    // {
-    //     panel_->setAngularMax(angular_max_->getFloat());
-    // }
-
-	// void DisplayTeleop::updateAngularStep()
-    // {
-    //     panel_->setAngularStep(angular_step_->getFloat());
-    // }
-
-    // void DisplayTeleop::updateMotionStateTopic()
-    // {
-    //     panel_->setMotionStateTopic(motion_state_topic_property_->getTopicStd());
-    // }
 
     void Display2DLineChart::updateDataTopic()
     {
         panel_->setDataTopic(data_topic_property_->getTopicStd());
+    }
+
+    void Display2DLineChart::updateMaxDataLength()
+    {
+        panel_->setMaxDataLength(max_data_length_property_->getInt());
+    }
+
+    void Display2DLineChart::updateGridDataSize()
+    {
+        panel_->setGridDataSize(data_size_property_->getFloat());
+    }
+
+    void Display2DLineChart::updateGridMajorSize()
+    {
+        panel_->setGridMajorSize(grid_major_size_property_->getFloat());
+    }
+
+    void Display2DLineChart::updateGridMinorSize()
+    {
+        panel_->setGridMinorSize(grid_minor_size_property_->getFloat());
+    }
+
+    void Display2DLineChart::updateDataColor()
+    {
+        panel_->setGridDataColor(data_color_property_->getColor());
+    }
+
+    void Display2DLineChart::updateMajorColor()
+    {
+        panel_->setGridMajorColor(grid_major_color_property_->getColor());
+    }
+
+    void Display2DLineChart::updateMinorColor()
+    {
+        panel_->setGridMinorColor(grid_minor_color_property_->getColor());
+    }
+
+    void Display2DLineChart::updateCanvasColor()
+    {
+        panel_->setGridCanvasColor(canvas_color_property_->getColor());
     }
 
     PLUGINLIB_EXPORT_CLASS(whi_rviz_plugins::Display2DLineChart, rviz::Display)

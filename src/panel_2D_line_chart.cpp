@@ -73,6 +73,10 @@ namespace whi_rviz_plugins
             base_time_ = Sec;
         }
 
+        if (series_map_[Key].size() > max_length_)
+        {
+            series_map_[Key].erase(series_map_[Key].begin());
+        }
         series_map_[Key].push_back(TimeData(Value, Unit, Sec, base_time_));
     }
 	
@@ -119,6 +123,11 @@ namespace whi_rviz_plugins
         return names;
     }
 
+    void TimeSeriesData::setMaxLength(int MaxLength)
+    {
+        max_length_ = MaxLength;
+    }
+
 
     LineChart2DPanel::LineChart2DPanel(QWidget* Parent/* = nullptr*/)
 		: QWidget(Parent), ui_(new Ui::LineChart2D())
@@ -126,14 +135,16 @@ namespace whi_rviz_plugins
 	{
 		// set up the GUI
 		ui_->setupUi(this);
-        ui_->qwtPlot->setCanvasBackground(QBrush(QColor(38, 64, 115)));
+        ui_->qwtPlot->setCanvasBackground(QBrush(color_canvas_));
         curve_ = new QwtPlotCurve("curve");
-        QwtPlotGrid* grid = new QwtPlotGrid();
-        grid->enableXMin(true);
-        grid->enableYMin(true);
-        grid->setMajorPen(QPen(Qt::cyan, 0.5, Qt::DotLine));
-        grid->setMinorPen(QPen(Qt::gray, 0.2, Qt::DotLine));
-        grid->attach(ui_->qwtPlot);
+        curve_->setPen(color_data_, grid_data_size_);
+        curve_->attach(ui_->qwtPlot);
+        grid_ = new QwtPlotGrid();
+        grid_->enableXMin(true);
+        grid_->enableYMin(true);
+        grid_->setMajorPen(QPen(color_major_, grid_major_size_, Qt::DotLine));
+        grid_->setMinorPen(QPen(color_minor_, grid_minor_size_, Qt::DotLine));
+        grid_->attach(ui_->qwtPlot);
         // a widget normally must setFocusPolicy() to something other than Qt::NoFocus in order to receive focus events
         setFocusPolicy(Qt::StrongFocus);
 
@@ -182,6 +193,64 @@ namespace whi_rviz_plugins
 		}
     }
 
+    void LineChart2DPanel::setMaxDataLength(int Length)
+    {
+        max_data_length_ = Length;
+        for (auto& it : chart_map_)
+        {
+            it.second.setMaxLength(max_data_length_);
+        }
+    }
+
+    void LineChart2DPanel::setGridDataSize(double Size)
+    {
+        grid_data_size_ = Size;
+        curve_->setPen(color_data_, grid_data_size_);
+        ui_->qwtPlot->replot();
+    }
+
+    void LineChart2DPanel::setGridMajorSize(double Size)
+    {
+        grid_major_size_ = Size;
+        grid_->setMajorPen(QPen(color_major_, grid_major_size_, Qt::DotLine));
+        ui_->qwtPlot->replot();
+    }
+
+    void LineChart2DPanel::setGridMinorSize(double Size)
+    {
+        grid_minor_size_ = Size;
+        grid_->setMinorPen(QPen(color_minor_, grid_minor_size_, Qt::DotLine));
+        ui_->qwtPlot->replot();
+    }
+
+    void LineChart2DPanel::setGridDataColor(const QColor& Color)
+    {
+        color_data_ = Color;
+        curve_->setPen(color_data_, grid_data_size_);
+        ui_->qwtPlot->replot();
+    }
+
+    void LineChart2DPanel::setGridMajorColor(const QColor& Color)
+    {
+        color_major_ = Color;
+        grid_->setMajorPen(QPen(color_major_, grid_major_size_, Qt::DotLine));
+        ui_->qwtPlot->replot();
+    }
+
+    void LineChart2DPanel::setGridMinorColor(const QColor& Color)
+    {
+        color_minor_ = Color;
+        grid_->setMinorPen(QPen(color_minor_, grid_minor_size_, Qt::DotLine));
+        ui_->qwtPlot->replot();
+    }
+
+    void LineChart2DPanel::setGridCanvasColor(const QColor& Color)
+    {
+        color_canvas_ = Color;
+        ui_->qwtPlot->setCanvasBackground(QBrush(color_canvas_));
+        ui_->qwtPlot->replot();
+    }
+
     void LineChart2DPanel::resetButtonClicked()
     {
         auto channel = ui_->comboBox_channel->currentText().toStdString();
@@ -224,7 +293,7 @@ namespace whi_rviz_plugins
 
             if (auto search = chart_map_.find(Data->array[i].name); search == chart_map_.end())
             {
-                chart_map_[Data->array[i].name] = TimeSeriesData();
+                chart_map_[Data->array[i].name] = TimeSeriesData(max_data_length_);
             }
             for (int j = 0; j < std::min(Data->array[i].data.size(), Data->array[i].items_name.size()); ++j)
             {
@@ -290,8 +359,6 @@ namespace whi_rviz_plugins
 
     void LineChart2DPanel::plot(const std::vector<TimeData>& Data, const std::string& Unit)
     {
-        curve_->detach();
-
         QVector<double> xData, yData;
         for (const auto& it : Data)
         {
@@ -299,9 +366,8 @@ namespace whi_rviz_plugins
             yData.append(it.get());
         }
 
-        curve_->setPen(Qt::yellow, 1.0);
         curve_->setSamples(xData, yData);
-        curve_->attach(ui_->qwtPlot);
+
         ui_->qwtPlot->setAxisTitle(QwtPlot::yLeft, Unit.c_str());
         ui_->qwtPlot->setAxisTitle(QwtPlot::xBottom, "second");
         ui_->qwtPlot->replot();

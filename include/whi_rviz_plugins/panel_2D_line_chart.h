@@ -29,6 +29,7 @@ class LineChart2D;
 
 // forward declaration
 class QwtPlotCurve;
+class QwtPlotGrid;
 
 namespace whi_rviz_plugins
 {
@@ -60,7 +61,7 @@ namespace whi_rviz_plugins
 	class TimeSeriesData
 	{
 	public:
-		TimeSeriesData() = default;
+		TimeSeriesData(int MaxLength = 100) : max_length_(MaxLength) {};
 		~TimeSeriesData() = default;
 
 	public:
@@ -68,10 +69,12 @@ namespace whi_rviz_plugins
 		std::vector<TimeData> get(const std::string& Key) const;
 		void setBaseTime(double Sec);
 		std::vector<std::string> dataNames() const;
+		void setMaxLength(int MaxLength);
 	
 	protected:
 		std::map<std::string, std::vector<TimeData>> series_map_;
 		double base_time_{ 0.0 };
+		int max_length_{ 100 };
 	};
 
 	class LineChart2DPanel : public QWidget
@@ -83,6 +86,14 @@ namespace whi_rviz_plugins
 
 	public:
 		void setDataTopic(const std::string& Topic);
+		void setMaxDataLength(int Length);
+		void setGridDataSize(double Size);
+		void setGridMajorSize(double Size);
+		void setGridMinorSize(double Size);
+		void setGridDataColor(const QColor& Color);
+		void setGridMajorColor(const QColor& Color);
+		void setGridMinorColor(const QColor& Color);
+		void setGridCanvasColor(const QColor& Color);
 
 	private:
 		void resetButtonClicked();
@@ -93,8 +104,17 @@ namespace whi_rviz_plugins
 	private:
 		Ui::LineChart2D* ui_{ nullptr };
 		QwtPlotCurve* curve_{ nullptr };
+		QwtPlotGrid* grid_{ nullptr };
 		std::unique_ptr<ros::NodeHandle> node_handle_{ nullptr };
 		std::unique_ptr<ros::Subscriber> sub_data_{ nullptr };
 		std::map<std::string, TimeSeriesData> chart_map_;
+		int max_data_length_{ 100 };
+		double grid_data_size_{ 2.0 };
+		double grid_major_size_{ 0.5 };
+		double grid_minor_size_{ 0.2 };
+		QColor color_data_{ Qt::yellow };
+		QColor color_major_{ Qt::cyan };
+		QColor color_minor_{ Qt::gray };
+		QColor color_canvas_{ QColor(38, 64, 115) };
 	};
 } // end namespace whi_rviz_plugins

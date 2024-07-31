@@ -23,10 +23,10 @@ Changelog:
 // forward declaration
 namespace rviz
 {
-	class BoolProperty;
-    class FloatProperty;
-    class StringProperty;
 	class RosTopicProperty;
+	class IntProperty;
+	class FloatProperty;
+	class ColorProperty;
 }
 
 namespace whi_rviz_plugins
@@ -51,33 +51,29 @@ namespace whi_rviz_plugins
 
 	private Q_SLOTS:
 		// these Qt slots get connected to signals indicating changes in the user-editable properties
-		// void updateEnable();
-		// void updatePubFrequency();
-		// void updatePubTopic();
-		// void updateLinearMin();
-		// void updateLinearMax();
-		// void updateLinearStep();
-		// void updateAngularMin();
-		// void updateAngularMax();
-		// void updateAngularStep();
-		// void updateMotionStateTopic();
 		void updateDataTopic();
+		void updateMaxDataLength();
+		void updateGridDataSize();
+		void updateGridMajorSize();
+		void updateGridMinorSize();
+		void updateDataColor();
+		void updateMajorColor();
+		void updateMinorColor();
+		void updateCanvasColor();
 
 	private:
         rviz::PanelDockWidget* frame_dock_{ nullptr };
         LineChart2DPanel* panel_{ nullptr };
 
 		// user-editable property variables
-		// rviz::BoolProperty* enable_property_;
-		// rviz::FloatProperty* pub_frequency_property_;
-		// rviz::StringProperty* pub_topic_property_;
-		// rviz::FloatProperty* linear_min_;
-		// rviz::FloatProperty* linear_max_;
-		// rviz::FloatProperty* linear_step_;
-		// rviz::FloatProperty* angular_min_;
-		// rviz::FloatProperty* angular_max_;
-		// rviz::FloatProperty* angular_step_;
-		// rviz::RosTopicProperty* motion_state_topic_property_;
 		rviz::RosTopicProperty* data_topic_property_;
+		rviz::IntProperty* max_data_length_property_;
+		rviz::FloatProperty* data_size_property_;
+		rviz::FloatProperty* grid_major_size_property_;
+		rviz::FloatProperty* grid_minor_size_property_;
+		rviz::ColorProperty* data_color_property_;
+		rviz::ColorProperty* grid_major_color_property_;
+		rviz::ColorProperty* grid_minor_color_property_;
+		rviz::ColorProperty* canvas_color_property_;
 	};
 } // end namespace whi_rviz_plugins
