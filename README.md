@@ -10,7 +10,7 @@ Rviz plugins package for handling custom info and operations. currently there ar
 
 The Battery shows the battery's left charge in text and symbolizes the battery; the Navi_waypoints allows user to add multiple navigation targets with interactive markers; the Teleop which publishes the twist message through GUI; the panel Map_saver helps user to save map directly by RViz without typing command in terminal; the Video_stream which derived from default image plugin with extended stream sources like webcam, IP stream, and video file; the tool Navi_namespace, under multiple robots scenario, allows user to specify target robot target through GUI without laboring edit in tool property; the Navi_robot_model_viewer is an auxiliary OGRE view for showing the URDF of robot
 
-Referring build section for setup the package:
+Referring build section for setting up the package:
 - [Build](#build)
 
 Following the brief introduction for the usage of each plugin:
@@ -38,34 +38,47 @@ uint8 STA_NEED_CHARGING=2
 int8 state
 ```
 
-The base of the charge text will be at the frame listed in the header of the WhiBattery message, which lets the charge info stick to the robot and move with it. Besides under multiple robots scenario, frame with namespace enables each robot to bear its charge info.
+The base of the charge text will be at the frame listed in the header of the WhiBattery message, which lets the charge info stick to the robot and move with it. Besides under multiple robots scenario, the frame with namespace enables each robot to bear its charge info.
 
 ## Navi_waypoints
 Plugin Navi_waypoints derives from class rviz::Display, and creates a panel for waypoints interaction logic:
+
 ![waypoints_im](https://user-images.githubusercontent.com/72239958/198922851-85c9cbee-87e3-4eca-871b-9a39282a0e05.gif)
 
 From version 00.09 it supports the namespace for manipulating multiple robots simultaneously:
+
 ![multiple_waypoints](https://user-images.githubusercontent.com/72239958/233375738-db73c3f4-9613-462e-8808-ec631c5aef5d.gif)
 
 ## Teleop
-Teleop's function is the same as the one operated through terminal but with graphic interaction which can be more convenient in scenario like mapping. User can navigate the robot directly through the mapping's RViz window without opening another terminal:
+Teleop's function is the same as the one operated through terminal but with graphic interaction which can be more convenient in scenarios like mapping. User can navigate the robot directly through the mapping's RViz window without opening another terminal:
+
 ![teleop](https://user-images.githubusercontent.com/72239958/202849722-3b94f105-314e-4de9-b6fb-4c0973ace9c4.gif)
 
 ## Map_saver
 Map_saver is a panel type plugin. It can help user to save map directly through the mapping's RViz window without typing save commands in another terminal:
+
 ![mapsaver](https://user-images.githubusercontent.com/72239958/202850327-21740d9a-5339-45bb-a772-2a1c1e2f22fc.gif)
 
 ## Video_stream
 This plugin derived from the default image plugin with extended stream sources including webcam, IP stream, and video file:
+
 ![stream](https://user-images.githubusercontent.com/72239958/204996337-f5bc2fae-bb17-4306-b71b-8beb10904a62.gif)
 
 ## Navi_namespace
-This plugin derived from the PoseTool, and extended to functionalities with both 2D Pose Estimate and 2D Nav goal. With this plugin user can navigate specified robot by GUI rather than laborious texting by Tool Properties:
+This plugin derived from the PoseTool, and extended to functionalities with both 2D Pose Estimate and 2D Nav goal. With this plugin user can navigate the specified robot by GUI rather than laborious texting by Tool Properties:
+
 ![multiple](https://user-images.githubusercontent.com/72239958/232202523-065316e1-c1eb-497a-9a42-6731e7f24d40.gif)
 
 ## Navi_robot_model_viewer
-This plugin is an additional OGRE view for showing the URDF of robot, which is requested by our end-user. It is derived from rviz::Display with user interaction in the 3D scene:
+This plugin is an additional OGRE view for showing the URDF of robot, which is requested by our end user. It is derived from rviz::Display with user interaction in the 3D scene:
+
 ![robot_model_viewer](https://github.com/xinjuezou-whi/whi_rviz_plugins/assets/72239958/27de3ed2-b725-44f6-bff7-ac2ed428383d)
+
+## 2D_line_Chart
+A general 2D line plot plugin fed by message whi_interfaces/WhiLineChart2D. This message is designed to bear multiple channels which contain several data:
+
+![2d_chart](https://github.com/user-attachments/assets/2b45c2e2-117b-4387-918a-3bf6f9209243)
+
 
 ## Build
 Clone package `whi_interfaces` and `whi_rviz_plugins` to your workspace:
@@ -86,7 +99,7 @@ source <your_workspace>/devel/setup.bash
 ## Use battery
 1. Publish the WhiBattery message
 
-  For a quick check, there is a test script, named `send_test_msgs.py` under folder `scripts` to publish simulated charge info interactively. Before running it, please make sure roscore is active:
+  For a quick check, there is a test script, named `send_test_msgs.py` under the folder `scripts` to publish simulated charge info interactively. Before running it, please make sure roscore is active:
   ```
   roscore
   ```
@@ -139,22 +152,22 @@ Click the "Add" button at the bottom of the "Displays" panel, then scroll down t
 > Remember to switch the mode from "Move Camera" to "Interact" to grand the accessibility of waypoint marker
 
 
-3. Click "Execute" to start the multiple goal's navigation
+3. Click "Execute" to start the multiple-goal's navigation
 
 ![waypoints_execute](https://user-images.githubusercontent.com/72239958/198869441-af36d932-8744-413e-907e-957bf3ac91ec.gif)
 
 
 ### Marker Height property
 
-Since the view orientation is top-down in navigation, multiple info are projected on map and overlay each other. If the interactive marker is happen to be overlaid by other info, it could not be accessed by user. Therefore the property marker height is introduced to make sure it is on top of other info, so to be accessible.
+Since the view orientation is top-down in navigation, multiple info are projected on map and overlay each other. If the interactive marker happens to be overlaid by other info, it cannot be accessed by the user. Therefore, the property marker height is introduced to ensure it is on top of other info to be accessible.
 
 It is suggested to set its height over the max of your robot, the default is 1 meter
 
 ### Point/Stop Span params
 
-These two params on Navi_waypoints panel are used to set the duration between two adjacent goals. If the execution is set as loop mode, the stop span stands for the duration between the last goal and the first goal.
+These two params on Navi_waypoints panel are used to set the duration between two adjacent goals. If the execution is set as loop mode, the stop span stands for the duration between the last and first goal.
 
-The duration is measured as time, so these two's units are second. Both are within range -10800 to 10800. Negative duration means there is no stop between goals, and the current goal will be preempted x seconds ahead its arrival by the next goal. The positive means the stop duration between goals.
+The duration is measured as time, so these two's units are second. Both are within range -10800 to 10800. Negative duration means there is no stop between goals, and the current goal will be preempted x seconds ahead of its arrival by the next goal. The positive means the stop duration between goals.
 
 ### Save and Load
 
@@ -162,7 +175,7 @@ For convenience, you can save the waypoints by clicking the save button, and re-
 
 ### Namespace
 
-Under multiple robots scenario, using the namespace drop list to set the namespace for specified robot.
+Under multiple robots scenario, using the namespace drop list to set the namespace for the specified robot.
 
 ## Use Teleop
 1. Add the Navi_waypoints plugin to RViz
@@ -177,18 +190,18 @@ keys definition
 
 ![Untitled Diagram drawio](https://user-images.githubusercontent.com/72239958/202851886-e404eafc-dae1-488b-bbb4-356eb4cca441.png)
 
-> Keys are functional while the "Key" indicator is light on in green. If it is gray click the anywhere of the teleop panel to activate it.
+> Keys are functional while the "Key" indicator is lit in green. If it is gray click anywhere on the teleop panel to activate it.
 > ![activate](https://user-images.githubusercontent.com/72239958/202852068-e9f2c921-3cc8-46ae-880f-5bece0c381a1.gif)
 
 ### Enable Teleop property
-This property toggles the publish of twist message. It is helpful to avoid the collision of cmd_vel while the plugin is added in navigation's configuration.
+This property toggles the publishing of twist message. It is helpful to avoid the collision of cmd_vel while the plugin is added to the navigation's configuration.
 
 ## Use Map_saver
 Add the Teleop panel by opening the "Panels" menu and then "Add New Panel" within that. This should bring up a Panel class chooser dialog, and select the "Map_saver" within whi_rviz_plugins":
 
 ![image](https://user-images.githubusercontent.com/72239958/202853152-601e29cf-00cf-4d0b-8c8f-170ad75a8948.png)
 
-Once the map is satified to you, just click the "Save" button to save it:
+Once the map is satisfied to you, just click the "Save" button to save it:
 
 ![image](https://user-images.githubusercontent.com/72239958/202853295-8db92ae3-2eec-4a9a-bad7-8a09b027c21c.png)
 
@@ -240,5 +253,5 @@ Click the "Add" button at the bottom of the "Displays" panel, then scroll down t
 
 2. Specify the frame of URDF
 
-Usually the frame of URDF is "base_link", you can set it through the property "Fixed Frame". While the URDF is showing, user can interact the model with mouse as same as the main view of RViz:
+Usually the frame of URDF is "base_link", you can set it through the property "Fixed Frame". While the URDF is showing, user can interact with the model with a mouse as same as the main view of RViz:
 ![robot_model_viewer_use](https://github.com/xinjuezou-whi/whi_rviz_plugins/assets/72239958/cedddc0b-e70c-4142-b126-98d19960af7f)
