@@ -1,15 +1,15 @@
 tasks_plugin:
   name: whi_waypoints_tasks_plugin/WaypointsTasks
-  service: tcp_pose
+  service: /whi/ur_combined/whi_moveit_cpp_bridge/tcp_pose
   alignment_service: /whi_qrcode_pose/qrcode_pose
   alignment_timeout: 15 # unit second
-  base_frame: ur10e_base_link
-  tcp_frame: camera
+  base_frame: whi/base_link
+  tcp_frame: whi/camera
   detection_topic: /pgnd_inspection
   pixel_size: 0.000003 # m
   focal_length: 0.00193 # m
   depth_multiplier: 1.0
   state_topic: actuator_state
-  installation: [0, 0, 0] # degrees
+  installation_to_tcp: [90.0, 0, 0] # degrees
   debug:
     print_locating_error: true
