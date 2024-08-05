@@ -539,10 +539,10 @@ std::array<double, 3> GoalsHandle::locationDelta()
 	tf2::Matrix3x3(goalQ).getRPY(goalRoll, goalPitch, goalYaw);
 
 	std::array<double, 3> delta;
-	delta[0] = curYaw - goalYaw;
-	delta[0] = fabs(delta[0]) > M_PI ? delta[0] - 2.0 * M_PI : delta[0];
-	delta[1] = current.position.x - active_goal_.position.x;
-	delta[2] = current.position.y - active_goal_.position.y;
+	delta[0] = current.position.x - active_goal_.position.x;
+	delta[1] = current.position.y - active_goal_.position.y;
+	delta[2] = curYaw - goalYaw;
+	delta[2] = fabs(delta[2]) > M_PI ? delta[2] - 2.0 * M_PI : delta[2];
 
 	return delta;
 }
