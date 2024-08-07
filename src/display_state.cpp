@@ -39,7 +39,7 @@ namespace whi_rviz_plugins
         : Display()
         , node_handle_(std::make_unique<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for motion state VERSION 00.07.5" << std::endl;
+        std::cout << "\nWHI RViz plugin for motion state VERSION 00.07.6" << std::endl;
         std::cout << "Copyright @ 2023-2025 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         tf_listener_ = std::make_unique<tf2_ros::TransformListener>(buffer_);
@@ -104,7 +104,7 @@ namespace whi_rviz_plugins
     void DisplayState::update(const ros::TimerEvent& Event)
     {
         std::string etaStr("no info");
-        if (fabs(velocities_.first) > 1e-4 || fabs(velocities_.second) > 1e-4)
+        if (fabs(velocities_.first) > 9.9e-4 || fabs(velocities_.second) > 9.9e-4)
         {
             auto tfBase2Map = listenTf("map", frame_property_->getFrame().toStdString(), ros::Time(0));
             geometry_msgs::Pose baselink;
