@@ -58,6 +58,7 @@ namespace whi_rviz_plugins
 		void clearButtonClicked();
 		void resetImuButtonClicked();
 		void resetRcButtonClicked();
+		void resetRgbdButtonClicked();
 		void update(const ros::TimerEvent& Event);
 
 	private:

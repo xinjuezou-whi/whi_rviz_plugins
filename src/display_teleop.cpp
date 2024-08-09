@@ -26,7 +26,7 @@ namespace whi_rviz_plugins
     DisplayTeleop::DisplayTeleop()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for teleop VERSION 00.07.1" << std::endl;
+        std::cout << "\nWHI RViz plugin for teleop VERSION 00.07.2" << std::endl;
         std::cout << "Copyright @ 2022-2025 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         enable_property_ = new rviz::BoolProperty("Enable teleop", true, "Toggle the functionality of teleop",

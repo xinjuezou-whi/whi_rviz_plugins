@@ -67,6 +67,7 @@ namespace whi_rviz_plugins
 		connect(ui_->pushButton_clear, &QPushButton::clicked, this, [=]() { clearButtonClicked(); });
         connect(ui_->pushButton_reset_imu, &QPushButton::clicked, this, [=]() { resetImuButtonClicked(); });
         connect(ui_->pushButton_reset_rc, &QPushButton::clicked, this, [=]() { resetRcButtonClicked(); });
+        connect(ui_->pushButton_reset_rgbd, &QPushButton::clicked, this, [=]() { resetRgbdButtonClicked(); });
     }
 
     StatePanel::~StatePanel()
@@ -132,7 +133,22 @@ namespace whi_rviz_plugins
         }
         else if (State->state == whi_interfaces::WhiMotionState::STA_OPERATING)
         {
-            setIndicatorIcon(ui_->label_indicator_3, INDICATOR_YELLOW);
+            static double preSetSec = sec;
+            static bool toggle = true;
+            const double duration = 0.5 / 3600.0;
+            if (sec - preSetSec > duration)
+            {
+                if (toggle)
+                {
+                    setIndicatorIcon(ui_->label_indicator_3, INDICATOR_BLUE);
+                }
+                else
+                {
+                    setIndicatorIcon(ui_->label_indicator_3, INDICATOR_GREY);
+                }
+                toggle = !toggle;
+                preSetSec = sec;
+            }
             setIndicatorText(ui_->label_indicator_cap_3, "operating");
         }
         else if (State->state == whi_interfaces::WhiMotionState::STA_FAULT)
@@ -429,7 +445,22 @@ namespace whi_rviz_plugins
         }
         else
         {
-            QMessageBox::information(nullptr, tr("Info"), tr("No RC node is running"));
+            QMessageBox::information(nullptr, tr("Info"), tr("No RC node running"));
+        }
+    }
+
+    void StatePanel::resetRgbdButtonClicked()
+    {
+        std::string name("whi_realsense2_camera_node");
+        if (killProcedure(name))
+        {
+            ROS_INFO_STREAM(name << " was successfully terminated");
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            launchProcedure(name);
+        }
+        else
+        {
+            QMessageBox::information(nullptr, tr("Info"), tr("No realsense2 camera node running"));
         }
     }
 
