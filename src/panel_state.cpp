@@ -383,7 +383,8 @@ namespace whi_rviz_plugins
         {
             for (const auto& it : res)
             {
-                if (it.find(" Ss") != std::string::npos)
+                if (it.find(" Ssl") != std::string::npos ||
+                    it.find(" Rsl") != std::string::npos)
                 {
                     std::vector<std::string> separated = splitStringBySpace(it);
 #ifdef DEBUG
