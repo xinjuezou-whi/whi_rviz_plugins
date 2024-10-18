@@ -1,7 +1,7 @@
 tasks_plugin:
   name: whi_waypoints_tasks_plugin/WaypointsTasks
   service: /whi/ur_combined/whi_moveit_cpp_bridge/tcp_pose
-  alignment_service: /whi_qrcode_pose/qrcode_pose
+  estop_topic: /estop
   alignment_timeout: 15 # unit second
   base_frame: whi/base_link
   tcp_frame: whi/camera
