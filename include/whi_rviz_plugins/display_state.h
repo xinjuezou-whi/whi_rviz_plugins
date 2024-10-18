@@ -81,6 +81,7 @@ namespace whi_rviz_plugins
 		void updateRcStateTopic();
 		void updateArmStateTopic();
 		void updateImuTopic();
+		void updateEstopTopic();
         void updateBaselinkFrame();
 
 	private:
@@ -96,6 +97,7 @@ namespace whi_rviz_plugins
 		rviz::RosTopicProperty* rc_state_topic_property_;
 		rviz::RosTopicProperty* arm_state_topic_property_;
 		rviz::RosTopicProperty* imu_topic_property_;
+		rviz::RosTopicProperty* estop_topic_property_;
 		rviz::TfFrameProperty* frame_property_;
 		std::shared_ptr<rviz::FrameManager> frame_manager_{ nullptr };
         // subscriber

@@ -79,9 +79,8 @@ namespace whi_rviz_plugins
         connect(ui_->pushButton_reset_rgbd, &QPushButton::clicked, this, [=]() { resetRgbdButtonClicked(); });
         connect(ui_->pushButton_estop, &QPushButton::toggled, this, [=](bool Checked) { estopButtonToggled(Checked); });
 
-        // advertised topic
-        pub_estop_ = std::make_unique<ros::Publisher>(
-            node_handle_->advertise<std_msgs::Bool>("estop", 50));
+        // advertised estop topic
+        setEstopTopic("estop");
     }
 
     StatePanel::~StatePanel()
@@ -260,6 +259,12 @@ namespace whi_rviz_plugins
     {
         pub_rc_state_ = std::make_unique<ros::Publisher>(
             node_handle_->advertise<whi_interfaces::WhiRcState>(Topic, 50));
+    }
+
+    void StatePanel::setEstopTopic(const std::string& Topic)
+    {
+        pub_estop_ = std::make_unique<ros::Publisher>(
+            node_handle_->advertise<std_msgs::Bool>(Topic, 50));
     }
 
     void StatePanel::setBatteryInfo(int Soc, int Soh)
