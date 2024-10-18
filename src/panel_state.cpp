@@ -18,6 +18,7 @@ All text above must be included in any redistribution.
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <angles/angles.h>
+#include <std_msgs/Bool.h>
 #include <boost/filesystem.hpp>
 #include <iostream>
 #include <sstream>
@@ -63,11 +64,24 @@ namespace whi_rviz_plugins
         setIndicatorText(ui_->label_indicator_cap_6, "reserved");
         setIndicatorText(ui_->label_indicator_cap_7, "reserved");
         setIndicatorText(ui_->label_indicator_cap_8, "reserved");
+        // buttons
+        ui_->pushButton_estop->setCheckable(true);
+        QIcon icon;
+        icon.addFile(QString(pkgPath.c_str()) + "/icons/classes/estop_released.png",
+            QSize(), QIcon::Normal, QIcon::Off);
+        ui_->pushButton_estop->setIcon(icon);
+        estop_init_height_ = ui_->pushButton_estop->height() + 10;
+        ui_->pushButton_estop->setIconSize(QSize(estop_init_height_, estop_init_height_));
         // signals
 		connect(ui_->pushButton_clear, &QPushButton::clicked, this, [=]() { clearButtonClicked(); });
         connect(ui_->pushButton_reset_imu, &QPushButton::clicked, this, [=]() { resetImuButtonClicked(); });
         connect(ui_->pushButton_reset_rc, &QPushButton::clicked, this, [=]() { resetRcButtonClicked(); });
         connect(ui_->pushButton_reset_rgbd, &QPushButton::clicked, this, [=]() { resetRgbdButtonClicked(); });
+        connect(ui_->pushButton_estop, &QPushButton::toggled, this, [=](bool Checked) { estopButtonToggled(Checked); });
+
+        // advertised topic
+        pub_estop_ = std::make_unique<ros::Publisher>(
+            node_handle_->advertise<std_msgs::Bool>("estop", 50));
     }
 
     StatePanel::~StatePanel()
@@ -463,6 +477,28 @@ namespace whi_rviz_plugins
         {
             QMessageBox::information(nullptr, tr("Info"), tr("No realsense2 camera node running"));
         }
+    }
+
+    void StatePanel::estopButtonToggled(bool Checked)
+    {
+        std_msgs::Bool msg;
+        msg.data = Checked;
+        pub_estop_->publish(msg);
+
+        std::string pkgPath = getPackagePath();
+        QIcon icon;
+        if (Checked)
+        {
+            icon.addFile(QString(pkgPath.c_str()) + "/icons/classes/estop_pressed.png",
+                QSize(), QIcon::Normal, QIcon::Off);
+        }
+        else
+        {
+            icon.addFile(QString(pkgPath.c_str()) + "/icons/classes/estop_released.png",
+                QSize(), QIcon::Normal, QIcon::Off);
+        }
+        ui_->pushButton_estop->setIcon(icon);
+        ui_->pushButton_estop->setIconSize(QSize(estop_init_height_, estop_init_height_));
     }
 
     void StatePanel::update(const ros::TimerEvent& Event)

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>860</width>
+    <width>988</width>
     <height>131</height>
    </rect>
   </property>
@@ -541,6 +541,37 @@
         </spacer>
        </item>
       </layout>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_9">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton_estop">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>E-Stop</string>
+       </property>
+       <property name="icon">
+        <iconset>
+         <normaloff>../icons/classes/estop_released.png</normaloff>
+         <normalon>../icons/classes/estop_pressed.png</normalon>../icons/classes/estop_released.png</iconset>
+       </property>
+      </widget>
      </item>
      <item>
       <spacer name="horizontalSpacer_12">

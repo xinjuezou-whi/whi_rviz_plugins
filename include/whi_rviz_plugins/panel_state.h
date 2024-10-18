@@ -59,6 +59,7 @@ namespace whi_rviz_plugins
 		void resetImuButtonClicked();
 		void resetRcButtonClicked();
 		void resetRgbdButtonClicked();
+		void estopButtonToggled(bool Checked);
 		void update(const ros::TimerEvent& Event);
 
 	private:
@@ -68,10 +69,11 @@ namespace whi_rviz_plugins
 		whi_interfaces::WhiMotionState first_state_msg_;
 		std::unique_ptr<ros::NodeHandle> node_handle_{ nullptr };
 		std::unique_ptr<ros::Publisher> pub_rc_state_{ nullptr };
-		std::string rc_state_topic_{ "rc_state" };
+		std::unique_ptr<ros::Publisher> pub_estop_{ nullptr };
 		std::unique_ptr<ros::Timer> non_realtime_loop_{ nullptr };
 		ros::Time last_updated_imu_;
 		ros::Time last_updated_rc_;
 		std::unique_ptr<ros::Time> last_updated_arm_{ nullptr };
+		int estop_init_height_{ 50 };
 	};
 } // end namespace whi_rviz_plugins
