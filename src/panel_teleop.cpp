@@ -211,8 +211,11 @@ namespace whi_rviz_plugins
         }
 
         linear_ = twist_widget_->getLinear() + Dir * twist_widget_->getLinearStep();
-        linear_ = fabs(linear_) < twist_widget_->getLinearMin() ? Dir * twist_widget_->getLinearMin() : linear_;
-        linear_ = fabs(linear_) > twist_widget_->getLinearMax() ? twist_widget_->getLinearMax() : linear_;
+        linear_ = fabs(linear_) > twist_widget_->getLinearMax() ? Dir * twist_widget_->getLinearMax() : linear_;
+        if (fabs(linear_) > 1e-3 && fabs(linear_) < twist_widget_->getLinearMin())
+        {
+            linear_ = Dir * twist_widget_->getLinearMin();
+        }
 
         twist_widget_->setLinear(linear_);
         ui_->label_linear->setText(to_string_with_precision(linear_, 2).c_str());
@@ -226,8 +229,11 @@ namespace whi_rviz_plugins
         }
 
         angular_ = twist_widget_->getAngular() + Dir * twist_widget_->getAngularStep();
-        angular_ = fabs(angular_) < twist_widget_->getAngularMin() ? Dir * twist_widget_->getAngularMin() : angular_;
-        angular_ = fabs(angular_) > twist_widget_->getAngularMax() ? twist_widget_->getAngularMax() : angular_;
+        angular_ = fabs(angular_) > twist_widget_->getAngularMax() ? Dir * twist_widget_->getAngularMax() : angular_;
+        if (fabs(angular_) > 1e-3 && fabs(angular_) < twist_widget_->getAngularMin())
+        {
+            angular_ = Dir * twist_widget_->getAngularMin();
+        }
 
         twist_widget_->setAngular(angular_);
         ui_->label_angular->setText(to_string_with_precision(angular_, 2).c_str());
