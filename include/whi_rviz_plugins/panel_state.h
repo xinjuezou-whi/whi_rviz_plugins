@@ -61,6 +61,7 @@ namespace whi_rviz_plugins
 		void resetRcButtonClicked();
 		void resetRgbdButtonClicked();
 		void estopButtonToggled(bool Checked);
+		void setEstopIcon(bool Checked);
 		void update(const ros::TimerEvent& Event);
 
 	private:

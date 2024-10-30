@@ -173,6 +173,19 @@ namespace whi_rviz_plugins
         {
             setIndicatorIcon(ui_->label_indicator_1, INDICATOR_ORANGE);
             setIndicatorText(ui_->label_indicator_cap_1, "E-Stop");
+            setIndicatorIcon(ui_->label_indicator_3, INDICATOR_GREY);
+
+            ui_->pushButton_estop->blockSignals(true);
+            ui_->pushButton_estop->setChecked(true);
+            setEstopIcon(true);
+            ui_->pushButton_estop->blockSignals(false);
+        }
+        else if (State->state == whi_interfaces::WhiMotionState::STA_ESTOP_CLEAR)
+        {
+            ui_->pushButton_estop->blockSignals(true);
+            ui_->pushButton_estop->setChecked(false);
+            setEstopIcon(false);
+            ui_->pushButton_estop->blockSignals(false);
         }
         else if (State->state == whi_interfaces::WhiMotionState::STA_CRITICAL_COLLISION)
         {
@@ -490,6 +503,11 @@ namespace whi_rviz_plugins
         msg.data = Checked;
         pub_estop_->publish(msg);
 
+        setEstopIcon(Checked);
+    }
+
+    void StatePanel::setEstopIcon(bool Checked)
+    {
         std::string pkgPath = getPackagePath();
         QIcon icon;
         if (Checked)
