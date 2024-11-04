@@ -1,6 +1,7 @@
 tasks_plugin:
   name: whi_waypoints_tasks_plugin/WaypointsTasks
-  service: /whi/ur_combined/whi_moveit_cpp_bridge/tcp_pose
+  service_tcp: /whi/ur_combined/whi_moveit_cpp_bridge/tcp_pose
+  service_joint: /whi/ur_combined/whi_moveit_cpp_bridge/joint_pose
   estop_topic: /estop
   base_frame: whi/base_link
   tcp_frame: whi/camera
