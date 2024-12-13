@@ -545,6 +545,18 @@ namespace whi_rviz_plugins
 			}
 			if (ret == QMessageBox::Yes)
 			{
+				// time span
+				const auto& pointSpan = node["point_span"];
+				if (pointSpan)
+				{
+					ui_->doubleSpinBox_point_span->setValue(pointSpan.as<double>());
+				}
+				const auto& stopSpan = node["stop_span"];
+				if (stopSpan)
+				{
+					ui_->doubleSpinBox_stop_span->setValue(stopSpan.as<double>());
+				}
+
 				// remove all rows from table
 				ui_->tableWidget_waypoints->setRowCount(0);
 				// load from yaml
@@ -622,9 +634,16 @@ namespace whi_rviz_plugins
 				origin = goals_map_[ns]->getMapOrigin();
 			}
 			std::string line("map: [" + std::to_string(origin.position.x) + ", " +
-				std::to_string(origin.position.y) + "]\nwaypoints:\n");
+				std::to_string(origin.position.y) + "]\n");
 			ofs.write(line.c_str(), line.length());
-
+			// save time span
+			line.assign("point_span: " + ui_->doubleSpinBox_point_span->text().toStdString() + "\n");
+			ofs.write(line.c_str(), line.length());
+			line.assign("stop_span: " + ui_->doubleSpinBox_stop_span->text().toStdString() + "\n");
+			ofs.write(line.c_str(), line.length());
+			// waypoints
+			line.assign("waypoints:\n");
+			ofs.write(line.c_str(), line.length());
 			for (int i = 0; i < ui_->tableWidget_waypoints->rowCount(); ++i)
 			{
 				line.assign("  - index: " + std::to_string(i) + "\n");
