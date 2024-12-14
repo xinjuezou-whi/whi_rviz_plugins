@@ -7,8 +7,14 @@
     <x>0</x>
     <y>0</y>
     <width>462</width>
-    <height>483</height>
+    <height>283</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>Form</string>
@@ -52,7 +58,23 @@
     </layout>
    </item>
    <item>
-    <widget class="QwtPlot" name="qwtPlot"/>
+    <widget class="QwtPlot" name="qwtPlot">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>1000</width>
+       <height>350</height>
+      </size>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
