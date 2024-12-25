@@ -201,7 +201,9 @@ namespace whi_rviz_plugins
 			// re-configure namespace
 			configureNs(ui_->comboBox_ns->currentText().toStdString());
 			// remove all rows from table
+			ui_->tableWidget_waypoints->blockSignals(true);
 			ui_->tableWidget_waypoints->setRowCount(0);
+			ui_->tableWidget_waypoints->blockSignals(false);
 			// fill all from map to table
 			const auto& poseList = waypoints_map_[ui_->comboBox_ns->currentText().toStdString()];
 			for (size_t i = 0; i < poseList.size(); ++i)
@@ -731,8 +733,6 @@ namespace whi_rviz_plugins
 				ui_->groupBox_waypoints->setTitle(QString("Waypoints (") + QString::number(ui_->tableWidget_waypoints->rowCount())
 					+ QString(")"));
 				ui_->tableWidget_waypoints->setCurrentCell(0, 0);
-
-				visualizeWaypoints(0);
 
 				if (goals_map_[ns])
 				{
