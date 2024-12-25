@@ -34,11 +34,45 @@ Changelog:
 
 using VisualizeEta = std::function<void(const geometry_msgs::Pose&, double)>;
 using ExecutionState = std::function<void(int, std::shared_ptr<std::string> Info)>;
+using WaypointPack = std::pair<geometry_msgs::PoseStamped, bool>;
 
 class GoalsHandle
 {
 public:
 	enum State { STA_STANDBY = 0, STA_POINT_APPROACHED, STA_DONE, STA_ABORTED };
+
+	class GoalPack
+	{
+	public:
+		GoalPack() = default;
+		GoalPack(const geometry_msgs::Pose& Pose, bool IsRelative, const std::string& Task, bool IsLast = false)
+			: request_pose_(Pose), absolute_pose_(Pose), is_relative_(IsRelative), task_(Task), is_last_(IsLast) {};
+		GoalPack(const GoalPack& SrcObj)
+		{
+			*this = SrcObj;
+		};
+		~GoalPack() = default;
+		GoalPack& operator=(const GoalPack& SrcObj)
+		{
+			if (this != &SrcObj)
+			{
+				request_pose_ = SrcObj.request_pose_;
+				absolute_pose_ = SrcObj.absolute_pose_;
+				is_relative_ = SrcObj.is_relative_;
+				task_ = SrcObj.task_;
+				is_last_ = SrcObj.is_last_;
+			}
+
+			return *this;
+		};
+
+	public:
+		geometry_msgs::Pose request_pose_;
+		geometry_msgs::Pose absolute_pose_;
+		bool is_relative_{ false };
+		std::string task_;
+		bool is_last_{ false };
+	};
 
 public:
     GoalsHandle() = delete;
@@ -46,9 +80,9 @@ public:
     ~GoalsHandle() = default;
 
 public:
-	bool execute(const std::vector<geometry_msgs::Pose>& Waypoints, double PointSpan, double StopSpan,
+	bool execute(const std::vector<WaypointPack>& WaypointPacks, double PointSpan, double StopSpan,
 		bool Loop = false);
-	bool execute(const std::vector<geometry_msgs::Pose>& Waypoints, const std::map<int, std::string>& Tasks,
+	bool execute(const std::vector<WaypointPack>& WaypointPacks, const std::map<int, std::string>& Tasks,
 		double PointSpan, double StopSpan, bool Loop = false);
 	void cancel();
 	void reset();
@@ -56,7 +90,7 @@ public:
 	void setPointSpan(double Span);
 	void setStopSpan(double Span);
 	geometry_msgs::Pose getMapOrigin() const;
-	geometry_msgs::Pose getCurrentPose();
+	geometry_msgs::Pose getCurrentPose() const;
 	void registerEatUpdater(VisualizeEta Func);
 	void registerExecutionUpdater(ExecutionState Func);
 	bool isActive() const;
@@ -74,21 +108,22 @@ private:
 	bool setGoal(const geometry_msgs::Pose& Goal, bool Recovery = false);
 	void cancelGoal() const;
 	geometry_msgs::TransformStamped listenTf(const std::string& DstFrame, const std::string& SrcFrame,
-        const ros::Time& Time);
-	void handleGoalAndState(const geometry_msgs::Pose& Pose);
-	void updateStateInfo(const geometry_msgs::Pose& Pose);
-	void subCallbackPlanPath(const nav_msgs::Path::ConstPtr& PlanPath);
+        const ros::Time& Time) const;
+	void handleGoalAndState(const geometry_msgs::PoseStamped& Pose);
+	void updateStateInfo(const GoalPack& Goal);
 	void subCallbackMapData(const nav_msgs::MapMetaData::ConstPtr& MapData);
 	void subCallbackCmdVel(const geometry_msgs::Twist::ConstPtr& CmdVel);
-	void callbackGoalDone(const actionlib::SimpleClientGoalState& State, const move_base_msgs::MoveBaseResultConstPtr& Result);
+	void callbackGoalDone(const actionlib::SimpleClientGoalState& State,
+		const move_base_msgs::MoveBaseResultConstPtr& Result);
 	void callbackGoalActive();
 	void callbackGoalFeedback(const move_base_msgs::MoveBaseFeedbackConstPtr& Feedback);
 	void callbackTimer(const ros::TimerEvent& Event);
-	int findBeginIndex(const std::vector<geometry_msgs::Pose>& Waypoints);
+	int findBeginIndex(const std::vector<WaypointPack>& WaypointPacks);
 	void executeTask(bool ForceClean = false);
 	std::array<double, 3> locationDelta();
 	bool isStill() const;
-	bool metTolerance();
+	bool metTolerance(const geometry_msgs::Pose& PoseA, const geometry_msgs::Pose& PoseB) const;
+	geometry_msgs::Pose constructAbsGoal(const geometry_msgs::Pose& Relative) const;
 
 private:
 	static bool metDistance(const geometry_msgs::Pose& Pose1, const geometry_msgs::Pose& Pose2, double Tolerance);
@@ -103,10 +138,8 @@ private:
     std::unique_ptr<tf2_ros::TransformListener> tf_listener_{ nullptr };
     geometry_msgs::Pose map_origin_;
     geometry_msgs::Pose current_pose_;
-	std::list<std::tuple<geometry_msgs::Pose, std::string>> goals_list_;
-	geometry_msgs::Pose active_goal_;
-	geometry_msgs::Pose final_goal_;
-	std::string active_goal_task_;
+	GoalPack active_goal_;
+	std::list<GoalPack> goals_list_;
 	bool looping_{ false };
 	double point_span_{ 0.3 };
 	double stop_span_{ 0.3 };

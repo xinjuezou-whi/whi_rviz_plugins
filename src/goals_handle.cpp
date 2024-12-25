@@ -27,31 +27,32 @@ GoalsHandle::GoalsHandle(const std::string& Namespace, bool Remote/* = false*/)
     tf_listener_ = std::make_unique<tf2_ros::TransformListener>(buffer_);
 }
 
-bool GoalsHandle::execute(const std::vector<geometry_msgs::Pose>& Waypoints, double PointSpan, double StopSpan,
+bool GoalsHandle::execute(const std::vector<WaypointPack>& WaypointPacks, double PointSpan, double StopSpan,
 	bool Loop/* = false*/)
 {
 	std::map<int, std::string> tasks;
-	bool res = execute(Waypoints, tasks, PointSpan, StopSpan, Loop);
+	bool res = execute(WaypointPacks, tasks, PointSpan, StopSpan, Loop);
 
 	return res;
 }
 
-bool GoalsHandle::execute(const std::vector<geometry_msgs::Pose>& Waypoints, const std::map<int, std::string>& Tasks,
+bool GoalsHandle::execute(const std::vector<WaypointPack>& WaypointPacks, const std::map<int, std::string>& Tasks,
 	double PointSpan, double StopSpan, bool Loop/* = false*/)
 {
 	goals_list_.clear();
 
-	for (std::size_t i = findBeginIndex(Waypoints); ; i = (i + 1) % Waypoints.size())
+	for (std::size_t i = findBeginIndex(WaypointPacks); ; i = (i + 1) % WaypointPacks.size())
 	{
 		std::string config;
 		if (auto search = Tasks.find(i); search != Tasks.end())
 		{
 			config = Tasks.at(i);
 		}
-		goals_list_.push_back(std::make_tuple(Waypoints[i], config));
+		goals_list_.emplace_back(WaypointPacks[i].first.pose, WaypointPacks[i].second, config);
 
-		if (goals_list_.size() == Waypoints.size())
+		if (goals_list_.size() == WaypointPacks.size())
 		{
+			goals_list_.back().is_last_ = true;
 			break;
 		}
 	}
@@ -70,8 +71,18 @@ bool GoalsHandle::execute(const std::vector<geometry_msgs::Pose>& Waypoints, con
 			non_realtime_loop_ = nullptr;
 		}
 
-		final_goal_ = std::get<0>(goals_list_.back());
-		return setGoal(std::get<0>(goals_list_.front()));
+		bool res = false;
+		if (goals_list_.front().is_relative_)
+		{
+			goals_list_.front().absolute_pose_ = constructAbsGoal(goals_list_.front().request_pose_);
+			res = setGoal(goals_list_.front().absolute_pose_);
+		}
+		else
+		{
+			res = setGoal(goals_list_.front().request_pose_);
+		}
+
+		return res;
 	}
 	else
 	{
@@ -90,7 +101,7 @@ void GoalsHandle::cancel()
 void GoalsHandle::reset()
 {
 	// neutralize the active goal
-	active_goal_ = getCurrentPose();
+	active_goal_.request_pose_ = getCurrentPose();
 }
 
 void GoalsHandle::setLooping(bool Looping)
@@ -113,7 +124,7 @@ geometry_msgs::Pose GoalsHandle::getMapOrigin() const
 	return map_origin_;
 }
 
-geometry_msgs::Pose GoalsHandle::getCurrentPose()
+geometry_msgs::Pose GoalsHandle::getCurrentPose() const
 {
 	auto trans = listenTf("map", baselink_frame_, ros::Time(0));
 	geometry_msgs::Pose pose;
@@ -219,12 +230,12 @@ void GoalsHandle::cancelGoal() const
 
 	if (func_eta_)
 	{
-		func_eta_(active_goal_, -2.0);
+		func_eta_(active_goal_.absolute_pose_, -2.0);
 	}
 }
 
 geometry_msgs::TransformStamped GoalsHandle::listenTf(const std::string& DstFrame, const std::string& SrcFrame,
-    const ros::Time& Time)
+    const ros::Time& Time) const
 {
     try
     {
@@ -237,20 +248,22 @@ geometry_msgs::TransformStamped GoalsHandle::listenTf(const std::string& DstFram
     }
 }
 
-void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
+void GoalsHandle::handleGoalAndState(const geometry_msgs::PoseStamped& Pose)
 {
 	ros::Time current = ros::Time::now();
-	double dist = distance(Pose, active_goal_);
+	double dist = distance(Pose.pose, active_goal_.absolute_pose_);
 
 	if (isStill())
 	{
+		// mechanics of break from stuck
 		if ((current - state_last_).toSec() > stuck_timeout_)
 		{
-			if (metTolerance() || stuck_relocate_count_++ >= recovery_max_try_count_)
+			if (metTolerance(getCurrentPose(), active_goal_.absolute_pose_) ||
+				stuck_relocate_count_++ >= recovery_max_try_count_)
 			{
 				if (goals_list_.empty())
 				{
-					if (active_goal_task_.empty())
+					if (active_goal_.task_.empty())
 					{
 						if (func_execution_state_)
 						{
@@ -258,7 +271,7 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 						}
 						if (func_eta_)
 						{
-							func_eta_(active_goal_, -1.0);
+							func_eta_(active_goal_.absolute_pose_, -1.0);
 						}
 						std::cout << "all goals traversed. remained goals " << goals_list_.size() << std::endl;
 					}
@@ -266,7 +279,7 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 					{
 						if (!state_task_)
 						{
-							// execute task then to approach the next waypoint
+							// execute waypoint task then to approach the next waypoint
 							// IMPORTANT: DO NOT CALL ACTION in its own callback
 							std::thread{ &GoalsHandle::executeTask, this, true }.detach();
 						}
@@ -274,14 +287,21 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 				}
 				else
 				{
-					if (active_goal_task_.empty())
+					if (active_goal_.task_.empty())
 					{
-						bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
-						double span = isFinalOne ? -stop_span_ : -point_span_;
+						double span = active_goal_.is_last_ ? -stop_span_ : -point_span_;
 						if (span < stuck_timeout_)
 						{
-							setGoal(std::get<0>(goals_list_.front()));
-
+							// to approach the next waypoint
+							if (goals_list_.front().is_relative_)
+							{
+								goals_list_.front().absolute_pose_ = constructAbsGoal(goals_list_.front().request_pose_);
+								setGoal(goals_list_.front().absolute_pose_);
+							}
+							else
+							{
+								setGoal(goals_list_.front().request_pose_);
+							}
 							std::cout << "break from stuck. remained goals " << goals_list_.size() << std::endl;
 						}
 					}
@@ -289,7 +309,7 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 					{
 						if (!state_task_)
 						{
-							// execute task then to approach the next waypoint
+							// execute waypoint task then to approach the next waypoint
 							// IMPORTANT: DO NOT CALL ACTION in its own callback
 							std::thread{ &GoalsHandle::executeTask, this, true }.detach();
 						}
@@ -298,23 +318,31 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 			}
 			else
 			{
-				goals_list_.insert(goals_list_.begin(), std::make_tuple(active_goal_, active_goal_task_));
-				setGoal(std::get<0>(goals_list_.front()), true);
+				// to re-execute the current goal
+				goals_list_.insert(goals_list_.begin(), active_goal_);
+				if (goals_list_.front().is_relative_)
+				{
+					goals_list_.front().absolute_pose_ = constructAbsGoal(goals_list_.front().request_pose_);
+					setGoal(goals_list_.front().absolute_pose_, true);
+				}
+				else
+				{
+					setGoal(goals_list_.front().request_pose_, true);
+				}
 			}
 		}
 	}
 	else
 	{
-		bool isFinal = metDistance(active_goal_, final_goal_, 1e-3);
-		if (active_goal_task_.empty() &&
-			(!isFinal && point_span_ < 0.0 || isFinal && stop_span_ < 0.0))
+		if (active_goal_.task_.empty() && !goals_list_.front().is_relative_ &&
+			((!active_goal_.is_last_ && point_span_ < 0.0) || (active_goal_.is_last_ && stop_span_ < 0.0)))
 		{
-			double tolerance = isFinal ? -stop_span_ * current_linear_ : -point_span_ * current_linear_;
+			double tolerance = active_goal_.is_last_ ? -stop_span_ * current_linear_ : -point_span_ * current_linear_;
 			if (dist < tolerance)
 			{
-				setGoal(std::get<0>(goals_list_.front()));
-
-				std::cout << "tolerance reached, proceeding the next. remained goals " << goals_list_.size() << "  " << tolerance << std::endl;
+				setGoal(goals_list_.front().request_pose_, true);
+				std::cout << "tolerance within " << tolerance << " reached, proceeding the next. remained goals " <<
+					goals_list_.size() << std::endl;
 			}
 		}
 
@@ -326,19 +354,19 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::Pose& Pose)
 	{
 		if (func_eta_)
 		{
-			func_eta_(active_goal_, dist / current_linear_);
+			func_eta_(active_goal_.absolute_pose_, dist / current_linear_);
 		}
 	}
 }
 
-void GoalsHandle::updateStateInfo(const geometry_msgs::Pose& Pose)
+void GoalsHandle::updateStateInfo(const GoalPack& Goal)
 {
 	if (func_execution_state_)
 	{
 		if (looping_)
 		{
 			// is final one?
-			if (metDistance(Pose, final_goal_, 0.5))
+			if (Goal.is_last_)
 			{
 				loop_count_ = is_recovery_ ? loop_count_ : loop_count_ + 1;
 				std::shared_ptr<std::string> info = std::make_shared<std::string>(
@@ -368,17 +396,17 @@ void GoalsHandle::subCallbackCmdVel(const geometry_msgs::Twist::ConstPtr& CmdVel
 	current_angular_ = CmdVel->angular.z;
 }
 
-void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State, const move_base_msgs::MoveBaseResultConstPtr& Result)
+void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State,
+	const move_base_msgs::MoveBaseResultConstPtr& Result)
 {
 #ifdef DEBUG
 	std::cout << "goal state " << std::to_string(State.state_) << " goal left " << goals_list_.size() << std::endl;
 #endif
-	if (active_goal_task_.empty())
+	if (active_goal_.task_.empty())
 	{
 		double pointSpan = point_span_ < 0.0 ? 0.1 : point_span_;
 		double stopSpan = stop_span_ < 0.0 ? 0.1 : stop_span_;
-		bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
-		ros::Duration duration = isFinalOne ? ros::Duration(stopSpan) : ros::Duration(pointSpan);
+		ros::Duration duration = active_goal_.is_last_ ? ros::Duration(stopSpan) : ros::Duration(pointSpan);
 		non_realtime_loop_ = std::make_unique<ros::Timer>(
 			node_handle_->createTimer(duration,
 			std::bind(&GoalsHandle::callbackTimer, this, std::placeholders::_1)));
@@ -386,7 +414,7 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 	else
 	{
 		if (movebase_client_->getState().state_ == actionlib::SimpleClientGoalState::SUCCEEDED &&
-			metDistance(active_goal_, getCurrentPose(), 0.2))
+			metDistance(active_goal_.absolute_pose_, getCurrentPose(), 0.2))
 		{
 			// execute task then to approach the next waypoint
 			// IMPORTANT: DO NOT CALL ACTION in its own callback
@@ -408,32 +436,17 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 
 void GoalsHandle::callbackGoalActive()
 {
-	static geometry_msgs::Pose lastGoal;
+	static GoalPack lastGoal;
 
-	active_goal_ = std::get<0>(goals_list_.front());
-	active_goal_task_ = std::get<1>(goals_list_.front());
+	active_goal_ = goals_list_.front();
 	goals_list_.pop_front();
 	if (looping_)
 	{
-		auto equal = [&](const std::tuple<geometry_msgs::Pose, std::string>& Item)
-		{
-			return fabs(active_goal_.position.x - std::get<0>(Item).position.x) < 1e-4 &&
-				fabs(active_goal_.position.x - std::get<0>(Item).position.x) < 1e-4 &&
-				fabs(active_goal_.orientation.x - std::get<0>(Item).orientation.x) < 1e-4 &&
-				fabs(active_goal_.orientation.y - std::get<0>(Item).orientation.y) < 1e-4 &&
-				fabs(active_goal_.orientation.z - std::get<0>(Item).orientation.z) < 1e-4 &&
-				fabs(active_goal_.orientation.w - std::get<0>(Item).orientation.w) < 1e-4 &&
-				active_goal_task_ == std::get<1>(Item);
-		};
-		if (std::find_if(begin(goals_list_), end(goals_list_), equal) == std::end(goals_list_))
-		{
-			goals_list_.push_back(std::make_tuple(active_goal_, active_goal_task_));
-		}
+		goals_list_.push_back(active_goal_);
 	}
 	else
 	{
-		bool isFinalOne = metDistance(active_goal_, final_goal_, 1e-3);
-		if (isFinalOne)
+		if (active_goal_.is_last_)
 		{
 			goals_list_.clear();
 		}
@@ -449,14 +462,23 @@ void GoalsHandle::callbackGoalActive()
 
 void GoalsHandle::callbackGoalFeedback(const move_base_msgs::MoveBaseFeedbackConstPtr& Feedback)
 {
-	handleGoalAndState(Feedback->base_position.pose);
+	handleGoalAndState(Feedback->base_position);
 }
 
 void GoalsHandle::callbackTimer(const ros::TimerEvent& Event)
 {
 	if (!goals_list_.empty())
 	{
-		setGoal(std::get<0>(goals_list_.front()));
+		if (goals_list_.front().is_relative_)
+		{
+			goals_list_.front().absolute_pose_ = constructAbsGoal(goals_list_.front().request_pose_);
+			setGoal(goals_list_.front().absolute_pose_);
+		}
+		else
+		{
+			setGoal(goals_list_.front().request_pose_);
+		}
+
 		std::cout << "span timeout, proceeding the next" << std::endl;
 	}
 	else
@@ -472,23 +494,25 @@ void GoalsHandle::callbackTimer(const ros::TimerEvent& Event)
 	non_realtime_loop_ = nullptr;
 }
 
-int GoalsHandle::findBeginIndex(const std::vector<geometry_msgs::Pose>& Waypoints)
+int GoalsHandle::findBeginIndex(const std::vector<WaypointPack>& WaypointPacks)
 {
 	int beginIndex = 0;
 	double minDistance = std::numeric_limits<double>::max();
-	for (std::size_t i = 0; i < Waypoints.size(); ++i)
+	for (std::size_t i = 0; i < WaypointPacks.size(); ++i)
 	{
-		auto dist = distance(getCurrentPose(), Waypoints[i]);
+		// only consider the absolute pose
+		auto dist = WaypointPacks[i].second ?
+			std::numeric_limits<double>::max() : distance(getCurrentPose(), WaypointPacks[i].first.pose);
 		if (dist < minDistance)
 		{
 			beginIndex = i;
 			minDistance = dist;
 		}
 	}
+	// choose the next one if current pose overlays the waypoint
 	if (minDistance < 0.5)
 	{
-		// choose the next one if current pose overlays the waypoint
-		beginIndex = (beginIndex + 1) % Waypoints.size();
+		beginIndex = (beginIndex + 1) % WaypointPacks.size();
 	}
 
 	return beginIndex;
@@ -506,11 +530,20 @@ void GoalsHandle::executeTask(bool ForceClean/* = false*/)
 	if (task_plugin_)
 	{
 		auto delta = locationDelta();
-		task_plugin_->process(active_goal_task_, delta.data(), delta.size());
+		task_plugin_->process(active_goal_.task_, delta.data(), delta.size());
 	}
 	if (!goals_list_.empty())
 	{
-		setGoal(std::get<0>(goals_list_.front()));
+		if (goals_list_.front().is_relative_)
+		{
+			goals_list_.front().absolute_pose_ = constructAbsGoal(goals_list_.front().request_pose_);
+			setGoal(goals_list_.front().absolute_pose_);
+		}
+		else
+		{
+			setGoal(goals_list_.front().request_pose_);
+		}
+
 		std::cout << "task executed, proceeding the next" << std::endl;
 	}
 	else
@@ -533,14 +566,14 @@ std::array<double, 3> GoalsHandle::locationDelta()
     double curRoll = 0.0, curPitch = 0.0, curYaw = 0.0;
 	tf2::Matrix3x3(curQ).getRPY(curRoll, curPitch, curYaw);
 
-	tf2::Quaternion goalQ(active_goal_.orientation.x, active_goal_.orientation.y, active_goal_.orientation.z,
-		active_goal_.orientation.w);
+	tf2::Quaternion goalQ(active_goal_.absolute_pose_.orientation.x, active_goal_.absolute_pose_.orientation.y,
+		active_goal_.absolute_pose_.orientation.z, active_goal_.absolute_pose_.orientation.w);
     double goalRoll = 0.0, goalPitch = 0.0, goalYaw = 0.0;
 	tf2::Matrix3x3(goalQ).getRPY(goalRoll, goalPitch, goalYaw);
 
 	std::array<double, 3> delta;
-	delta[0] = active_goal_.position.x - current.position.x;
-	delta[1] = active_goal_.position.y - current.position.y;
+	delta[0] = active_goal_.absolute_pose_.position.x - current.position.x;
+	delta[1] = active_goal_.absolute_pose_.position.y - current.position.y;
 	delta[2] = goalYaw - curYaw;
 	delta[2] = fabs(delta[2]) > M_PI ? delta[2] - 2.0 * M_PI : delta[2];
 
@@ -552,22 +585,74 @@ bool GoalsHandle::isStill() const
 	return fabs(current_linear_) < 1e-4 && fabs(current_angular_) < 1e-4;
 }
 
-bool GoalsHandle::metTolerance()
+bool GoalsHandle::metTolerance(const geometry_msgs::Pose& PoseA, const geometry_msgs::Pose& PoseB) const
 {
-	const auto current = getCurrentPose();
-	tf2::Quaternion curQ(current.orientation.x, current.orientation.y, current.orientation.z,
-		current.orientation.w);
+	tf2::Quaternion curQ(PoseA.orientation.x, PoseA.orientation.y, PoseA.orientation.z, PoseA.orientation.w);
     double curRoll = 0.0, curPitch = 0.0, curYaw = 0.0;
 	tf2::Matrix3x3(curQ).getRPY(curRoll, curPitch, curYaw);
 
-	tf2::Quaternion activeQ(active_goal_.orientation.x, active_goal_.orientation.y, active_goal_.orientation.z,
-		active_goal_.orientation.w);
+	tf2::Quaternion activeQ(PoseB.orientation.x, PoseB.orientation.y, PoseB.orientation.z, PoseB.orientation.w);
     double activeRoll = 0.0, activePitch = 0.0, activeYaw = 0.0;
 	tf2::Matrix3x3(activeQ).getRPY(activeRoll, activePitch, activeYaw);
 
-	return fabs(current.position.x - active_goal_.position.x) < xy_goal_tolerance_ &&
-		fabs(current.position.y - active_goal_.position.y) < xy_goal_tolerance_ &&
+	return fabs(PoseA.position.x - active_goal_.absolute_pose_.position.x) < xy_goal_tolerance_ &&
+		fabs(PoseA.position.y - active_goal_.absolute_pose_.position.y) < xy_goal_tolerance_ &&
 		fabs(curYaw - activeYaw) < yaw_goal_tolerance_;
+}
+
+static void rangeRadians(double& Radians)
+{
+	if (Radians > M_PI)
+	{
+		Radians -= 2.0 * M_PI;
+	}
+	if (Radians < -M_PI)
+	{
+		Radians += 2.0 * M_PI;
+	}
+}
+
+static std::array<double, 3> toEuler(const tf2::Quaternion& Quaternion)
+{
+	double roll = 0.0, pitch = 0.0, yaw = 0.0;
+	tf2::Matrix3x3(Quaternion).getRPY(roll, pitch, yaw);
+
+	return { roll, pitch, yaw };
+}
+
+static std::array<double, 3> toEuler(const geometry_msgs::Quaternion& Orientation)
+{
+	tf2::Quaternion quaternion(Orientation.x, Orientation.y, Orientation.z, Orientation.w);
+
+	return toEuler(quaternion);
+}
+
+static geometry_msgs::Quaternion fromEuler(double Roll, double Pitch, double Yaw)
+{
+	tf2::Quaternion orientation;
+	orientation.setRPY(Roll, Pitch, Yaw);
+
+	return tf2::toMsg(orientation);
+}
+
+geometry_msgs::Pose GoalsHandle::constructAbsGoal(const geometry_msgs::Pose& Relative) const
+{
+	geometry_msgs::Pose absolute = getCurrentPose();
+	// position
+	absolute.position.x += Relative.position.x;
+	absolute.position.y += Relative.position.y;
+	absolute.position.z += Relative.position.z;
+	// orientation
+	auto absEulers = toEuler(absolute.orientation);
+	auto relativeEulers = toEuler(Relative.orientation);
+	for (int i = 0; i < absEulers.size(); ++i)
+	{
+		absEulers[i] += relativeEulers[i];
+		rangeRadians(absEulers[i]);
+	}
+	absolute.orientation = fromEuler(absEulers[0], absEulers[1], absEulers[2]);
+
+	return absolute;
 }
 
 void GoalsHandle::setTaskPlugin(boost::shared_ptr<whi_rviz_plugins::BasePlugin> Plugin)

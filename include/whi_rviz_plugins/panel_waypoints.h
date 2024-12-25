@@ -30,6 +30,7 @@ Changelog:
 
 class QTimer;
 class QPushButton;
+class QCheckBox;
 
 namespace Ui
 {
@@ -65,8 +66,8 @@ namespace whi_rviz_plugins
 	private:
 		void configureNs(const std::string& Namespace);
 		void fillWaypoint(int RowIndex, bool WithCurrent = false, const std::vector<double>* Point = nullptr);
-		void retrieveWaypoints(std::vector<geometry_msgs::PoseStamped>& Waypoints) const;
-		void retrieveWaypoint(int Index, geometry_msgs::PoseStamped& Waypoint) const;
+		void retrieveWaypoints(std::vector<WaypointPack>& WaypointPacks) const;
+		void retrieveWaypoint(int Index, WaypointPack& WaypointPack) const;
 		void visualizeWaypoints(int Row) const;
 		void addButtonClicked();
 		void insertButtonClicked();
@@ -79,12 +80,16 @@ namespace whi_rviz_plugins
 		void storeAll2Map(const std::string& Namespace);
 		void addWaypoint();
 		void insertWaypoint();
+		QCheckBox* getCheckBox(int Row) const;
+		std::array<double, 3> getAbsolute(int CurrentRow) const;
+		std::vector<geometry_msgs::PoseStamped> convertToAbsolute(const std::vector<WaypointPack>& WaypointPacks) const;
 		double getYawFromPose(const geometry_msgs::Pose& Pose) const;
 		void enableUi(bool Flag);
 		bool nsExisted(const std::string& Namespace) const;
 		bool loadPlugin(const std::string& Config, const std::string& Namespace);
 		bool createTaskPlugin(const YAML::Node& Node, const std::string& Namespace);
 		QPushButton* bindTaskPlugin(int Row);
+		QCheckBox* bindCheckBox(int Row);
 		void refreshTasksMap();
 		void subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState);
 		void subCallbackRcState(const whi_interfaces::WhiRcState::ConstPtr& RcState);
@@ -97,7 +102,7 @@ namespace whi_rviz_plugins
 		VisualizeEta func_visualize_eta_{ nullptr };
 		std::map<std::string, std::unique_ptr<GoalsHandle>> goals_map_;
 		std::string waypoints_file_;
-		std::map<std::string, std::vector<geometry_msgs::Pose>> waypoints_map_;
+		std::map<std::string, std::vector<WaypointPack>> waypoints_map_;
 		std::string ns_from_load_;
 		bool is_remote_{ false };
 		std::string pre_ns_;

@@ -65,6 +65,7 @@ namespace whi_rviz_plugins
 		{
 			header.push_back("task");
 		}
+		header.push_back("relative");
 		ui_->tableWidget_waypoints->setColumnCount(header.size());
 		ui_->tableWidget_waypoints->setHorizontalHeaderLabels(header);
 		ui_->tableWidget_waypoints->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
@@ -115,17 +116,12 @@ namespace whi_rviz_plugins
 			std::string ns = ui_->comboBox_ns->currentText().toStdString();
 			configureNs(ns);
 
-			std::vector<geometry_msgs::PoseStamped> waypoints;
-			retrieveWaypoints(waypoints);
-			std::vector<geometry_msgs::Pose> points;
-			for (const auto& it : waypoints)
-			{
-				points.push_back(it.pose);
-			}
+			std::vector<WaypointPack> waypointPacks;
+			retrieveWaypoints(waypointPacks);
 
 			if (tasks_map_[ns].empty())
 			{
-				if (goals_map_[ns]->execute(points,
+				if (goals_map_[ns]->execute(waypointPacks,
 					ui_->doubleSpinBox_point_span->value(), ui_->doubleSpinBox_stop_span->value(),
 					ui_->checkBox_loop->isChecked()))
 				{
@@ -140,7 +136,7 @@ namespace whi_rviz_plugins
 			}
 			else
 			{
-				if (goals_map_[ns]->execute(points, tasks_map_[ns],
+				if (goals_map_[ns]->execute(waypointPacks, tasks_map_[ns],
 					ui_->doubleSpinBox_point_span->value(), ui_->doubleSpinBox_stop_span->value(),
 					ui_->checkBox_loop->isChecked()))
 				{
@@ -211,13 +207,21 @@ namespace whi_rviz_plugins
 			for (size_t i = 0; i < poseList.size(); ++i)
 			{
 				std::vector<double> poseVector;
-				poseVector.push_back(poseList[i].position.x);
-				poseVector.push_back(poseList[i].position.y);
-				poseVector.push_back(angles::to_degrees(getYawFromPose(poseList[i])));
+				poseVector.push_back(poseList[i].first.pose.position.x);
+				poseVector.push_back(poseList[i].first.pose.position.y);
+				poseVector.push_back(angles::to_degrees(getYawFromPose(poseList[i].first.pose)));
 
 				ui_->tableWidget_waypoints->insertRow(i);
 				bindTaskPlugin(i);
+				bindCheckBox(i);
 				fillWaypoint(i, false, &poseVector);
+
+				if (poseList[i].second)
+				{
+					getCheckBox(i)->blockSignals(true);
+					getCheckBox(i)->setCheckState(Qt::Checked);
+					getCheckBox(i)->blockSignals(false);
+				}
 			}
 			visualizeWaypoints(0);
 
@@ -235,32 +239,93 @@ namespace whi_rviz_plugins
 		is_remote_ = Flag;
 	}
 
+	static void rangeDegrees(double& Degrees)
+	{
+		if (Degrees > 180.0)
+		{
+			Degrees -= 360.0;
+		}
+		if (Degrees < -180.0)
+		{
+			Degrees += 360.0;
+		}
+	}
+
+	static void rangeRadians(double& Radians)
+	{
+		if (Radians > M_PI)
+		{
+			Radians -= 2.0 * M_PI;
+		}
+		if (Radians < -M_PI)
+		{
+			Radians += 2.0 * M_PI;
+		}
+	}
+
+    static std::array<double, 3> toEuler(const tf2::Quaternion& Quaternion)
+    {
+        double roll = 0.0, pitch = 0.0, yaw = 0.0;
+  		tf2::Matrix3x3(Quaternion).getRPY(roll, pitch, yaw);
+
+        return { roll, pitch, yaw };
+    }
+
+    static std::array<double, 3> toEuler(const geometry_msgs::Quaternion& Orientation)
+    {
+        tf2::Quaternion quaternion(Orientation.x, Orientation.y, Orientation.z, Orientation.w);
+
+        return toEuler(quaternion);
+    }
+
+    static geometry_msgs::Quaternion fromEuler(double Roll, double Pitch, double Yaw)
+    {
+        tf2::Quaternion orientation;
+		orientation.setRPY(Roll, Pitch, Yaw);
+
+		return tf2::toMsg(orientation);
+    }
+
 	void WaypointsPanel::updateWaypoint(int Index, const geometry_msgs::Pose& Pose)
 	{
+		std::array<double, 3> xyyaw{Pose.position.x, Pose.position.y, angles::to_degrees(getYawFromPose(Pose))};
+
+		QCheckBox* check = getCheckBox(Index);
+		if (check->checkState() != Qt::Unchecked) // relative
+		{
+			std::array<double, 3> preAbsolute = getAbsolute(Index - 1);
+			for (int i = 0; i < xyyaw.size(); ++i)
+			{
+				xyyaw[i] -= preAbsolute[i];
+			}
+			rangeDegrees(xyyaw[2]);
+		}
+
 		ui_->tableWidget_waypoints->blockSignals(true);
-		ui_->tableWidget_waypoints->setItem(Index, 0, new QTableWidgetItem(QString::number(Pose.position.x)));
-		ui_->tableWidget_waypoints->setItem(Index, 1, new QTableWidgetItem(QString::number(Pose.position.y)));
-		ui_->tableWidget_waypoints->setItem(Index, 2,
-			new QTableWidgetItem(QString::number(angles::to_degrees(getYawFromPose(Pose)))));
+		ui_->tableWidget_waypoints->setItem(Index, 0, new QTableWidgetItem(QString::number(xyyaw[0], 'f', 5)));
+		ui_->tableWidget_waypoints->setItem(Index, 1, new QTableWidgetItem(QString::number(xyyaw[1], 'f', 5)));
+		ui_->tableWidget_waypoints->setItem(Index, 2, new QTableWidgetItem(QString::number(xyyaw[2], 'f', 5)));
 		ui_->tableWidget_waypoints->blockSignals(false);
 
 		// synchronize the map
-		geometry_msgs::PoseStamped pose;
-		retrieveWaypoint(Index, pose);
-		waypoints_map_[ui_->comboBox_ns->currentText().toStdString()][Index] = pose.pose;
+		WaypointPack pack;
+		retrieveWaypoint(Index, pack);
+		waypoints_map_[ui_->comboBox_ns->currentText().toStdString()][Index].first = pack.first;
 	}
 
 	void WaypointsPanel::updateHeight(double Height)
 	{
-		std::vector<geometry_msgs::PoseStamped> waypoints;
-		retrieveWaypoints(waypoints);
-		for (auto& it : waypoints)
+		std::vector<WaypointPack> waypointPacks;
+		retrieveWaypoints(waypointPacks);
+
+		for (auto& it : waypointPacks)
         {
-            it.pose.position.z = Height;
+            it.first.pose.position.z = Height;
         }
 
 		if (func_visualize_waypoints_)
 		{
+			auto waypoints = convertToAbsolute(waypointPacks);
 			func_visualize_waypoints_(ui_->tableWidget_waypoints->currentRow(), waypoints);
 		}
 	}
@@ -372,10 +437,13 @@ namespace whi_rviz_plugins
 		if (WithCurrent)
 		{
 			geometry_msgs::Pose currentPose = goals_map_[ui_->comboBox_ns->currentText().toStdString()]->getCurrentPose();
-			ui_->tableWidget_waypoints->setItem(RowIndex, 0, new QTableWidgetItem(QString::number(currentPose.position.x)));
-			ui_->tableWidget_waypoints->setItem(RowIndex, 1, new QTableWidgetItem(QString::number(currentPose.position.y)));
+			ui_->tableWidget_waypoints->setItem(RowIndex, 0, 
+				new QTableWidgetItem(QString::number(currentPose.position.x, 'f', 5)));
+			ui_->tableWidget_waypoints->setItem(RowIndex, 1,
+				new QTableWidgetItem(QString::number(currentPose.position.y, 'f', 5)));
 			double yaw = getYawFromPose(currentPose);
-			ui_->tableWidget_waypoints->setItem(RowIndex, 2, new QTableWidgetItem(QString::number(angles::to_degrees(yaw))));
+			ui_->tableWidget_waypoints->setItem(RowIndex, 2,
+				new QTableWidgetItem(QString::number(angles::to_degrees(yaw), 'f', 5)));
 		}
 		else
 		{
@@ -385,7 +453,8 @@ namespace whi_rviz_plugins
 			{
 				for (int i = 0; i < std::min(colCount, int(Point->size())); ++i)
 				{
-					ui_->tableWidget_waypoints->setItem(RowIndex, i, new QTableWidgetItem(std::to_string(Point->at(i)).c_str()));
+					ui_->tableWidget_waypoints->setItem(RowIndex, i,
+						new QTableWidgetItem(QString::number(Point->at(i), 'f', 5)));
 				}
 			}
 			else
@@ -400,36 +469,39 @@ namespace whi_rviz_plugins
 		ui_->pushButton_execute->setEnabled(true);
 	}
 
-	void WaypointsPanel::retrieveWaypoints(std::vector<geometry_msgs::PoseStamped>& Waypoints) const
+	void WaypointsPanel::retrieveWaypoints(std::vector<WaypointPack>& WaypointPacks) const
 	{
   		for (int i = 0; i < ui_->tableWidget_waypoints->rowCount(); ++i)
 		{
-			geometry_msgs::PoseStamped pose;
-			retrieveWaypoint(i, pose);
+			WaypointPack pack;
+			retrieveWaypoint(i, pack);
 
-			Waypoints.push_back(pose);
+			WaypointPacks.push_back(pack);
 		}
 	}
 
-	void WaypointsPanel::retrieveWaypoint(int Index, geometry_msgs::PoseStamped& Waypoint) const
+	void WaypointsPanel::retrieveWaypoint(int Index, WaypointPack& WaypointPack) const
 	{
-		Waypoint.pose.position.x = ui_->tableWidget_waypoints->item(Index, 0)->text().toDouble();
-		Waypoint.pose.position.y = ui_->tableWidget_waypoints->item(Index, 1)->text().toDouble();
-		Waypoint.pose.position.z = 1.0;// TODO
+		WaypointPack.first.pose.position.x = ui_->tableWidget_waypoints->item(Index, 0)->text().toDouble();
+		WaypointPack.first.pose.position.y = ui_->tableWidget_waypoints->item(Index, 1)->text().toDouble();
+		WaypointPack.first.pose.position.z = 1.0;// TODO
 
 		tf2::Quaternion orientation;
 		orientation.setRPY(0.0, 0.0, angles::from_degrees(ui_->tableWidget_waypoints->item(Index, 2)->text().toDouble()));
 
-		Waypoint.pose.orientation = tf2::toMsg(orientation);
+		WaypointPack.first.pose.orientation = tf2::toMsg(orientation);
+
+		WaypointPack.second = getCheckBox(Index)->checkState() == Qt::Unchecked ? false : true;
 	}
 
 	void WaypointsPanel::visualizeWaypoints(int Row) const
 	{
-		std::vector<geometry_msgs::PoseStamped> waypoints;
-		retrieveWaypoints(waypoints);
+		std::vector<WaypointPack> waypointPacks;
+		retrieveWaypoints(waypointPacks);
 
 		if (func_visualize_waypoints_)
 		{
+			auto waypoints = convertToAbsolute(waypointPacks);
 			func_visualize_waypoints_(Row, waypoints);
 		}
 	}
@@ -488,13 +560,18 @@ namespace whi_rviz_plugins
 			search != waypoints_map_.end())
 		{
 			auto& poseList = waypoints_map_[ui_->comboBox_ns->currentText().toStdString()];
-			poseList.erase(poseList.begin() + ui_->tableWidget_waypoints->currentRow());
+			if (!poseList.empty())
+			{
+				poseList.erase(poseList.begin() + ui_->tableWidget_waypoints->currentRow());
+			}
 		}
 
 		// then remove item in table
 		int highlightRow = ui_->tableWidget_waypoints->currentRow() == ui_->tableWidget_waypoints->rowCount() - 1 ?
 			ui_->tableWidget_waypoints->rowCount() - 2 : ui_->tableWidget_waypoints->currentRow();
+		ui_->tableWidget_waypoints->blockSignals(true);
 		ui_->tableWidget_waypoints->removeRow(ui_->tableWidget_waypoints->currentRow());
+		ui_->tableWidget_waypoints->blockSignals(false);
 		ui_->groupBox_waypoints->setTitle(QString("Waypoints (") + QString::number(ui_->tableWidget_waypoints->rowCount())
 			+ QString(")"));
 
@@ -520,6 +597,53 @@ namespace whi_rviz_plugins
 		else if (State == GoalsHandle::STA_POINT_APPROACHED)
 		{
 			ui_->label_state->setText("Executing..." + QString(Info != nullptr ? Info->c_str() : ""));
+		}
+	}
+
+	bool WaypointsPanel::loadWaypointsNs(std::string File)
+	{
+		waypoints_file_ = File;
+		try
+		{
+			YAML::Node node = YAML::LoadFile(waypoints_file_);
+			const auto& ns = node["namespace"];
+			ns_from_load_ = ns ? ns.as<std::string>() : "";
+
+			int ret = QMessageBox::Yes;
+			if (nsExisted(ns_from_load_))
+			{
+				if (ui_->tableWidget_waypoints->rowCount() > 0)
+				{
+					ret = QMessageBox::question(this, tr("Your call"),
+               			tr("Waypoints under namespace ") + QString(ns_from_load_.c_str()) + tr(" present.\n") +
+						tr("Do you intend to overwrite current ones?"),
+                    	QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel);
+				}
+			}
+			if (ret == QMessageBox::Yes)
+			{
+				// re-configure namespace
+				configureNs(ns_from_load_);
+
+				// wait for map subscriber
+				QTimer::singleShot(500, this, [=]()
+				{
+					if (!this->nsExisted(ns_from_load_))
+					{
+						ui_->comboBox_ns->addItem(ns_from_load_.c_str());
+					}
+					ui_->comboBox_ns->setCurrentText(ns_from_load_.c_str());
+						
+					loadWaypoints(waypoints_file_);
+				});
+			}
+
+			return true;
+		}
+		catch (const std::exception& e)
+		{
+			std::cout << "failed to load waypoints file " << waypoints_file_ << std::endl;
+			return false;
 		}
 	}
 
@@ -558,13 +682,13 @@ namespace whi_rviz_plugins
 				}
 
 				// remove all rows from table
+				ui_->tableWidget_waypoints->blockSignals(true);
 				ui_->tableWidget_waypoints->setRowCount(0);
+				ui_->tableWidget_waypoints->blockSignals(false);
 				// load from yaml
 				const auto& points = node["waypoints"];
 				for (size_t i = 0; i < points.size(); ++i)
 				{
-					int index = points[i]["index"].as<int>();
-
 					std::vector<double> pose;
 					for (const auto& it : points[i]["pose"])
 					{
@@ -573,25 +697,35 @@ namespace whi_rviz_plugins
 
 					ui_->tableWidget_waypoints->insertRow(i);
 					fillWaypoint(i, false, &pose);
-					// add to map
-					storeItem2Map(i, false);
 
 					if (plugins_map_[task_plugin_name_])
 					{
-						auto btnTask = bindTaskPlugin(index);
+						auto btnTask = bindTaskPlugin(i);
 
 						const auto& taskFile = points[i]["task_file"];
 						if (taskFile)
 						{
-							tasks_map_[ns][index] = taskFile.as<std::string>();
+							tasks_map_[ns][i] = taskFile.as<std::string>();
 						}
-						if (btnTask && !tasks_map_[ns][index].empty())
+						if (btnTask && !tasks_map_[ns][i].empty())
 						{
-							plugins_map_[task_plugin_name_]->addTask(tasks_map_[ns][index]);
-							btnTask->setToolTip(tasks_map_[ns][index].c_str());
+							plugins_map_[task_plugin_name_]->addTask(tasks_map_[ns][i]);
+							btnTask->setToolTip(tasks_map_[ns][i].c_str());
 							btnTask->setText("Remove");
 						}
 					}
+					auto checkRelative = bindCheckBox(i);
+
+					const auto& isRelative = points[i]["is_relative"];
+					if (isRelative && isRelative.as<bool>())
+					{
+						checkRelative->blockSignals(true);
+						checkRelative->setCheckState(Qt::Checked);
+						checkRelative->blockSignals(false);
+					}
+
+					// add to map
+					storeItem2Map(i, false);
 				}
 
 				ui_->groupBox_waypoints->setTitle(QString("Waypoints (") + QString::number(ui_->tableWidget_waypoints->rowCount())
@@ -646,10 +780,19 @@ namespace whi_rviz_plugins
 			ofs.write(line.c_str(), line.length());
 			for (int i = 0; i < ui_->tableWidget_waypoints->rowCount(); ++i)
 			{
-				line.assign("  - index: " + std::to_string(i) + "\n");
-				line += "    pose: [" + ui_->tableWidget_waypoints->item(i, 0)->text().toStdString() + ", ";
+				line.assign("  - pose: [");
+				line += ui_->tableWidget_waypoints->item(i, 0)->text().toStdString() + ", ";
 				line += ui_->tableWidget_waypoints->item(i, 1)->text().toStdString() + ", ";
 				line += ui_->tableWidget_waypoints->item(i, 2)->text().toStdString() + "]\n";
+				QCheckBox* check = getCheckBox(i);
+				if (check->checkState() != Qt::Unchecked)
+				{
+					line += "    is_relative: true\n";
+				}
+				else
+				{
+					line += "    is_relative: false\n";
+				}
 				if (!tasks_map_[ns][i].empty())
 				{
 					line += "    task_file: " + tasks_map_[ns][i] + "\n";
@@ -661,71 +804,22 @@ namespace whi_rviz_plugins
 		}
 	}
 
-	bool WaypointsPanel::loadWaypointsNs(std::string File)
-	{
-		waypoints_file_ = File;
-		try
-		{
-			YAML::Node node = YAML::LoadFile(waypoints_file_);
-			const auto& ns = node["namespace"];
-			ns_from_load_ = ns ? ns.as<std::string>() : "";
-
-			int ret = QMessageBox::Yes;
-			if (nsExisted(ns_from_load_))
-			{
-				if (ui_->tableWidget_waypoints->rowCount() > 0)
-				{
-					ret = QMessageBox::question(this, tr("Your call"),
-               			tr("Waypoints under namespace ") + QString(ns_from_load_.c_str()) + tr(" present.\n") +
-						tr("Do you intend to overwrite current ones?"),
-                    	QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel);
-				}
-			}
-			if (ret == QMessageBox::Yes)
-			{
-				// re-configure namespace
-				configureNs(ns_from_load_);
-
-				// wait for map subscriber
-				QTimer::singleShot(500, this, [=]()
-				{
-					if (!this->nsExisted(ns_from_load_))
-					{
-						ui_->comboBox_ns->addItem(ns_from_load_.c_str());
-					}
-					ui_->comboBox_ns->setCurrentText(ns_from_load_.c_str());
-						
-					loadWaypoints(waypoints_file_);
-				});
-			}
-
-			return true;
-		}
-		catch (const std::exception& e)
-		{
-			std::cout << "failed to load waypoints file " << waypoints_file_ << std::endl;
-			return false;
-		}
-	}
-
 	void WaypointsPanel::storeItem2Map(int RowIndex, bool Insert/* = true*/)
 	{
 		if (auto search = waypoints_map_.find(ui_->comboBox_ns->currentText().toStdString());
 			search != waypoints_map_.end())
 		{
 			// add single item
-			geometry_msgs::PoseStamped added;
+			WaypointPack added;
 			retrieveWaypoint(RowIndex, added);
-			geometry_msgs::Pose pose;
-			pose = added.pose;
 			auto& poseList = waypoints_map_[ui_->comboBox_ns->currentText().toStdString()];
 			if (Insert)
 			{
-				poseList.insert(poseList.begin() + RowIndex, pose);
+				poseList.insert(poseList.begin() + RowIndex, added);
 			}
 			else
 			{
-				poseList.push_back(pose);
+				poseList.push_back(added);
 			}
 		}
 		else
@@ -737,41 +831,116 @@ namespace whi_rviz_plugins
 
 	void WaypointsPanel::storeAll2Map(const std::string& Namespace)
 	{
-		std::vector<geometry_msgs::PoseStamped> waypoints;
-		retrieveWaypoints(waypoints);
-		for (const auto& it : waypoints)
+		std::vector<WaypointPack> waypointPacks;
+		retrieveWaypoints(waypointPacks);
+		for (const auto& it : waypointPacks)
 		{
-			waypoints_map_[Namespace].push_back(it.pose);
+			waypoints_map_[Namespace].push_back(it);
 		}
 	}
 
 	void WaypointsPanel::addWaypoint()
 	{
 		ui_->tableWidget_waypoints->insertRow(ui_->tableWidget_waypoints->rowCount());
-		bindTaskPlugin(ui_->tableWidget_waypoints->rowCount() - 1);
-		fillWaypoint(ui_->tableWidget_waypoints->rowCount() - 1, ui_->checkBox_current->isChecked());
+		int rowIndex = ui_->tableWidget_waypoints->rowCount() - 1;
+		bindTaskPlugin(rowIndex);
+		bindCheckBox(rowIndex);
+		fillWaypoint(rowIndex, ui_->checkBox_current->isChecked());
 
 		// add to map
-		storeItem2Map(ui_->tableWidget_waypoints->rowCount() - 1, false);
+		storeItem2Map(rowIndex, false);
 		ui_->groupBox_waypoints->setTitle(QString("Waypoints (") + QString::number(ui_->tableWidget_waypoints->rowCount())
 			+ QString(")"));
 
-		ui_->tableWidget_waypoints->setCurrentCell(ui_->tableWidget_waypoints->rowCount() - 1, 0);
+		ui_->tableWidget_waypoints->setCurrentCell(rowIndex, 0);
 	}
 
 	void WaypointsPanel::insertWaypoint()
 	{
 		ui_->tableWidget_waypoints->insertRow(ui_->tableWidget_waypoints->currentRow());
-		bindTaskPlugin(ui_->tableWidget_waypoints->currentRow() - 1);
+		int rowIndex = ui_->tableWidget_waypoints->currentRow() - 1;
+		bindTaskPlugin(rowIndex);
+		bindCheckBox(rowIndex);
 		refreshTasksMap();
-		fillWaypoint(ui_->tableWidget_waypoints->currentRow() - 1, ui_->checkBox_current->isChecked());
+		fillWaypoint(rowIndex, ui_->checkBox_current->isChecked());
 	
 		// add to map
-		storeItem2Map(ui_->tableWidget_waypoints->currentRow() - 1);
+		storeItem2Map(rowIndex);
 		ui_->groupBox_waypoints->setTitle(QString("Waypoints (") + QString::number(ui_->tableWidget_waypoints->rowCount())
 			+ QString(")"));
 
-		ui_->tableWidget_waypoints->setCurrentCell(ui_->tableWidget_waypoints->currentRow() - 1, 0);
+		ui_->tableWidget_waypoints->setCurrentCell(rowIndex, 0);
+	}
+
+	QCheckBox* WaypointsPanel::getCheckBox(int Row) const
+	{
+		int colIndex = plugins_map_.at(task_plugin_name_) ? 4 : 3;
+		return qobject_cast<QCheckBox*>(ui_->tableWidget_waypoints->cellWidget(Row, colIndex)->layout()->itemAt(0)->widget());
+	}
+
+	std::array<double, 3> WaypointsPanel::getAbsolute(int Row) const
+	{
+		std::array<double, 3> absolute{ui_->tableWidget_waypoints->item(Row, 0)->text().toDouble(),
+			ui_->tableWidget_waypoints->item(Row, 1)->text().toDouble(),
+			ui_->tableWidget_waypoints->item(Row, 2)->text().toDouble()};
+
+		if (getCheckBox(Row)->checkState() == Qt::Unchecked)
+		{
+			return absolute;
+		}
+
+		for (int row = Row - 1; row >= 0; --row)
+		{
+			std::array<double, 3> rowValue{ui_->tableWidget_waypoints->item(row, 0)->text().toDouble(),
+				ui_->tableWidget_waypoints->item(row, 1)->text().toDouble(),
+				ui_->tableWidget_waypoints->item(row, 2)->text().toDouble()};
+			for (int i = 0; i < absolute.size(); ++i)
+			{
+				absolute[i] += rowValue[i];
+			}
+			rangeDegrees(absolute[2]);
+
+			if (getCheckBox(row)->checkState() == Qt::Unchecked)
+			{
+				break;
+			}
+		}
+
+		return absolute;
+	}
+
+	std::vector<geometry_msgs::PoseStamped> WaypointsPanel::convertToAbsolute(
+		const std::vector<WaypointPack>& WaypointPacks) const
+	{
+		std::vector<geometry_msgs::PoseStamped> absolutes;
+		for (int i = 0; i < WaypointPacks.size(); ++i)
+		{
+			absolutes.push_back(WaypointPacks[i].first);
+			auto absEulers = toEuler(absolutes.back().pose.orientation);
+			if (WaypointPacks[i].second)
+			{
+				for (int j = i - 1; j >= 0; --j)
+				{
+					absolutes.back().pose.position.x += WaypointPacks[j].first.pose.position.x;
+					absolutes.back().pose.position.y += WaypointPacks[j].first.pose.position.y;
+					absolutes.back().pose.position.z += WaypointPacks[j].first.pose.position.z;
+					auto eulers = toEuler(WaypointPacks[j].first.pose.orientation);
+					for (int i = 0; i < absEulers.size(); ++i)
+					{
+						absEulers[i] += eulers[i];
+						rangeRadians(absEulers[i]);
+					}
+
+					if (!WaypointPacks[j].second)
+					{
+						break;
+					}
+				}
+				absolutes.back().pose.orientation = fromEuler(absEulers[0], absEulers[1], absEulers[2]);
+			}
+		}
+
+		return absolutes;
 	}
 
 	double WaypointsPanel::getYawFromPose(const geometry_msgs::Pose& Pose) const
@@ -908,6 +1077,55 @@ namespace whi_rviz_plugins
 		}
 
 		return nullptr;
+	}
+
+	QCheckBox* WaypointsPanel::bindCheckBox(int Row)
+	{
+		QWidget* general = new QWidget();
+		QCheckBox* checkBoxRelative = new QCheckBox();
+		if (Row == 0)
+		{
+			checkBoxRelative->setEnabled(false);
+		}
+		QHBoxLayout* hbox = new QHBoxLayout(general);
+		hbox->addWidget(checkBoxRelative);
+		hbox->setAlignment(Qt::AlignCenter);
+		general->setLayout(hbox);
+		int colIndex = plugins_map_[task_plugin_name_] ? 4 : 3;
+		ui_->tableWidget_waypoints->setCellWidget(Row, colIndex, general);
+
+			connect(checkBoxRelative, &QCheckBox::stateChanged, this, [=](int State)
+			{
+				std::array<double, 3> current{ui_->tableWidget_waypoints->item(Row, 0)->text().toDouble(),
+					ui_->tableWidget_waypoints->item(Row, 1)->text().toDouble(),
+					ui_->tableWidget_waypoints->item(Row, 2)->text().toDouble()};
+
+				std::array<double, 3> preAbsolute = getAbsolute(Row - 1);
+
+				if (State != Qt::Unchecked)
+				{
+					for (int i = 0; i < current.size(); ++i)
+					{
+						current[i] -= preAbsolute[i];
+					}
+				}
+				else
+				{
+					for (int i = 0; i < current.size(); ++i)
+					{
+						current[i] += preAbsolute[i];
+					}
+				}
+				rangeDegrees(current[2]);
+
+				ui_->tableWidget_waypoints->blockSignals(true);
+				ui_->tableWidget_waypoints->setItem(Row, 0, new QTableWidgetItem(QString::number(current[0], 'f', 5)));
+				ui_->tableWidget_waypoints->setItem(Row, 1, new QTableWidgetItem(QString::number(current[1], 'f', 5)));
+				ui_->tableWidget_waypoints->setItem(Row, 2, new QTableWidgetItem(QString::number(current[2], 'f', 5)));
+				ui_->tableWidget_waypoints->blockSignals(false);
+			});
+
+		return checkBoxRelative;
 	}
 
 	void WaypointsPanel::refreshTasksMap()
