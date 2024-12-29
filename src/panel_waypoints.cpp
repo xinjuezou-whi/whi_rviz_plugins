@@ -504,6 +504,7 @@ namespace whi_rviz_plugins
 		if (func_visualize_waypoints_)
 		{
 			auto waypoints = convertToAbsolute(waypointPacks);
+std::cout << "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv " << Row << std::endl;
 			func_visualize_waypoints_(Row, waypoints);
 		}
 	}
@@ -852,11 +853,15 @@ namespace whi_rviz_plugins
 		ui_->groupBox_waypoints->setTitle(QString("Waypoints (") + QString::number(ui_->tableWidget_waypoints->rowCount())
 			+ QString(")"));
 
-		ui_->tableWidget_waypoints->setCurrentCell(rowIndex, 0);
+		ui_->tableWidget_waypoints->setCurrentCell(rowIndex, rowIndex);
 	}
 
 	void WaypointsPanel::insertWaypoint()
 	{
+		if (ui_->tableWidget_waypoints->currentRow() == 0)
+		{
+			getCheckBox(0)->setEnabled(true);
+		}
 		ui_->tableWidget_waypoints->insertRow(ui_->tableWidget_waypoints->currentRow());
 		int rowIndex = ui_->tableWidget_waypoints->currentRow() - 1;
 		bindTaskPlugin(rowIndex);
@@ -1130,12 +1135,19 @@ namespace whi_rviz_plugins
 
 	void WaypointsPanel::refreshTasksMap()
 	{
-		for (int i = 0; i < ui_->tableWidget_waypoints->rowCount(); ++i)
+		if (ui_->tableWidget_waypoints->rowCount() > 0)
 		{
-			auto widget = ui_->tableWidget_waypoints->cellWidget(i, 3);
-			auto btn = widget->layout()->itemAt(0)->widget();
-			tasks_map_[ui_->comboBox_ns->currentText().toStdString()][i] = btn->toolTip().toStdString();
+			for (int i = 0; i < ui_->tableWidget_waypoints->rowCount(); ++i)
+			{
+				auto widget = ui_->tableWidget_waypoints->cellWidget(i, 3);
+				auto btn = widget->layout()->itemAt(0)->widget();
+				tasks_map_[ui_->comboBox_ns->currentText().toStdString()][i] = btn->toolTip().toStdString();
+			}
 		}
+		else
+		{
+			tasks_map_[ui_->comboBox_ns->currentText().toStdString()].clear();
+		}	
 	}
 
 	void WaypointsPanel::subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState)
