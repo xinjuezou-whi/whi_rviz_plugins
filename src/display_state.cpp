@@ -39,7 +39,7 @@ namespace whi_rviz_plugins
         : Display()
         , node_handle_(std::make_unique<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for motion state VERSION 00.08.3" << std::endl;
+        std::cout << "\nWHI RViz plugin for motion state VERSION 00.09.1" << std::endl;
         std::cout << "Copyright @ 2023-2025 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         tf_listener_ = std::make_unique<tf2_ros::TransformListener>(buffer_);
@@ -68,6 +68,9 @@ namespace whi_rviz_plugins
         estop_topic_property_ = new rviz::RosTopicProperty("Estop topic", "estop",
             "std_msgs/Bool", "Topic of EStop",
             this, SLOT(updateEstopTopic()));
+        temp_hum_topic_property_ = new rviz::RosTopicProperty("temperature and humidity topic", "temperature_humidity",
+            "whi_interfaces/WhiTemperatureHumidity", "Topic of environmental temperature and humidity",
+            this, SLOT(updateTempHumTopic()));
         frame_manager_ = std::make_shared<rviz::FrameManager>();
         frame_property_ = new rviz::TfFrameProperty("base_frame", "base_link", "Base link frame of robot",
             this, frame_manager_.get(), false, SLOT(updateBaselinkFrame()));
@@ -97,6 +100,7 @@ namespace whi_rviz_plugins
         updateRcStateTopic();
         updateArmStateTopic();
         updateEstopTopic();
+        updateTempHumTopic();
         updateBaselinkFrame();
 
         // tf listener
@@ -189,6 +193,11 @@ namespace whi_rviz_plugins
         panel_->setImuState();
     }
 
+    void DisplayState::subCallbackTempHum(const whi_interfaces::WhiTemperatureHumidity::ConstPtr& TempHum)
+    {
+        panel_->setTempHum(TempHum->temperature, TempHum->humidity);
+    }
+
     void DisplayState::updateOdomTopic()
     {
         sub_odom_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<nav_msgs::Odometry>(
@@ -250,6 +259,14 @@ namespace whi_rviz_plugins
             node_handle_->subscribe<sensor_msgs::Imu>(
 		    imu_topic_property_->getTopicStd(), 10,
             std::bind(&DisplayState::subCallbackImu, this, std::placeholders::_1)));
+    }
+
+    void DisplayState::updateTempHumTopic()
+    {
+        sub_temp_hum_ = std::make_unique<ros::Subscriber>(
+            node_handle_->subscribe<whi_interfaces::WhiTemperatureHumidity>(
+		    temp_hum_topic_property_->getTopicStd(), 10,
+            std::bind(&DisplayState::subCallbackTempHum, this, std::placeholders::_1)));
     }
 
     void DisplayState::updateEstopTopic()

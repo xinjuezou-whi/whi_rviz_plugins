@@ -49,11 +49,13 @@ namespace whi_rviz_plugins
 		void setRcStateTopic(const std::string& Topic);
 		void setEstopTopic(const std::string& Topic);
 		void setBatteryInfo(int Soc, int Soh);
+		void setTempHum(double Temperature, double Humidity);
 
 	private:
         std::string getPackagePath() const;
         void setIndicatorIcon(QLabel* Label, int Type);
 		void setIndicatorText(QLabel* Label, const std::string& Text);
+		void setTempHumVisibility(bool Visibale);
 		void setBatteryIcon(QLabel* Label, int Soc);
 		void setLabelIcon(QLabel* Label, const std::string& IconFile, int Scale);
 		void clearButtonClicked();

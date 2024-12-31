@@ -20,6 +20,7 @@ Changelog:
 #include <whi_interfaces/WhiMotionState.h>
 #include <whi_interfaces/WhiBattery.h>
 #include <whi_interfaces/WhiRcState.h>
+#include <whi_interfaces/WhiTemperatureHumidity.h>
 
 #include <rviz/display.h>
 #include <rviz/panel_dock_widget.h>
@@ -71,6 +72,7 @@ namespace whi_rviz_plugins
 		void subCallbackRcState(const whi_interfaces::WhiRcState::ConstPtr& RcState);
 		void subCallbackArmState(const whi_interfaces::WhiMotionState::ConstPtr& ArmState);
 		void subCallbackImu(const sensor_msgs::Imu::ConstPtr& Imu);
+		void subCallbackTempHum(const whi_interfaces::WhiTemperatureHumidity::ConstPtr& TempHum);
 
 	private Q_SLOTS:
 		// these Qt slots get connected to signals indicating changes in the user-editable properties
@@ -82,6 +84,7 @@ namespace whi_rviz_plugins
 		void updateArmStateTopic();
 		void updateImuTopic();
 		void updateEstopTopic();
+		void updateTempHumTopic();
         void updateBaselinkFrame();
 
 	private:
@@ -98,6 +101,7 @@ namespace whi_rviz_plugins
 		rviz::RosTopicProperty* arm_state_topic_property_;
 		rviz::RosTopicProperty* imu_topic_property_;
 		rviz::RosTopicProperty* estop_topic_property_;
+		rviz::RosTopicProperty* temp_hum_topic_property_;
 		rviz::TfFrameProperty* frame_property_;
 		std::shared_ptr<rviz::FrameManager> frame_manager_{ nullptr };
         // subscriber
@@ -108,6 +112,7 @@ namespace whi_rviz_plugins
 		std::unique_ptr<ros::Subscriber> sub_rc_state_{ nullptr };
 		std::unique_ptr<ros::Subscriber> sub_arm_state_{ nullptr };
 		std::unique_ptr<ros::Subscriber> sub_imu_{ nullptr };
+		std::unique_ptr<ros::Subscriber> sub_temp_hum_{ nullptr };
         std::pair<double, double> velocities_;
         geometry_msgs::Pose goal_;
 		tf2_ros::Buffer buffer_;

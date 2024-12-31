@@ -64,6 +64,10 @@ namespace whi_rviz_plugins
         setIndicatorText(ui_->label_indicator_cap_6, "reserved");
         setIndicatorText(ui_->label_indicator_cap_7, "reserved");
         setIndicatorText(ui_->label_indicator_cap_8, "reserved");
+        // dynamic ones
+        setTempHumVisibility(false);
+        setLabelIcon(ui_->label_temperature, "/icons/classes/temperature.png", 24);
+        setLabelIcon(ui_->label_humidity, "/icons/classes/humidity.png", 24);
         // buttons
         ui_->pushButton_estop->setCheckable(true);
         QIcon icon;
@@ -288,6 +292,13 @@ namespace whi_rviz_plugins
         setBatteryIcon(ui_->label_battery, Soc);
     }
 
+    void StatePanel::setTempHum(double Temperature, double Humidity)
+    {
+        setTempHumVisibility(true);
+        ui_->label_temperature_text->setText(QString::number(Temperature, 'f', 1) + "°C");
+        ui_->label_humidity_text->setText(QString::number(Humidity, 'f', 1) + "%");
+    }
+
     std::string StatePanel::getPackagePath() const
     {
         boost::filesystem::path path(ros::package::getPath("whi_rviz_plugins"));
@@ -352,6 +363,14 @@ namespace whi_rviz_plugins
         }
 
         setLabelIcon(Label, iconFile, 24);
+    }
+
+	void StatePanel::setTempHumVisibility(bool Visibale)
+    {
+        ui_->label_temperature->setVisible(Visibale);
+        ui_->label_temperature_text->setVisible(Visibale);
+        ui_->label_humidity->setVisible(Visibale);
+        ui_->label_humidity_text->setVisible(Visibale);
     }
 
     void StatePanel::setLabelIcon(QLabel* Label, const std::string& IconFile, int Scale)
