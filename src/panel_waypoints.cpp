@@ -504,7 +504,6 @@ namespace whi_rviz_plugins
 		if (func_visualize_waypoints_)
 		{
 			auto waypoints = convertToAbsolute(waypointPacks);
-std::cout << "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv " << Row << std::endl;
 			func_visualize_waypoints_(Row, waypoints);
 		}
 	}
