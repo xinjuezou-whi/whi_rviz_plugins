@@ -391,6 +391,16 @@ namespace whi_rviz_plugins
 		}
 	}
 
+	void WaypointsPanel::setSwEstopTopic(const std::string& Topic)
+	{
+		if (!Topic.empty())
+		{
+        	sub_sw_estop_ = std::make_unique<ros::Subscriber>(
+            	node_handle_->subscribe<std_msgs::Bool>(Topic, 10,
+            	std::bind(&WaypointsPanel::subCallbackSwEstop, this, std::placeholders::_1)));
+		}
+	}
+
 	void WaypointsPanel::setRcStateTopic(const std::string& Topic)
 	{
 		if (!Topic.empty())
@@ -1159,9 +1169,9 @@ namespace whi_rviz_plugins
 		    }
 		    toggle_estop_.store(true);
 	    }
-	    else if (MotionState->state == whi_interfaces::WhiMotionState::STA_ESTOP_CLEAR)
+	    else if (MotionState->state == whi_interfaces::WhiMotionState::STA_STANDBY)
 	    {
-		    toggle_estop_.store(false);
+			toggle_estop_.store(false);
 	    }
 
         if (MotionState->state == whi_interfaces::WhiMotionState::STA_CRITICAL_COLLISION)
@@ -1177,6 +1187,11 @@ namespace whi_rviz_plugins
 		    toggle_collision_.store(false);
 	    }
     }
+
+    void WaypointsPanel::subCallbackSwEstop(const std_msgs::Bool::ConstPtr& Msg)
+    {
+		sw_estopped_ = Msg->data;
+    }	
 
 	void WaypointsPanel::subCallbackRcState(const whi_interfaces::WhiRcState::ConstPtr& RcState)
 	{
@@ -1207,7 +1222,7 @@ namespace whi_rviz_plugins
 
 	bool WaypointsPanel::isBypassed()
     {
-        if (toggle_estop_.load())
+        if (toggle_estop_.load() || sw_estopped_)
         {
             QMessageBox::information(this, tr("Info"), tr("E-Stop detected, command is ignored"));
         }

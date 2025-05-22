@@ -17,11 +17,12 @@ Changelog:
 #pragma once
 #include <ros/ros.h>
 #include <rviz/panel.h>
-#include <memory>
-#include <thread>
-
+#include <std_msgs/Bool.h>
 #include <whi_interfaces/WhiMotionState.h>
 #include <whi_interfaces/WhiRcState.h>
+
+#include <memory>
+#include <thread>
 
 namespace Ui
 {
@@ -53,6 +54,7 @@ namespace whi_rviz_plugins
 		void moveAngular(int Dir);
 		void halt();
 		void setMotionStateTopic(const std::string& Topic);
+		void setSwEstopTopic(const std::string& Topic);
 		void setRcStateTopic(const std::string& Topic);
 
 	private:
@@ -61,6 +63,7 @@ namespace whi_rviz_plugins
 		void focusInEvent(QFocusEvent* Event) override;
 
 		void subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState);
+		void subCallbackSwEstop(const std_msgs::Bool::ConstPtr& Msg);
 		void subCallbackRcState(const whi_interfaces::WhiRcState::ConstPtr& RcState);
 		bool isBypassed();
 
@@ -77,7 +80,9 @@ namespace whi_rviz_plugins
 		float linear_{ 0.0 };
 		float angular_{ 0.0 };
 		std::unique_ptr<ros::Subscriber> sub_motion_state_{ nullptr };
+		std::unique_ptr<ros::Subscriber> sub_sw_estop_{ nullptr };
 		std::unique_ptr<ros::Subscriber> sub_rc_state_{ nullptr };
+		bool sw_estopped_{ false };
 		std::atomic_bool toggle_estop_{ false };
 		std::atomic_bool toggle_collision_{ false };
 		std::atomic_bool remote_mode_{ false };

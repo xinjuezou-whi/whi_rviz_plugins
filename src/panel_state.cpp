@@ -136,15 +136,22 @@ namespace whi_rviz_plugins
 
         if (State->state == whi_interfaces::WhiMotionState::STA_STANDBY)
         {
-            setIndicatorIcon(ui_->label_indicator_1, INDICATOR_GREEN);
-            setIndicatorText(ui_->label_indicator_cap_1, "standby");
+            if (ui_->label_indicator_cap_1->text() != "SE-Stop")
+            {
+                ui_->pushButton_estop->setChecked(false);
+                setIndicatorIcon(ui_->label_indicator_1, INDICATOR_GREEN);
+                setIndicatorText(ui_->label_indicator_cap_1, "standby");
+            }
             setIndicatorIcon(ui_->label_indicator_3, INDICATOR_GREY);
             setIndicatorText(ui_->label_indicator_cap_3, "task");
         }
         else if (State->state == whi_interfaces::WhiMotionState::STA_RUNNING)
         {
-            setIndicatorIcon(ui_->label_indicator_1, INDICATOR_YELLOW);
-            setIndicatorText(ui_->label_indicator_cap_1, "running");
+            if (ui_->label_indicator_cap_1->text() != "SE-Stop")
+            {
+                setIndicatorIcon(ui_->label_indicator_1, INDICATOR_YELLOW);
+                setIndicatorText(ui_->label_indicator_cap_1, "running");
+            }
             setIndicatorIcon(ui_->label_indicator_3, INDICATOR_GREY);
             setIndicatorText(ui_->label_indicator_cap_3, "task");
         }
@@ -175,21 +182,10 @@ namespace whi_rviz_plugins
         }
         else if (State->state == whi_interfaces::WhiMotionState::STA_ESTOP)
         {
-            setIndicatorIcon(ui_->label_indicator_1, INDICATOR_ORANGE);
+            ui_->pushButton_estop->setChecked(true);
+
             setIndicatorText(ui_->label_indicator_cap_1, "E-Stop");
             setIndicatorIcon(ui_->label_indicator_3, INDICATOR_GREY);
-
-            ui_->pushButton_estop->blockSignals(true);
-            ui_->pushButton_estop->setChecked(true);
-            setEstopIcon(true);
-            ui_->pushButton_estop->blockSignals(false);
-        }
-        else if (State->state == whi_interfaces::WhiMotionState::STA_ESTOP_CLEAR)
-        {
-            ui_->pushButton_estop->blockSignals(true);
-            ui_->pushButton_estop->setChecked(false);
-            setEstopIcon(false);
-            ui_->pushButton_estop->blockSignals(false);
         }
         else if (State->state == whi_interfaces::WhiMotionState::STA_CRITICAL_COLLISION)
         {
@@ -533,11 +529,15 @@ namespace whi_rviz_plugins
         {
             icon.addFile(QString(pkgPath.c_str()) + "/icons/classes/estop_pressed.png",
                 QSize(), QIcon::Normal, QIcon::Off);
+            setIndicatorIcon(ui_->label_indicator_1, INDICATOR_ORANGE);
+            setIndicatorText(ui_->label_indicator_cap_1, "SE-Stop");
         }
         else
         {
             icon.addFile(QString(pkgPath.c_str()) + "/icons/classes/estop_released.png",
                 QSize(), QIcon::Normal, QIcon::Off);
+            setIndicatorIcon(ui_->label_indicator_1, INDICATOR_GREY);
+            setIndicatorText(ui_->label_indicator_cap_1, "none");
         }
         ui_->pushButton_estop->setIcon(icon);
         ui_->pushButton_estop->setIconSize(QSize(estop_init_height_, estop_init_height_));

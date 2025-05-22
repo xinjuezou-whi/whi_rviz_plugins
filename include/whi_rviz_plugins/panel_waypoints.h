@@ -23,6 +23,7 @@ Changelog:
 
 #include <rviz/panel.h>
 #include <rviz/visualization_manager.h>
+#include <std_msgs/Bool.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <pluginlib/class_loader.hpp>
 
@@ -61,6 +62,7 @@ namespace whi_rviz_plugins
 		void setRecoveryMaxTryCount(int Count);
 		void setTolerance(double XyTolerance, double YawTolerance);
 		void setMotionStateTopic(const std::string& Topic);
+		void setSwEstopTopic(const std::string& Topic);
 		void setRcStateTopic(const std::string& Topic);
 
 	private:
@@ -92,6 +94,7 @@ namespace whi_rviz_plugins
 		QCheckBox* bindCheckBox(int Row);
 		void refreshTasksMap();
 		void subCallbackMotionState(const whi_interfaces::WhiMotionState::ConstPtr& MotionState);
+		void subCallbackSwEstop(const std_msgs::Bool::ConstPtr& Msg);
 		void subCallbackRcState(const whi_interfaces::WhiRcState::ConstPtr& RcState);
 		void abort();
 		bool isBypassed();
@@ -117,8 +120,10 @@ namespace whi_rviz_plugins
 		double xy_goal_tolerance_{ 0.15 };
 		double yaw_goal_tolerance_{ 0.15 };
 		std::unique_ptr<ros::Subscriber> sub_motion_state_{ nullptr };
+		std::unique_ptr<ros::Subscriber> sub_sw_estop_{ nullptr };
 		std::unique_ptr<ros::Subscriber> sub_rc_state_{ nullptr };
 		std::unique_ptr<ros::NodeHandle> node_handle_{ nullptr };
+		bool sw_estopped_{ false };
 		std::atomic_bool toggle_estop_{ false };
 		std::atomic_bool toggle_collision_{ false };
 		std::atomic_bool remote_mode_{ false };

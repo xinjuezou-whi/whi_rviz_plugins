@@ -145,7 +145,7 @@ namespace whi_rviz_plugins
                 {
                     while (!terminated_.load())
                     {
-                        if (activated_ && !toggle_estop_.load() && !remote_mode_.load() && !toggle_collision_.load())
+                        if (activated_ && !toggle_estop_.load() && !sw_estopped_ && !remote_mode_.load() && !toggle_collision_.load())
                         {
                             geometry_msgs::Twist msgTwist;
                             msgTwist.linear.x = linear_;
@@ -179,7 +179,7 @@ namespace whi_rviz_plugins
                 timer_toggle_ = new QTimer(this);
                 connect(timer_toggle_, &QTimer::timeout, this, [=]()
                 {
-                    if (!toggle_estop_.load() && !remote_mode_.load() && !toggle_collision_.load())
+                    if (!toggle_estop_.load() && !sw_estopped_ && !remote_mode_.load() && !toggle_collision_.load())
                     {
                         twist_widget_->toggleIndicator(toggle_publishing_, true);
                         toggle_publishing_ = !toggle_publishing_;
@@ -251,11 +251,6 @@ namespace whi_rviz_plugins
 
     void TeleopPanel::halt()
     {
-        if (isBypassed())
-        {
-            return;
-        }
-
         linear_ = 0.0;
         angular_ = 0.0;
         twist_widget_->setLinear(linear_);
@@ -274,6 +269,16 @@ namespace whi_rviz_plugins
             	std::bind(&TeleopPanel::subCallbackMotionState, this, std::placeholders::_1)));
 		}
 	}
+
+    void TeleopPanel::setSwEstopTopic(const std::string& Topic)
+    {
+		if (!Topic.empty())
+		{
+        	sub_sw_estop_ = std::make_unique<ros::Subscriber>(
+            	node_handle_->subscribe<std_msgs::Bool>(Topic, 10,
+            	std::bind(&TeleopPanel::subCallbackSwEstop, this, std::placeholders::_1)));
+		}
+    }
 
     void TeleopPanel::setRcStateTopic(const std::string& Topic)
     {
@@ -330,9 +335,9 @@ namespace whi_rviz_plugins
 		    }
 		    toggle_estop_.store(true);
 	    }
-	    else if (MotionState->state == whi_interfaces::WhiMotionState::STA_ESTOP_CLEAR)
+	    else if (MotionState->state == whi_interfaces::WhiMotionState::STA_STANDBY)
 	    {
-		    toggle_estop_.store(false);
+            toggle_estop_.store(false);
 	    }
 
         if (MotionState->state == whi_interfaces::WhiMotionState::STA_CRITICAL_COLLISION)
@@ -347,6 +352,11 @@ namespace whi_rviz_plugins
 	    {
 		    toggle_collision_.store(false);
 	    }
+    }
+
+    void TeleopPanel::subCallbackSwEstop(const std_msgs::Bool::ConstPtr& Msg)
+    {
+        sw_estopped_ = Msg->data;
     }
     
     void TeleopPanel::subCallbackRcState(const whi_interfaces::WhiRcState::ConstPtr& RcState)
@@ -367,7 +377,7 @@ namespace whi_rviz_plugins
 
     bool TeleopPanel::isBypassed()
     {
-        if (toggle_estop_.load())
+        if (toggle_estop_.load() || sw_estopped_)
         {
             QMessageBox::information(this, tr("Info"), tr("E-Stop detected, command is ignored"));
         }

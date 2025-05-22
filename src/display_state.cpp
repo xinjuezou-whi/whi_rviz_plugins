@@ -39,7 +39,7 @@ namespace whi_rviz_plugins
         : Display()
         , node_handle_(std::make_unique<ros::NodeHandle>())
     {
-        std::cout << "\nWHI RViz plugin for motion state VERSION 00.09.1" << std::endl;
+        std::cout << "\nWHI RViz plugin for motion state VERSION 00.10.1" << std::endl;
         std::cout << "Copyright @ 2023-2025 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         tf_listener_ = std::make_unique<tf2_ros::TransformListener>(buffer_);

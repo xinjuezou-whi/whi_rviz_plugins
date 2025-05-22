@@ -61,6 +61,7 @@ namespace whi_rviz_plugins
 		void updateAngularMax();
 		void updateAngularStep();
 		void updateMotionStateTopic();
+		void updateSwEstopTopic();
 		void updateRcStateTopic();
 
 	private:
@@ -78,6 +79,7 @@ namespace whi_rviz_plugins
 		rviz::FloatProperty* angular_max_;
 		rviz::FloatProperty* angular_step_;
 		rviz::RosTopicProperty* motion_state_topic_property_;
+		rviz::RosTopicProperty* sw_estop_topic_property_;
 		rviz::RosTopicProperty* rc_state_topic_property_;
 	};
 } // end namespace whi_rviz_plugins

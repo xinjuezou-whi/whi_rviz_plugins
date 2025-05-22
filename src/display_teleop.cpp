@@ -26,7 +26,7 @@ namespace whi_rviz_plugins
     DisplayTeleop::DisplayTeleop()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for teleop VERSION 00.07.3" << std::endl;
+        std::cout << "\nWHI RViz plugin for teleop VERSION 00.08.1" << std::endl;
         std::cout << "Copyright @ 2022-2025 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         enable_property_ = new rviz::BoolProperty("Enable teleop", true, "Toggle the functionality of teleop",
@@ -57,6 +57,9 @@ namespace whi_rviz_plugins
         motion_state_topic_property_ = new rviz::RosTopicProperty("Motion state topic", "motion_state",
             "whi_interfaces/WhiMotionState", "Topic of motion state",
             this, SLOT(updateMotionStateTopic()));
+        sw_estop_topic_property_ = new rviz::RosTopicProperty("Software EStop topic", "estop",
+            "std_msgs/Bool", "Topic of software EStop",
+            this, SLOT(updateSwEstopTopic()));
         rc_state_topic_property_ = new rviz::RosTopicProperty("Remote controller state topic", "rc_state",
             "whi_interfaces/WhiRcState", "Topic of remote controller state",
             this, SLOT(updateRcStateTopic()));
@@ -89,6 +92,7 @@ namespace whi_rviz_plugins
         updatePubFrequency();
         updateEnable();
         updateMotionStateTopic();
+        updateSwEstopTopic();
         updateRcStateTopic();
     }
 
@@ -140,6 +144,11 @@ namespace whi_rviz_plugins
     void DisplayTeleop::updateMotionStateTopic()
     {
         panel_->setMotionStateTopic(motion_state_topic_property_->getTopicStd());
+    }
+
+    void DisplayTeleop::updateSwEstopTopic()
+    {
+        panel_->setSwEstopTopic(sw_estop_topic_property_->getTopicStd());
     }
 
     void DisplayTeleop::updateRcStateTopic()

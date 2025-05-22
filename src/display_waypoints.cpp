@@ -35,7 +35,7 @@ namespace whi_rviz_plugins
     WaypointsDisplay::WaypointsDisplay()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 01.29.1" << std::endl;
+        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 01.30.1" << std::endl;
         std::cout << "Copyright @ 2022-2025 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         marker_size_property_ = new rviz::FloatProperty("Marker Size", 1.0, "Arrow size of waypoint mark.",
@@ -71,6 +71,9 @@ namespace whi_rviz_plugins
         motion_state_topic_property_ = new rviz::RosTopicProperty("Motion state topic", "motion_state",
             "whi_interfaces/WhiMotionState", "Topic of motion state",
             this, SLOT(updateMotionStateTopic()));
+        sw_estop_topic_property_ = new rviz::RosTopicProperty("Software EStop topic", "estop",
+            "std_msgs/Bool", "Topic of software EStop",
+            this, SLOT(updateSwEstopTopic()));
         rc_state_topic_property_ = new rviz::RosTopicProperty("Remote controller state topic", "rc_state",
             "whi_interfaces/WhiRcState", "Topic of remote controller state",
             this, SLOT(updateRcStateTopic()));
@@ -116,6 +119,7 @@ namespace whi_rviz_plugins
         updateRecoveryMaxTryCount();
         updateTolerance();
         updateMotionStateTopic();
+        updateSwEstopTopic();
         updateRcStateTopic();
     }
 
@@ -271,6 +275,11 @@ namespace whi_rviz_plugins
     void WaypointsDisplay::updateMotionStateTopic()
     {
         panel_->setMotionStateTopic(motion_state_topic_property_->getTopicStd());
+    }
+
+    void WaypointsDisplay::updateSwEstopTopic()
+    {
+        panel_->setSwEstopTopic(sw_estop_topic_property_->getTopicStd());
     }
 
     void WaypointsDisplay::updateRcStateTopic()
