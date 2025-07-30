@@ -12,17 +12,22 @@ All text above must be included in any redistribution.
 
 Changelog:
 2022-11-30: Initial version
-2022-xx-xx: xxx
+2025-07-30: Migrate from ROS 1
+2025-xx-xx: xxx
 ******************************************************************/
 #pragma once
-#include "rviz/image/image_display_base.h"
-#include "rviz/image/ros_image_texture.h"
-#include "rviz/render_panel.h"
-#include "rviz/properties/bool_property.h"
-#include "rviz/properties/float_property.h"
-#include "rviz/properties/int_property.h"
-#include "rviz/properties/enum_property.h"
-#include "rviz/properties/string_property.h"
+#include "whi_rviz_plugins/visibility_control.hpp"
+
+#include "rviz_default_plugins/displays/image/image_display.hpp"
+#include "rviz_default_plugins/displays/image/ros_image_texture.hpp"
+#include "rviz_default_plugins/displays/image/ros_image_texture_iface.hpp"
+#include "rviz_common/message_filter_display.hpp"
+#include "rviz_common/render_panel.hpp"
+#include "rviz_common/properties/bool_property.hpp"
+#include "rviz_common/properties/float_property.hpp"
+#include "rviz_common/properties/int_property.hpp"
+#include "rviz_common/properties/enum_property.hpp"
+#include "rviz_common/properties/string_property.hpp"
 #include <OgreMaterial.h>
 #include <OgreSharedPtr.h>
 #include <opencv2/highgui.hpp>
@@ -38,10 +43,12 @@ namespace Ogre
 
 namespace whi_rviz_plugins
 {
-    class VideoStreamDisplay : public rviz::ImageDisplayBase
+    class WHI_RVIZ_PLUGINS_PUBLIC VideoStreamDisplay : public
+        rviz_common::MessageFilterDisplay<sensor_msgs::msg::Image>
     {
         Q_OBJECT
     public:
+        explicit VideoStreamDisplay(std::unique_ptr<rviz_default_plugins::displays::ROSImageTextureIface> Texture);
         VideoStreamDisplay();
         ~VideoStreamDisplay() override;
 
@@ -55,10 +62,13 @@ namespace whi_rviz_plugins
         // overrides from Display
         void onEnable() override;
         void onDisable() override;
+        // this is called by incomingMessage()
+        void processMessage(const sensor_msgs::msg::Image::ConstSharedPtr Msg) override;
 
     protected:
-        // this is called by incomingMessage()
-        void processMessage(const sensor_msgs::Image::ConstPtr& Msg) override;
+        void setupScreenRectangle();
+        void setupRenderPanel();
+        void clear();
         bool resetTexture();
         void stopSubscribe();
         void startCapture(const std::string& Stream);
@@ -72,20 +82,18 @@ namespace whi_rviz_plugins
         void updateStreamUrl();
 
     private:
-        Ogre::SceneManager* img_scene_manager_{ nullptr };
-        rviz::ROSImageTexture texture_;
-        rviz::RenderPanel* render_panel_{ nullptr };
-        Ogre::SceneNode* img_scene_node_{ nullptr };
-        Ogre::Rectangle2D* screen_rect_{ nullptr };
+        std::unique_ptr<rviz_default_plugins::displays::ROSImageTextureIface> texture_{ nullptr };
+        std::unique_ptr<Ogre::Rectangle2D> screen_rect_;
         Ogre::MaterialPtr material_;
-        bool float_image_{ false };
-        rviz::BoolProperty* normalize_property_{ nullptr };
-        rviz::FloatProperty* min_property_{ nullptr };
-        rviz::FloatProperty* max_property_{ nullptr };
-        rviz::IntProperty* median_buffer_size_property_{ nullptr };
-        rviz::EnumProperty* stream_source_{ nullptr };
-        rviz::IntProperty* stream_device_{ nullptr };
-        rviz::StringProperty* stream_url_{ nullptr };
+        std::unique_ptr<rviz_common::RenderPanel> render_panel_{ nullptr };
+        bool got_float_image_{ false };
+        rviz_common::properties::BoolProperty* normalize_property_{ nullptr };
+        rviz_common::properties::FloatProperty* min_property_{ nullptr };
+        rviz_common::properties::FloatProperty* max_property_{ nullptr };
+        rviz_common::properties::IntProperty* median_buffer_size_property_{ nullptr };
+        rviz_common::properties::EnumProperty* stream_source_{ nullptr };
+        rviz_common::properties::IntProperty* stream_device_{ nullptr };
+        rviz_common::properties::StringProperty* stream_url_{ nullptr };
         std::thread th_capture_;
         std::atomic_bool terminated_{ true };
     };

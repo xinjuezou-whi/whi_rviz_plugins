@@ -16,48 +16,56 @@ All text above must be included in any redistribution.
 #include <OgreSceneNode.h>
 #include <OgreMaterialManager.h>
 #include <OgreRoot.h>
+#include <OgreRectangle2D.h>
+#include <OgreTechnique.h>
+#include <OgreTextureManager.h>
 #include <OgreRenderWindow.h>
-#include "rviz/display_context.h"
-#include <rviz/render_panel.h>
-#include <sensor_msgs/image_encodings.h>
-#include <ros/package.h>
+#include "rviz_common/display_context.hpp"
+#include "rviz_rendering/render_window.hpp"
+#include "rviz_rendering/material_manager.hpp"
+#include "rviz_common/message_filter_display.hpp"
+#include "rviz_common/uniform_string_stream.hpp"
+#include "rviz_default_plugins/displays/image/ros_image_texture.hpp"
+#include <sensor_msgs/image_encodings.hpp>
+#include "ament_index_cpp/get_package_share_directory.hpp"
 #include <cv_bridge/cv_bridge.h>
-#include <boost/filesystem.hpp>
-
-#include <pluginlib/class_list_macros.hpp>
 
 namespace whi_rviz_plugins
 {
     VideoStreamDisplay::VideoStreamDisplay()
-        : ImageDisplayBase(), texture_()
-    {
-        std::cout << "\nWHI RViz plugin for video stream VERSION 00.04" << std::endl;
-        std::cout << "Copyright @ 2022-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
+    : VideoStreamDisplay(std::make_unique<rviz_default_plugins::displays::ROSImageTexture>()) {}
 
-        normalize_property_ = new rviz::BoolProperty("Normalize Range", true,
+    VideoStreamDisplay::VideoStreamDisplay(
+        std::unique_ptr<rviz_default_plugins::displays::ROSImageTextureIface> Texture)
+        : texture_(std::move(Texture))
+    {
+        std::cout << "\nWHI RViz plugin for video stream VERSION 02.04.1" << std::endl;
+        std::cout << "Copyright @ 2022-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
+
+        normalize_property_ = new rviz_common::properties::BoolProperty("Normalize Range", true,
             "If set to true, will try to estimate the range of possible values from the received images",
             this, SLOT(updateNormalizeOptions()));
-        min_property_ = new rviz::FloatProperty("Min Value", 0.0,
+        min_property_ = new rviz_common::properties::FloatProperty("Min Value", 0.0,
             "Value which will be displayed as black",
             this, SLOT(updateNormalizeOptions()));
-        max_property_ = new rviz::FloatProperty("Max Value", 1.0,
+        max_property_ = new rviz_common::properties::FloatProperty("Max Value", 1.0,
             "Value which will be displayed as white", this, SLOT(updateNormalizeOptions()));
-        median_buffer_size_property_ = new rviz::IntProperty("Median window", 5,
+        median_buffer_size_property_ = new rviz_common::properties::IntProperty("Median window", 5,
             "Window size for median filter used for computin min/max",
             this, SLOT(updateNormalizeOptions()));
         QStringList sourceList = { "Message", "Device", "URL" };
-        stream_source_ = new rviz::EnumProperty("Stream source", sourceList[0],
+        stream_source_ = new rviz_common::properties::EnumProperty("Stream source", sourceList[0],
             "Options of selecting stream source",
             this, SLOT(updateStreamSource()));
         for (int i = 0; i < sourceList.size(); ++i)
         {
             stream_source_->addOption(sourceList[i], i);
         }
-        stream_device_ = new rviz::IntProperty("Device address", 0,
+        stream_device_ = new rviz_common::properties::IntProperty("Device address", 0,
             "Camera device address, just input 0 for /dev/video0 for an example",
             this, SLOT(updateStreamDevice()));
         stream_device_->setMin(0);
-        stream_url_ = new rviz::StringProperty("IP stream address", "",
+        stream_url_ = new rviz_common::properties::StringProperty("IP stream address", "",
             "Address of network stream, RTSP and HTTP are supported",
             this, SLOT(updateStreamUrl()));
     }
@@ -68,67 +76,21 @@ namespace whi_rviz_plugins
 
         if (initialized())
         {
-            delete render_panel_;
-            delete screen_rect_;
-            img_scene_node_->getParentSceneNode()->removeAndDestroyChild(img_scene_node_->getName());
+            render_panel_.reset(nullptr);
+            screen_rect_.reset(nullptr);
         }
     }
 
     void VideoStreamDisplay::onInitialize()
     {
-        ImageDisplayBase::onInitialize();
-        {
-            static uint32_t count = 0;
-            std::stringstream ss;
-            ss << "VideoStreamDisplay" << count++;
-            img_scene_manager_ = Ogre::Root::getSingleton().createSceneManager(Ogre::ST_GENERIC, ss.str());
-        }
+        MFDClass::onInitialize();
 
-        img_scene_node_ = img_scene_manager_->getRootSceneNode()->createChildSceneNode();
+        updateNormalizeOptions();
+        setupScreenRectangle();
+        setupRenderPanel();
 
-        {
-            static int count = 0;
-            std::stringstream ss;
-            ss << "VideoStreamDisplayObject" << count++;
-
-            screen_rect_ = new Ogre::Rectangle2D(true);
-            screen_rect_->setRenderQueueGroup(Ogre::RENDER_QUEUE_OVERLAY - 1);
-            screen_rect_->setCorners(-1.0f, 1.0f, 1.0f, -1.0f);
-
-            ss << "Material";
-            material_ = Ogre::MaterialManager::getSingleton().create(ss.str(),
-                Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
-            material_->setSceneBlending(Ogre::SBT_REPLACE);
-            material_->setDepthWriteEnabled(false);
-            material_->setReceiveShadows(false);
-            material_->setDepthCheckEnabled(false);
-
-            material_->getTechnique(0)->setLightingEnabled(false);
-            Ogre::TextureUnitState* tu = material_->getTechnique(0)->getPass(0)->createTextureUnitState();
-            tu->setTextureName(texture_.getTexture()->getName());
-            tu->setTextureFiltering(Ogre::TFO_NONE);
-            tu->setTextureAddressingMode(Ogre::TextureUnitState::TAM_CLAMP);
-
-            material_->setCullingMode(Ogre::CULL_NONE);
-            Ogre::AxisAlignedBox aabInf;
-            aabInf.setInfinite();
-            screen_rect_->setBoundingBox(aabInf);
-            screen_rect_->setMaterial(material_->getName());
-            img_scene_node_->attachObject(screen_rect_);
-        }
-
-        render_panel_ = new rviz::RenderPanel();
-        render_panel_->getRenderWindow()->setAutoUpdated(false);
-        render_panel_->getRenderWindow()->setActive(false);
-
-        render_panel_->resize(640, 480);
-        render_panel_->initialize(img_scene_manager_, context_);
-
-        setAssociatedWidget(render_panel_);
-
-        render_panel_->setAutoRender(false);
-        render_panel_->setOverlaysEnabled(false);
-        render_panel_->getCamera()->setNearClipDistance(0.01f);
+        render_panel_->getRenderWindow()->setupSceneAfterInit(
+            [this](Ogre::SceneNode * scene_node) { scene_node->attachObject(screen_rect_.get()); });
 
         updateNormalizeOptions();
         updateStreamDevice();
@@ -137,20 +99,35 @@ namespace whi_rviz_plugins
         resetTexture();
     }
 
+    void VideoStreamDisplay::onEnable()
+    {
+        MFDClass::subscribe();
+    }
+
+    void VideoStreamDisplay::onDisable()
+    {
+        stopSubscribe();
+    }
+
+    void VideoStreamDisplay::clear()
+    {
+        texture_->clear();
+    }
+
     void VideoStreamDisplay::update(float WallDt, float RosDt)
     {
-        Q_UNUSED(WallDt)
-        Q_UNUSED(RosDt)
+        (void)WallDt;
+        (void)RosDt;
         try
         {
-            texture_.update();
+            texture_->update();
 
             // make sure the aspect ratio of the image is preserved
             float winWidth = render_panel_->width();
             float winHeight = render_panel_->height();
 
-            float imgWidth = texture_.getWidth();
-            float imgHeight = texture_.getHeight();
+            float imgWidth = texture_->getWidth();
+            float imgHeight = texture_->getHeight();
 
             if (imgWidth != 0 && imgHeight != 0 && winWidth != 0 && winHeight != 0)
             {
@@ -164,77 +141,103 @@ namespace whi_rviz_plugins
                 }
                 else
                 {
-                    screen_rect_->setCorners(-1.0f * imgAspect / winAspect, 1.0f, 1.0f * imgAspect / winAspect,
-                        -1.0f, false);
+                    screen_rect_->setCorners(-1.0f * imgAspect / winAspect, 1.0f, 
+                        1.0f * imgAspect / winAspect, -1.0f, false);
                 }
             }
-
-            render_panel_->getRenderWindow()->update();
         }
-        catch (rviz::UnsupportedImageEncoding& e)
+        catch (rviz_default_plugins::displays::UnsupportedImageEncoding& e)
         {
-            setStatus(rviz::StatusProperty::Error, "Image", e.what());
+            setStatus(rviz_common::properties::StatusProperty::Error, "Image", e.what());
         }
     }
 
     void VideoStreamDisplay::reset()
     {
-        ImageDisplayBase::reset();
+        MFDClass::reset();
+        clear();
         if (resetTexture())
         {
-            texture_.clear();
+            texture_->clear();
         }
-        render_panel_->getCamera()->setPosition(Ogre::Vector3(999999, 999999, 999999));
     }
 
-    void VideoStreamDisplay::onEnable()
-    {
-        ImageDisplayBase::subscribe();
-        render_panel_->getRenderWindow()->setActive(true);
-    }
-
-    void VideoStreamDisplay::onDisable()
-    {
-        render_panel_->getRenderWindow()->setActive(false);
-        stopSubscribe();
-    }
-
-    void VideoStreamDisplay::processMessage(const sensor_msgs::Image::ConstPtr& Msg)
+    void VideoStreamDisplay::processMessage(const sensor_msgs::msg::Image::ConstSharedPtr Msg)
     {
         bool floatImage = Msg->encoding == sensor_msgs::image_encodings::TYPE_32FC1 ||
             Msg->encoding == sensor_msgs::image_encodings::TYPE_16UC1 ||
             Msg->encoding == sensor_msgs::image_encodings::TYPE_16SC1 ||
             Msg->encoding == sensor_msgs::image_encodings::MONO16;
 
-        if (floatImage != float_image_)
+        if (floatImage != got_float_image_)
         {
-            float_image_ = floatImage;
+            got_float_image_ = floatImage;
             updateNormalizeOptions();
         }
-        texture_.addMessage(Msg);
+        texture_->addMessage(Msg);
+    }
+
+    void VideoStreamDisplay::setupScreenRectangle()
+    {
+        static int count = 0;
+        rviz_common::UniformStringStream ss;
+        ss << "VideoStreamDisplayObject" << count++;
+
+        screen_rect_ = std::make_unique<Ogre::Rectangle2D>(true);
+        screen_rect_->setRenderQueueGroup(Ogre::RENDER_QUEUE_OVERLAY - 1);
+        screen_rect_->setCorners(-1.0f, 1.0f, 1.0f, -1.0f);
+
+        ss << "Material";
+        material_ = rviz_rendering::MaterialManager::createMaterialWithNoLighting(ss.str());
+        material_->setSceneBlending(Ogre::SBT_REPLACE);
+        material_->setDepthWriteEnabled(false);
+        material_->setDepthCheckEnabled(false);
+
+        Ogre::TextureUnitState* tu =
+            material_->getTechnique(0)->getPass(0)->createTextureUnitState();
+        tu->setTextureName(texture_->getName());
+        tu->setTextureFiltering(Ogre::TFO_NONE);
+
+        material_->setCullingMode(Ogre::CULL_NONE);
+        Ogre::AxisAlignedBox aabInf;
+        aabInf.setInfinite();
+        screen_rect_->setBoundingBox(aabInf);
+        screen_rect_->setMaterial(material_);
+    }
+
+    void VideoStreamDisplay::setupRenderPanel()
+    {
+        render_panel_ = std::make_unique<rviz_common::RenderPanel>();
+        render_panel_->resize(640, 480);
+        render_panel_->initialize(context_);
+        setAssociatedWidget(render_panel_.get());
+
+        static int count = 0;
+        render_panel_->getRenderWindow()->setObjectName(
+            "ImageDisplayRenderWindow" + QString::number(count++));
+    }
+
+    void VideoStreamDisplay::stopSubscribe()
+    {
+        MFDClass::onDisable();
+        reset();
     }
 
     bool VideoStreamDisplay::resetTexture()
     {
         // set the empty image to WHI's logo
-        boost::filesystem::path path(ros::package::getPath("whi_rviz_plugins"));
-        std::string imgPath(path.string() + "/icons/classes/whi_logo.png");
+        std::string package_path = ament_index_cpp::get_package_share_directory("whi_rviz_plugins");
+        std::string imgPath(package_path + "/icons/classes/whi_logo.png");
         cv::Mat img = cv::imread(imgPath);
         if (!img.empty())
         {
-            processMessage(cv_bridge::CvImage(std_msgs::Header(), "bgr8", img).toImageMsg());
+            processMessage(cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", img).toImageMsg());
             return false;
         }
         else
         {
             return true;
         }
-    }
-
-    void VideoStreamDisplay::stopSubscribe()
-    {
-        ImageDisplayBase::unsubscribe();
-        reset();
     }
 
     void VideoStreamDisplay::startCapture(const std::string& Stream)
@@ -273,7 +276,7 @@ namespace whi_rviz_plugins
                 *Capture >> mat;
                 if (!mat.empty())
                 {
-                    processMessage(cv_bridge::CvImage(std_msgs::Header(), "bgr8", mat).toImageMsg());
+                    processMessage(cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", mat).toImageMsg());
                 }
             }
         }
@@ -283,7 +286,7 @@ namespace whi_rviz_plugins
 
     void VideoStreamDisplay::updateNormalizeOptions()
     {
-        if (float_image_)
+        if (got_float_image_)
         {
             bool normalize = normalize_property_->getBool();
 
@@ -292,8 +295,9 @@ namespace whi_rviz_plugins
             max_property_->setHidden(normalize);
             median_buffer_size_property_->setHidden(!normalize);
 
-            texture_.setNormalizeFloatImage(normalize, min_property_->getFloat(), max_property_->getFloat());
-            texture_.setMedianFrames(median_buffer_size_property_->getInt());
+            texture_->setNormalizeFloatImage(
+            normalize, min_property_->getFloat(), max_property_->getFloat());
+            texture_->setMedianFrames(median_buffer_size_property_->getInt());
         }
         else
         {
@@ -311,7 +315,7 @@ namespace whi_rviz_plugins
 
         if (stream_source_->getOptionInt() == 0)
         {
-            ImageDisplayBase::subscribe();
+            onEnable();
         }
         else
         {
@@ -343,6 +347,7 @@ namespace whi_rviz_plugins
             startCapture(stream_url_->getStdString());
         }
     }
-
-    PLUGINLIB_EXPORT_CLASS(whi_rviz_plugins::VideoStreamDisplay, rviz::Display)
 } // end namespace whi_rviz_plugins
+
+#include <pluginlib/class_list_macros.hpp>  // NOLINT
+PLUGINLIB_EXPORT_CLASS(whi_rviz_plugins::VideoStreamDisplay, rviz_common::Display)

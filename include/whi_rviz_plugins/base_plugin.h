@@ -12,7 +12,8 @@ All text above must be included in any redistribution.
 
 Changelog:
 2023-09-20: Initial version
-2022-xx-xx: xxx
+2025-07-30: Migrate from ROS 1
+2025-xx-xx: xxx
 ******************************************************************/
 #pragma once
 #include <yaml-cpp/yaml.h>

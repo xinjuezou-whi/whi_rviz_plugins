@@ -1,5 +1,5 @@
-<library path="lib/libwhi_rviz_plugins">
-  <class name="whi_rviz_plugins/Battery"
+<library path="whi_rviz_plugins">
+  <!-- <class name="whi_rviz_plugins/Battery"
          type="whi_rviz_plugins::DisplayBat"
          base_class_type="rviz::Display">
     <description>
@@ -27,15 +27,15 @@
     <description>
       Generic keyboard teleop
     </description>
-  </class>
+  </class> -->
   <class name="whi_rviz_plugins/Video_stream"
          type="whi_rviz_plugins::VideoStreamDisplay"
-         base_class_type="rviz::Display">
+         base_class_type="rviz_common::Display">
     <description>
       Video stream display
     </description>
   </class>
-  <class name="whi_rviz_plugins/Navi_namespace"
+  <!-- <class name="whi_rviz_plugins/Navi_namespace"
          type="whi_rviz_plugins::NaviNsTool"
          base_class_type="rviz::Tool">
     <description>
@@ -62,5 +62,5 @@
     <description>
       2D line chart
     </description>
-  </class>
+  </class> -->
 </library>

@@ -1,154 +1,80 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.5)
+
 project(whi_rviz_plugins)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-set(CMAKE_CXX_STANDARD 17)
-
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
-  rviz
-  move_base_msgs
-  whi_interfaces
-)
-
-## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
-
-
-## Uncomment this if the package has a setup.py. This macro ensures
-## modules and global scripts declared therein get installed
-## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-# catkin_python_setup()
-
-################################################
-## Declare ROS messages, services and actions ##
-################################################
-
-## To declare and build messages, services or actions from within this
-## package, follow these steps:
-## * Let MSG_DEP_SET be the set of packages whose message types you use in
-##   your messages/services/actions (e.g. std_msgs, actionlib_msgs, ...).
-## * In the file package.xml:
-##   * add a build_depend tag for "message_generation"
-##   * add a build_depend and a exec_depend tag for each package in MSG_DEP_SET
-##   * If MSG_DEP_SET isn't empty the following dependency has been pulled in
-##     but can be declared for certainty nonetheless:
-##     * add a exec_depend tag for "message_runtime"
-## * In this file (CMakeLists.txt):
-##   * add "message_generation" and every package in MSG_DEP_SET to
-##     find_package(catkin REQUIRED COMPONENTS ...)
-##   * add "message_runtime" and every package in MSG_DEP_SET to
-##     catkin_package(CATKIN_DEPENDS ...)
-##   * uncomment the add_*_files sections below as needed
-##     and list every .msg/.srv/.action file to be processed
-##   * uncomment the generate_messages entry below
-##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
-
-## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
-
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
-
-## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
-
-## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
-
-################################################
-## Declare ROS dynamic reconfigure parameters ##
-################################################
-
-## To declare and build dynamic reconfigure parameters within this
-## package, follow these steps:
-## * In the file package.xml:
-##   * add a build_depend and a exec_depend tag for "dynamic_reconfigure"
-## * In this file (CMakeLists.txt):
-##   * add "dynamic_reconfigure" to
-##     find_package(catkin REQUIRED COMPONENTS ...)
-##   * uncomment the "generate_dynamic_reconfigure_options" section below
-##     and list every .cfg file to be processed
-
-## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
-
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if your package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
-  INCLUDE_DIRS include
-#  LIBRARIES whi_articulated_steering_controller
-#  CATKIN_DEPENDS pluginlib roscpp
-#  DEPENDS system_lib
-)
-
-###########
-## Build ##
-###########
-
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-)
-
-## This setting causes Qt's "MOC" generation to happen automatically.
-set(CMAKE_AUTOMOC ON)
-
-## This plugin includes Qt widgets, so we must include Qt.
-## We'll use the version that rviz used so they are compatible.
-if(rviz_QT_VERSION VERSION_LESS "5")
-  message(STATUS "Using Qt4 based on the rviz_QT_VERSION: ${rviz_QT_VERSION}")
-  find_package(Qt4 ${rviz_QT_VERSION} EXACT REQUIRED QtCore QtGui)
-  ## pull in all required include dirs, define QT_LIBRARIES, etc.
-  include(${QT_USE_FILE})
-  macro(qt_wrap_ui)
-    qt4_wrap_ui(${ARGN})
-  endmacro()
-else()
-  message(STATUS "Using Qt5 based on the rviz_QT_VERSION: ${rviz_QT_VERSION}")
-  find_package(Qt5 ${rviz_QT_VERSION} EXACT REQUIRED Core Widgets)
-  ## make target_link_libraries(${QT_LIBRARIES}) pull in all required dependencies
-  set(QT_LIBRARIES Qt5::Widgets)
-  macro(qt_wrap_ui)
-    qt5_wrap_ui(${ARGN})
-  endmacro()
+# Default to C++14
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
-# Find includes in corresponding build directories
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic -Wnon-virtual-dtor -Woverloaded-virtual)
+endif()
 
-qt_wrap_ui(UIC_FILES
+# Tests currently only run on OS X @ OSRF jenkins
+# Enable on Linux by providing a display, enable on Windows via EnableDisplayTests=True
+option(EnableDisplayTests "EnableDisplayTests")
+set(DisplayTests "False" CACHE STRING "DisplayTestsVariable")
+
+if(DEFINED ENV{DISPLAY})
+  set(DISPLAYPRESENT TRUE)
+endif()
+
+if(APPLE OR DISPLAYPRESENT OR EnableDisplayTests STREQUAL "True")
+  message(STATUS "Enabling tests requiring a display")
+else()
+  set(SKIP_DISPLAY_TESTS "SKIP_TEST")
+endif()
+
+# options and directories for visual tests (see visual_testing_framework documentation)
+option(EnableVisualTests "decides whether or not to enable the tests")
+
+add_definitions(-D_BUILD_DIR_PATH="${CMAKE_CURRENT_BINARY_DIR}")
+add_definitions(-D_SRC_DIR_PATH="${CMAKE_CURRENT_SOURCE_DIR}")
+
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/test_images)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/reference_images)
+
+# Run visual tests only if "EnableVisualTests=True"
+if(EnableVisualTests STREQUAL "True")
+  message(STATUS "Enabling visual tests")
+else()
+  set(SKIP_VISUAL_TESTS "SKIP_TEST")
+endif()
+
+if(MSVC)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+endif()
+
+# We specifically don't turn on CMAKE_AUTOMOC, since it generates one huge
+# mocs_compilation.cpp file that takes a lot of memory to compile.  Instead
+# we create individual moc files that can be compiled separately.
+
+find_package(ament_cmake REQUIRED)
+
+find_package(rviz_common REQUIRED)
+find_package(rviz_rendering REQUIRED)
+find_package(rviz_ogre_vendor REQUIRED)
+find_package(rviz_default_plugins REQUIRED)
+find_package(Qt5 REQUIRED COMPONENTS Widgets Test)
+find_package(geometry_msgs REQUIRED)
+find_package(interactive_markers REQUIRED)
+find_package(laser_geometry REQUIRED)
+find_package(map_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(resource_retriever REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(urdf REQUIRED)
+find_package(visualization_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(OpenCV REQUIRED)
+
+# UI Files
+set(UIC_FILES
   ui/navi_waypoints.ui
   ui/navi_teleop.ui
   ui/navi_multiple_ns.ui
@@ -157,120 +83,116 @@ qt_wrap_ui(UIC_FILES
   ui/navi_robot_model_viewer.ui
   ui/line_chart_2D.ui
 )
+qt5_wrap_ui(UIC_SOURCES ${UIC_FILES})
 
-find_package(OpenCV)
-
-include_directories(
-  ${QT_INCLUDE_DIR}
-  ${OpenCV_INCLUDE_DIRS}
-  /usr/include/qwt/
-)
-
-## I prefer the Qt signals and slots to avoid defining "emit", "slots",
-## etc because they can conflict with boost signals, so define QT_NO_KEYWORDS here.
-add_definitions(-DQT_NO_KEYWORDS)
-
-## Declare a C++ library
-file(GLOB_RECURSE WHI_SDK_SRC
- "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
-)
+# Source files
 file(GLOB_RECURSE WHI_SDK_H
-  "${CMAKE_CURRENT_SOURCE_DIR}/include/${PROJECT_NAME}/*.h"
+  "include/${PROJECT_NAME}/*.h"
 )
-file(GLOB QWT_LIBRARIES
-  "/usr/lib/libqwt*"
+file(GLOB_RECURSE WHI_SDK_SRC
+  "src/*.cpp"
 )
-add_library(${PROJECT_NAME}
-  ${WHI_SDK_H}
+
+foreach(header "${WHI_SDK_H}")
+  qt5_wrap_cpp(whi_rviz_plugins_moc_files "${header}")
+endforeach()
+
+add_library(${PROJECT_NAME} SHARED
+  ${whi_rviz_plugins_moc_files}
   ${WHI_SDK_SRC}
-  ${UIC_FILES}
+  ${UIC_SOURCES}
 )
 
-## Add cmake target dependencies of the library
-## as an example, code may need to be generated before libraries
-## either from message generation or dynamic reconfigure
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(${PROJECT_NAME} whi_interfaces_generate_messages_cpp)
+target_include_directories(${PROJECT_NAME} PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+  ${Qt5Widgets_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+)
 
-## Declare a C++ executable
-## With catkin_make all packages are built within a single CMake context
-## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/whi_articulated_steering_controller_node.cpp)
-
-## Rename C++ executable without prefix
-## The above recommended prefix causes long target names, the following renames the
-## target back to the shorter version for ease of user use
-## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
-# set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
-
-## Add cmake target dependencies of the executable
-## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}
-  ${catkin_LIBRARIES}
-  ${QT_LIBRARIES}
+target_link_libraries(${PROJECT_NAME} PUBLIC
+  rviz_ogre_vendor::OgreMain
+  rviz_ogre_vendor::OgreOverlay
   ${OpenCV_LIBRARIES}
-  ${QWT_LIBRARIES}
 )
 
-#############
-## Install ##
-#############
+# Causes the visibility macros to use dllexport rather than dllimport,
+# which is appropriate when building the dll but not consuming it.
+target_compile_definitions(${PROJECT_NAME} PRIVATE "WHI_RVIZ_PLUGINS_BUILDING_LIBRARY")
 
-# all install targets should use catkin DESTINATION variables
-# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
+# prevent pluginlib from using boost
+target_compile_definitions(${PROJECT_NAME} PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
 
-## Mark executable scripts (Python etc.) for installation
-## in contrast to setup.py, you can choose the destination
-# catkin_install_python(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+pluginlib_export_plugin_description_file(rviz_common whi_rviz_plugins.xml)
 
-## Mark executables for installation
-## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
-# install(TARGETS ${PROJECT_NAME}_node
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
-
-## Mark libraries for installation
-## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
-install(TARGETS ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+ament_target_dependencies(${PROJECT_NAME}
+  PUBLIC
+  geometry_msgs
+  interactive_markers
+  laser_geometry
+  nav_msgs
+  map_msgs
+  rclcpp
+  resource_retriever
+  rviz_common
+  rviz_rendering
+  tf2
+  tf2_geometry_msgs
+  tf2_ros
+  urdf
+  visualization_msgs
+  cv_bridge
+  rviz_default_plugins
 )
 
-## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-#)
-
-## Mark other files for installation (e.g. launch and bag files, etc.)
-install(FILES
-  ${PROJECT_NAME}.xml
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+ament_export_include_directories(include)
+ament_export_targets(${PROJECT_NAME} HAS_LIBRARY_TARGET)
+ament_export_dependencies(
+  Qt5
+  rviz_common
+  geometry_msgs
+  interactive_markers
+  laser_geometry
+  map_msgs
+  nav_msgs
+  rclcpp
+  resource_retriever
+  rviz_ogre_vendor
+  tf2
+  tf2_geometry_msgs
+  tf2_ros
+  urdf
+  visualization_msgs
 )
 
-install(DIRECTORY icons/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/icons)
+install(
+  TARGETS ${PROJECT_NAME}
+  EXPORT ${PROJECT_NAME}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
+)
 
-catkin_install_python(PROGRAMS scripts/send_test_msgs.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+install(
+  DIRECTORY include/
+  DESTINATION include
+)
 
-#############
-## Testing ##
-#############
+install(
+  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/icons"
+  DESTINATION "share/${PROJECT_NAME}"
+)
 
-## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_whi_articulated_steering_controller.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  # the following line skips the linter which checks for copyrights
+  # uncomment the line when a copyright and license is not present in all source files
+  #set(ament_cmake_copyright_FOUND TRUE)
+  # the following line skips cpplint (only works in a git repo)
+  # uncomment the line when this package is not in a git repo
+  #set(ament_cmake_cpplint_FOUND TRUE)
+  ament_lint_auto_find_test_dependencies()
+endif()
 
-## Add folders to be run by python nosetests
-# catkin_add_nosetests(test)
+ament_package()
