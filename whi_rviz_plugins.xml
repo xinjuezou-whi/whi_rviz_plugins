@@ -13,15 +13,15 @@
     <description>
       A panel widget to for waypoints of navigation
     </description>
-  </class>
+  </class> -->
   <class name="whi_rviz_plugins/Map_saver"
          type="whi_rviz_plugins::MapSaverPanel"
-         base_class_type="rviz::Panel">
+         base_class_type="rviz_common::Panel">
     <description>
       A panel widget for save map with map_server
     </description>
   </class>
-  <class name="whi_rviz_plugins/Teleop"
+  <!-- <class name="whi_rviz_plugins/Teleop"
          type="whi_rviz_plugins::DisplayTeleop"
          base_class_type="rviz::Display">
     <description>
