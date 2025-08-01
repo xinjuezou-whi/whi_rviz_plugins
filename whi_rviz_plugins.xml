@@ -21,13 +21,13 @@
       A panel widget for save map with map_server
     </description>
   </class>
-  <!-- <class name="whi_rviz_plugins/Teleop"
+  <class name="whi_rviz_plugins/Teleop"
          type="whi_rviz_plugins::DisplayTeleop"
-         base_class_type="rviz::Display">
+         base_class_type="rviz_common::Display">
     <description>
       Generic keyboard teleop
     </description>
-  </class> -->
+  </class>
   <class name="whi_rviz_plugins/Video_stream"
          type="whi_rviz_plugins::VideoStreamDisplay"
          base_class_type="rviz_common::Display">

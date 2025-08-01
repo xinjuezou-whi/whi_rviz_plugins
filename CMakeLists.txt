@@ -72,6 +72,7 @@ find_package(urdf REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(whi_interfaces REQUIRED)
 
 # UI Files
 set(UIC_FILES
@@ -84,6 +85,8 @@ set(UIC_FILES
   ui/line_chart_2D.ui
 )
 qt5_wrap_ui(UIC_SOURCES ${UIC_FILES})
+
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # Source files
 file(GLOB_RECURSE WHI_SDK_H
@@ -143,6 +146,7 @@ ament_target_dependencies(${PROJECT_NAME}
   visualization_msgs
   cv_bridge
   rviz_default_plugins
+  whi_interfaces
 )
 
 ament_export_include_directories(include)
