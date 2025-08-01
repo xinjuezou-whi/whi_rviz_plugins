@@ -12,7 +12,8 @@ All text above must be included in any redistribution.
 
 Changelog:
 2022-11-15: Initial version
-2022-xx-xx: xxx
+2025-08-01: Migrate from ROS 1
+2025-xx-xx: xxx
 ******************************************************************/
 #pragma once
 #include <rclcpp/rclcpp.hpp>
