@@ -55,12 +55,12 @@
     <description>
       Viewer of robot model
     </description>
-  </class>
+  </class> -->
   <class name="whi_rviz_plugins/2D_line_chart"
          type="whi_rviz_plugins::Display2DLineChart"
-         base_class_type="rviz::Display">
+         base_class_type="rviz_common::Display">
     <description>
       2D line chart
     </description>
-  </class> -->
+  </class>
 </library>

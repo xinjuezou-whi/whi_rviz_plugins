@@ -95,6 +95,9 @@ file(GLOB_RECURSE WHI_SDK_H
 file(GLOB_RECURSE WHI_SDK_SRC
   "src/*.cpp"
 )
+file(GLOB QWT_LIBRARIES
+  "/usr/lib/libqwt*"
+)
 
 foreach(header "${WHI_SDK_H}")
   qt5_wrap_cpp(whi_rviz_plugins_moc_files "${header}")
@@ -111,12 +114,14 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   $<INSTALL_INTERFACE:include>
   ${Qt5Widgets_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
+  /usr/include/qwt/
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
   rviz_ogre_vendor::OgreMain
   rviz_ogre_vendor::OgreOverlay
   ${OpenCV_LIBRARIES}
+  ${QWT_LIBRARIES}
 )
 
 # Causes the visibility macros to use dllexport rather than dllimport,
