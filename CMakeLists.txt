@@ -99,12 +99,29 @@ file(GLOB QWT_LIBRARIES
   "/usr/lib/libqwt*"
 )
 
-foreach(header "${WHI_SDK_H}")
-  qt5_wrap_cpp(whi_rviz_plugins_moc_files "${header}")
-endforeach()
+set(CMAKE_AUTOMOC ON)
+qt5_wrap_cpp(MOC_FILES
+  include/${PROJECT_NAME}/display_2D_line_chart.h
+  include/${PROJECT_NAME}/display_battery.h
+  include/${PROJECT_NAME}/display_state.h
+  include/${PROJECT_NAME}/display_teleop.h
+  include/${PROJECT_NAME}/display_video_stream.h
+  include/${PROJECT_NAME}/display_waypoints.h
+  include/${PROJECT_NAME}/panel_2D_line_chart.h
+  include/${PROJECT_NAME}/panel_battery.h
+  include/${PROJECT_NAME}/panel_map_saver.h
+  include/${PROJECT_NAME}/panel_state.h
+  include/${PROJECT_NAME}/panel_teleop.h
+  include/${PROJECT_NAME}/panel_waypoints.h
+  include/${PROJECT_NAME}/widget_twist.h
+  )
+# foreach(header "${WHI_SDK_H}")
+#   qt5_wrap_cpp(whi_rviz_plugins_moc_files "${header}")
+# endforeach()
 
 add_library(${PROJECT_NAME} SHARED
-  ${whi_rviz_plugins_moc_files}
+  # ${whi_rviz_plugins_moc_files}
+  ${MOC_FILES}
   ${WHI_SDK_SRC}
   ${UIC_SOURCES}
 )
@@ -120,6 +137,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 target_link_libraries(${PROJECT_NAME} PUBLIC
   rviz_ogre_vendor::OgreMain
   rviz_ogre_vendor::OgreOverlay
+  rviz_common::rviz_common
+  rviz_rendering::rviz_rendering
+  rviz_default_plugins::rviz_default_plugins
   ${OpenCV_LIBRARIES}
   ${QWT_LIBRARIES}
 )
@@ -144,13 +164,13 @@ ament_target_dependencies(${PROJECT_NAME}
   resource_retriever
   rviz_common
   rviz_rendering
+  rviz_default_plugins
   tf2
   tf2_geometry_msgs
   tf2_ros
   urdf
   visualization_msgs
   cv_bridge
-  rviz_default_plugins
   whi_interfaces
 )
 
@@ -189,7 +209,7 @@ install(
 )
 
 install(
-  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/icons"
+  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/icons" config
   DESTINATION "share/${PROJECT_NAME}"
 )
 

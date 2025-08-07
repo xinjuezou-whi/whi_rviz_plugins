@@ -5,15 +5,15 @@
     <description>
       display battery power information
     </description>
-    <message_type>whi_interfaces/WhiBattery</message_type>
+    <message_type>whi_interfaces/msg/WhiBattery</message_type>
   </class>
-  <!-- <class name="whi_rviz_plugins/Navi_waypoints"
+  <class name="whi_rviz_plugins/Navi_waypoints"
          type="whi_rviz_plugins::WaypointsDisplay"
-         base_class_type="rviz::Display">
+         base_class_type="rviz_common::Display">
     <description>
       A panel widget to for waypoints of navigation
     </description>
-  </class> -->
+  </class>
   <class name="whi_rviz_plugins/Map_saver"
          type="whi_rviz_plugins::MapSaverPanel"
          base_class_type="rviz_common::Panel">
@@ -51,7 +51,7 @@
   </class>
   <!-- <class name="whi_rviz_plugins/Navi_robot_model_viewer"
          type="whi_rviz_plugins::DisplayRobotModelViewer"
-         base_class_type="rviz::Display">
+         base_class_type="rviz_common::Display">
     <description>
       Viewer of robot model
     </description>

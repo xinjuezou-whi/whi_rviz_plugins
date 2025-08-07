@@ -40,7 +40,6 @@ namespace rviz_common
 	{
 		class RosTopicProperty;
 		class TfFrameProperty;
-		// class FrameManager;
 	}
 }
 
@@ -66,8 +65,7 @@ namespace whi_rviz_plugins
 
     private:
         void update();
-        geometry_msgs::msg::TransformStamped listenTf(const std::string& DstFrame, const std::string& SrcFrame,
-            const rclcpp::Time& Time);
+		geometry_msgs::msg::TransformStamped listenTf(const std::string& DstFrame, const std::string& SrcFrame) const;
         double distance(const geometry_msgs::msg::Pose& Pose1, const geometry_msgs::msg::Pose& Pose2);
 		void subCallbackOdom(const nav_msgs::msg::Odometry::SharedPtr Msg);
 		void subCallbackGoal(const geometry_msgs::msg::PoseStamped::SharedPtr Msg);

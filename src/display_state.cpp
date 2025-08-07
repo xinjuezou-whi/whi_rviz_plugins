@@ -84,6 +84,8 @@ namespace whi_rviz_plugins
     {
         Display::onInitialize();
 
+        frame_property_->setFrameManager(context_->getFrameManager());
+
         panel_ = new StatePanel(node_handle_);
         rviz_common::WindowManagerInterface* windowContext = context_->getWindowManager();
         if (windowContext)
@@ -121,7 +123,7 @@ namespace whi_rviz_plugins
         std::string etaStr("no info");
         if (fabs(velocities_.first) > 9.9e-4 || fabs(velocities_.second) > 9.9e-4)
         {
-            auto tfBase2Map = listenTf("map", frame_property_->getFrame().toStdString(), rclcpp::Time(0));
+            auto tfBase2Map = listenTf("map", frame_property_->getFrame().toStdString());
             geometry_msgs::msg::Pose baselink;
             baselink.position.x = tfBase2Map.transform.translation.x;
             baselink.position.y = tfBase2Map.transform.translation.y;
@@ -132,28 +134,28 @@ namespace whi_rviz_plugins
         panel_->setEta(etaStr);
     }
 
-    geometry_msgs::msg::TransformStamped DisplayState::listenTf(const std::string& DstFrame, const std::string& SrcFrame,
-        const rclcpp::Time& Time)
+    geometry_msgs::msg::TransformStamped DisplayState::listenTf(const std::string& DstFrame, const std::string& SrcFrame) const
     {
         try
         {
-            if (buffer_->canTransform(DstFrame, SrcFrame, Time, rclcpp::Duration::from_seconds(1.0)))
+            if (buffer_->canTransform(DstFrame, SrcFrame, tf2::TimePointZero, tf2::durationFromSec(1.0)))
             {
-                return buffer_->lookupTransform(DstFrame, SrcFrame, Time, rclcpp::Duration::from_seconds(1.0));
+                return buffer_->lookupTransform(DstFrame, SrcFrame, tf2::TimePointZero, tf2::durationFromSec(1.0));
             }
             else
             {
-				auto pose = geometry_msgs::msg::TransformStamped();
-				pose.transform.rotation.w = 1.0;
+                auto pose = geometry_msgs::msg::TransformStamped();
+                pose.transform.rotation.w = 1.0;
                 return pose;
             }
         }
         catch (tf2::TransformException &e)
         {
-            RCLCPP_ERROR_STREAM(node_handle_->get_logger(), "failed to listen TF: " << e.what());
+            RCLCPP_ERROR_STREAM(node_handle_->get_logger(), "\033[1;31m" << "failed to listen TF: " << e.what() <<
+                "\033[0m");
 
-			auto pose = geometry_msgs::msg::TransformStamped();
-			pose.transform.rotation.w = 1.0;
+            auto pose = geometry_msgs::msg::TransformStamped();
+            pose.transform.rotation.w = 1.0;
             return pose;
         }
     }

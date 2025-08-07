@@ -12,6 +12,7 @@ All text above must be included in any redistribution.
 
 ******************************************************************/
 #include "whi_rviz_plugins/panel_map_saver.h"
+
 #include <nav_msgs/srv/get_map.hpp>
 #include "rviz_common/visualization_manager.hpp"
 

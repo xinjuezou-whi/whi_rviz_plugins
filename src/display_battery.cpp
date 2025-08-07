@@ -18,7 +18,6 @@ All text above must be included in any redistribution.
 #include <OGRE/OgreSceneManager.h>
 
 #include <rviz_common/window_manager_interface.hpp>
-// #include <rviz/visualization_manager.h>
 #include <rviz_common/properties/color_property.hpp>
 #include <rviz_common/properties/float_property.hpp>
 #include <rviz_common/properties/int_property.hpp>
