@@ -63,4 +63,11 @@
       2D line chart
     </description>
   </class>
+  <class name="whi_rviz_plugins/TF"
+         type="whi_rviz_plugins::TFDisplay"
+         base_class_type="rviz_common::Display">
+    <description>
+      Displays the TF transform hierarchy
+    </description>
+  </class>
 </library>
