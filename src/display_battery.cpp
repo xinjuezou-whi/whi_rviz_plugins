@@ -14,8 +14,8 @@ All text above must be included in any redistribution.
 #include "whi_rviz_plugins/display_battery.h"
 #include "whi_rviz_plugins/battery_visual.h"
 
-#include <OGRE/OgreSceneNode.h>
-#include <OGRE/OgreSceneManager.h>
+#include <OgreSceneNode.h>
+#include <OgreSceneManager.h>
 
 #include <rviz_common/window_manager_interface.hpp>
 #include <rviz_common/properties/color_property.hpp>
