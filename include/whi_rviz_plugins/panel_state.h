@@ -81,5 +81,6 @@ namespace whi_rviz_plugins
 		rclcpp::Time last_updated_rc_;
 		std::unique_ptr<rclcpp::Time> last_updated_arm_{ nullptr };
 		int estop_init_height_{ 50 };
+		rclcpp::Clock system_clock_{RCL_SYSTEM_TIME};
 	};
 } // end namespace whi_rviz_plugins

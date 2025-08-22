@@ -25,6 +25,7 @@ Changelog:
 #include <whi_interfaces/msg/whi_temperature_humidity.hpp>
 
 #include <rviz_common/display.hpp>
+#include <rviz_common/ros_integration/ros_node_abstraction_iface.hpp>
 #include <rviz_common/panel_dock_widget.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <sensor_msgs/msg/imu.hpp>
@@ -78,22 +79,13 @@ namespace whi_rviz_plugins
 
 	private Q_SLOTS:
 		// these Qt slots get connected to signals indicating changes in the user-editable properties
-		void updateOdomTopic();
-		void updateGoalTopic();
-		void updateMotionStateTopic();
-		void updateBatteryTopic();
-		void updateRcStateTopic();
-		void updateArmStateTopic();
-		void updateImuTopic();
-		void updateEstopTopic();
-		void updateTempHumTopic();
         void updateBaselinkFrame();
 
 	private:
 		rviz_common::PanelDockWidget* frame_dock_{ nullptr };
 		StatePanel* panel_{ nullptr };
 
-        std::shared_ptr<rclcpp::Node> node_handle_{ nullptr };
+        rclcpp::Node::SharedPtr node_handle_{ nullptr };
         rclcpp::TimerBase::SharedPtr non_realtime_loop_{ nullptr };
 
 		// user-editable property variables

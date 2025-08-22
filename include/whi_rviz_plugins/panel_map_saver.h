@@ -18,7 +18,8 @@ Changelog:
 #pragma once
 #include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
-#include "rviz_common/panel.hpp"
+#include <rviz_common/panel.hpp>
+#include <rviz_common/ros_integration/ros_node_abstraction_iface.hpp>
 
 #include <string>
 #include <memory>
@@ -32,6 +33,9 @@ namespace whi_rviz_plugins
         MapSaverPanel(QWidget* Parent = nullptr);
         ~MapSaverPanel() = default;
 
+    public:
+        void onInitialize() override;
+
     private:
 		void initLayout();
         bool mapServerValid();
@@ -39,8 +43,8 @@ namespace whi_rviz_plugins
         void subCallbackMap(const nav_msgs::msg::OccupancyGrid::SharedPtr Msg);
 
     private:
+        rclcpp::Node::SharedPtr node_handle_{ nullptr };
         rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_{ nullptr };
-        std::unique_ptr<rclcpp::Node> node_handle_{ nullptr };
         rclcpp::Time map_received_{ 0 };
     };
 } // end namespace whi_rviz_plugins

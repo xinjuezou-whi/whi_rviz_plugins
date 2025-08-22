@@ -197,9 +197,9 @@ namespace whi_rviz_plugins
     {
         if (!non_realtime_loop_)
         {
-            auto updateFreq = std::chrono::milliseconds(200);
+            auto period = std::chrono::milliseconds(200);
             non_realtime_loop_ = node_handle_->create_wall_timer(
-                updateFreq, std::bind(&StatePanel::update, this));  
+                period, std::bind(&StatePanel::update, this));  
         }
 
         if (State->state == whi_interfaces::msg::WhiRcState::STA_AUTO)
@@ -213,7 +213,7 @@ namespace whi_rviz_plugins
             setIndicatorText(ui_->label_indicator_cap_2, "remote");
         }
 
-        last_updated_rc_ = node_handle_->get_clock()->now();
+        last_updated_rc_ = system_clock_.now();
     }
 
     void StatePanel::setArmState(const whi_interfaces::msg::WhiMotionState::SharedPtr State)
@@ -238,11 +238,11 @@ namespace whi_rviz_plugins
 
             if (last_updated_arm_ == nullptr)
             {
-                last_updated_arm_ = std::make_unique<rclcpp::Time>(node_handle_->get_clock()->now());
+                last_updated_arm_ = std::make_unique<rclcpp::Time>(system_clock_.now());
             }
             else
             {
-                *last_updated_arm_ = node_handle_->get_clock()->now();
+                *last_updated_arm_ = system_clock_.now();
             }
         }
         else
@@ -264,7 +264,7 @@ namespace whi_rviz_plugins
         setIndicatorIcon(ui_->label_indicator_5, INDICATOR_GREEN);
         setIndicatorText(ui_->label_indicator_cap_5, "IMU");
 
-        last_updated_imu_ = node_handle_->get_clock()->now();
+        last_updated_imu_ = system_clock_.now();
     }
 
     void StatePanel::setRcStateTopic(const std::string& Topic)
@@ -536,7 +536,7 @@ namespace whi_rviz_plugins
 
     void StatePanel::update()
     {
-        auto current = node_handle_->get_clock()->now();
+        auto current = system_clock_.now();
 
         if ((current - last_updated_imu_).seconds() > 2.0)
         {

@@ -30,12 +30,20 @@ namespace whi_rviz_plugins
     MapSaverPanel::MapSaverPanel(QWidget* Parent/* = nullptr*/)
         : rviz_common::Panel(Parent)
     {
-        std::cout << "\nWHI RViz plugin for saving map VERSION 02.02.0" << std::endl;
+        std::cout << "\nWHI RViz plugin for saving map VERSION 02.02.2" << std::endl;
         std::cout << "Copyright @ 2022-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         initLayout();
+    }
 
-        node_handle_ = std::make_unique<rclcpp::Node>("MapSaverPanel");
+    void MapSaverPanel::onInitialize()
+    {
+        // Access the abstract ROS Node and
+        // in the process lock it for exclusive use until the method is done.
+        // Get a pointer to the familiar rclcpp::Node for making subscriptions/publishers
+        // (as per normal rclcpp code)
+        node_handle_ = getDisplayContext()->getRosNodeAbstraction().lock()->get_raw_node();
+
         map_sub_ = node_handle_->create_subscription<nav_msgs::msg::OccupancyGrid>(
 	        "map", 10, std::bind(&MapSaverPanel::subCallbackMap, this, std::placeholders::_1));
         map_received_ = node_handle_->get_clock()->now();
@@ -67,7 +75,7 @@ namespace whi_rviz_plugins
         layoutMain->addLayout(hBox);
 
         // signal
-        connect(buttonSave, &QPushButton::clicked, this, [=]()
+        connect(buttonSave, &QPushButton::clicked, this, [&]()
         {
             rclcpp::Duration duration = node_handle_->get_clock()->now() - map_received_;
             if (duration.seconds() < 5)

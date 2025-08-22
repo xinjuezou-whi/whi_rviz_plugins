@@ -155,7 +155,7 @@ namespace whi_rviz_plugins
 
     void DisplayTeleop::updateSwEstopTopic()
     {
-        // panel_->setSwEstopTopic(sw_estop_topic_property_->getTopicStd());
+        panel_->setSwEstopTopic(sw_estop_topic_property_->getTopicStd());
     }
 
     void DisplayTeleop::updateRcStateTopic()
