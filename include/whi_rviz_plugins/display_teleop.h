@@ -73,6 +73,8 @@ namespace whi_rviz_plugins
         rviz_common::PanelDockWidget* frame_dock_{ nullptr };
         TeleopPanel* panel_{ nullptr };
 
+		std::shared_ptr<rclcpp::Node> node_handle_{ nullptr };
+
 		// user-editable property variables
 		rviz_common::properties::BoolProperty* enable_property_;
 		rviz_common::properties::FloatProperty* pub_frequency_property_;

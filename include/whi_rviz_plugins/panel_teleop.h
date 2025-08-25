@@ -40,7 +40,7 @@ namespace whi_rviz_plugins
 	{
 		Q_OBJECT
 	public:
-		TeleopPanel(QWidget* Parent = nullptr);
+		TeleopPanel(std::shared_ptr<rclcpp::Node> Node, QWidget* Parent = nullptr);
 		~TeleopPanel() override;
 
 	public:
@@ -79,7 +79,7 @@ namespace whi_rviz_plugins
 		int interval_toggle_{ 500 };
 		int interval_pub_{ 200 };
 		bool toggle_publishing_{ true };
-		std::unique_ptr<rclcpp::Node> node_handle_{ nullptr };
+		std::shared_ptr<rclcpp::Node> node_handle_{ nullptr };
 		rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_twist_unstamped_{ nullptr };
 		using Twist = geometry_msgs::msg::TwistStamped;
 		rclcpp::Publisher<Twist>::SharedPtr pub_twist_{ nullptr };

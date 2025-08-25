@@ -34,9 +34,9 @@ namespace whi_rviz_plugins
         return out.str();
     }
 
-    TeleopPanel::TeleopPanel(QWidget* Parent/* = nullptr*/)
+    TeleopPanel::TeleopPanel(std::shared_ptr<rclcpp::Node> Node, QWidget* Parent/* = nullptr*/)
 		: QWidget(Parent), ui_(new Ui::NaviTeleop())
-        , node_handle_(std::make_unique<rclcpp::Node>("TeleopPanel"))
+        , node_handle_(Node)
 	{
 		// set up the GUI
 		ui_->setupUi(this);
