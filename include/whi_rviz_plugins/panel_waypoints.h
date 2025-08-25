@@ -49,7 +49,7 @@ namespace whi_rviz_plugins
 	{
 		Q_OBJECT
 	public:
-		WaypointsPanel(VisualizeWaypoints FuncWaypoints, VisualizeEta FuncEta,
+		WaypointsPanel(std::shared_ptr<rclcpp::Node> Node, VisualizeWaypoints FuncWaypoints, VisualizeEta FuncEta,
 			/*rviz::VisualizationManager* VisualManager,*/ QWidget* Parent = nullptr);
 		~WaypointsPanel() override;
 

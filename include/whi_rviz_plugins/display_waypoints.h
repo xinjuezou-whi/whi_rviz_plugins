@@ -36,9 +36,7 @@ namespace rviz_common
         class BoolProperty;
         class EnumProperty;
         class TfFrameProperty;
-        class StringProperty;
         class IntProperty;
-        class FrameManager;
         class MovableText;
         class RosTopicProperty;
     }
@@ -79,11 +77,10 @@ namespace whi_rviz_plugins
         void updateStuckTimeout();
         void updateRecoveryMaxTryCount();
         void updateTolerance();
-        void updateMotionStateTopic();
-        void updateSwEstopTopic();
-        void updateRcStateTopic();
 
     private:
+        std::shared_ptr<rclcpp::Node> node_handle_{ nullptr };
+
 		// dock and panel
 		rviz_common::PanelDockWidget* frame_dock_{ nullptr };
         WaypointsPanel* panel_{ nullptr };
@@ -99,8 +96,7 @@ namespace whi_rviz_plugins
         rviz_common::properties::FloatProperty* font_size_property_;
         rviz_common::properties::ColorProperty* font_color_property_;
         rviz_common::properties::EnumProperty* mode_property_;
-        // rviz_common::properties::TfFrameProperty* frame_property_;
-        rviz_common::properties::StringProperty* tmp_frame_property_;
+        rviz_common::properties::TfFrameProperty* frame_property_;
         rviz_common::properties::FloatProperty* stuck_timeout_property_;
         rviz_common::properties::IntProperty* recovery_max_try_count_property_;
         rviz_common::properties::FloatProperty* xy_goal_tolerance_property_;

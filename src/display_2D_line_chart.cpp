@@ -29,7 +29,7 @@ namespace whi_rviz_plugins
         std::cout << "Copyright @ 2024-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         data_topic_property_ = new rviz_common::properties::RosTopicProperty("Data topic", "line_data_2D",
-            "whi_interfaces/WhiLineChart2D", "Topic of 2D data", this);
+            "whi_interfaces/msg/WhiLineChart2D", "Topic of 2D data", this);
         max_data_length_property_ = new rviz_common::properties::IntProperty("Max data length", 100,
             "Maxium data length that recoreded for plotting", this, SLOT(updateMaxDataLength()));
         max_data_length_property_->setMin(1);

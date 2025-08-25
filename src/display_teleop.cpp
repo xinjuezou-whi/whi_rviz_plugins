@@ -56,11 +56,11 @@ namespace whi_rviz_plugins
             this, SLOT(updateAngularStep()));
         angular_step_->setMin(0.01);
         motion_state_topic_property_ = new rviz_common::properties::RosTopicProperty("Motion state topic", "motion_state",
-            "whi_interfaces/WhiMotionState", "Topic of motion state", this);
+            "whi_interfaces/msg/WhiMotionState", "Topic of motion state", this);
         sw_estop_topic_property_ = new rviz_common::properties::RosTopicProperty("Software EStop topic", "estop",
-            "std_msgs/Bool", "Topic of software EStop", this);
+            "std_msgs/msg/Bool", "Topic of software EStop", this);
         rc_state_topic_property_ = new rviz_common::properties::RosTopicProperty("Remote controller state topic", "rc_state",
-            "whi_interfaces/WhiRcState", "Topic of remote controller state", this);
+            "whi_interfaces/msg/WhiRcState", "Topic of remote controller state", this);
     }
 
     DisplayTeleop::~DisplayTeleop()

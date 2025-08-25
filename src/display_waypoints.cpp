@@ -36,7 +36,7 @@ namespace whi_rviz_plugins
     WaypointsDisplay::WaypointsDisplay()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 02.30.1" << std::endl;
+        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 02.30.2" << std::endl;
         std::cout << "Copyright @ 2022-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         use_stamped_vel_bool_property_ = new rviz_common::properties::BoolProperty("Whether to use stamped twist", true,
@@ -69,15 +69,13 @@ namespace whi_rviz_plugins
         yaw_goal_tolerance_property_ = new rviz_common::properties::FloatProperty("Goal yaw tolerance", 0.15,
             "yaw tolerance of goal", this, SLOT(updateTolerance()));
         motion_state_topic_property_ = new rviz_common::properties::RosTopicProperty("Motion state topic", "motion_state",
-            "whi_interfaces/WhiMotionState", "Topic of motion state", this, SLOT(updateMotionStateTopic()));
+            "whi_interfaces/msg/WhiMotionState", "Topic of motion state", this);
         sw_estop_topic_property_ = new rviz_common::properties::RosTopicProperty("Software EStop topic", "estop",
-            "std_msgs/Bool", "Topic of software EStop", this, SLOT(updateSwEstopTopic()));
+            "std_msgs/msg/Bool", "Topic of software EStop", this);
         rc_state_topic_property_ = new rviz_common::properties::RosTopicProperty("Remote controller state topic", "rc_state",
-            "whi_interfaces/WhiRcState", "Topic of remote controller state", this, SLOT(updateRcStateTopic()));
-        // frame_property_ = new rviz_common::properties::TfFrameProperty("base_frame", "base_link", "Base link frame of robot",
-        //     this, nullptr, false, SLOT(updateBaselinkFrame()));
-        tmp_frame_property_ = new rviz_common::properties::StringProperty("base_frame", "base_link", "Base link frame of robot",
-            this, SLOT(updateBaselinkFrame()));
+            "whi_interfaces/msg/WhiRcState", "Topic of remote controller state", this);
+        frame_property_ = new rviz_common::properties::TfFrameProperty("base_frame", "base_link", "Base link frame of robot",
+            this, nullptr, false, SLOT(updateBaselinkFrame()));
     }
 
     WaypointsDisplay::~WaypointsDisplay()
@@ -89,12 +87,43 @@ namespace whi_rviz_plugins
     {
         Display::onInitialize();
 
-        // frame_property_->setFrameManager(context_->getFrameManager());
+        // Access the abstract ROS Node and
+        // in the process lock it for exclusive use until the method is done.
+        // Get a pointer to the familiar rclcpp::Node for making subscriptions/publishers
+        // (as per normal rclcpp code)
+        node_handle_ = context_->getRosNodeAbstraction().lock()->get_raw_node();
+
+        motion_state_topic_property_->initialize(context_->getRosNodeAbstraction());
+        connect(motion_state_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
+        {
+            if (initialized())
+            {
+                panel_->setMotionStateTopic(motion_state_topic_property_->getTopicStd());
+            }
+        });
+        sw_estop_topic_property_->initialize(context_->getRosNodeAbstraction());
+        connect(sw_estop_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
+        {
+            if (initialized())
+            {
+                panel_->setSwEstopTopic(sw_estop_topic_property_->getTopicStd());
+            }
+        });
+        rc_state_topic_property_->initialize(context_->getRosNodeAbstraction());
+        connect(rc_state_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
+        {
+            if (initialized())
+            {
+                panel_->setRcStateTopic(rc_state_topic_property_->getTopicStd());
+            }
+        });
+
+        frame_property_->setFrameManager(context_->getFrameManager());
 
         rviz_common::WindowManagerInterface* windowContext = context_->getWindowManager();
         if (windowContext)
         {
-            panel_ = new WaypointsPanel(
+            panel_ = new WaypointsPanel(node_handle_,
                 std::bind(&WaypointsDisplay::visualizeWaypointsLocations, this, std::placeholders::_1, std::placeholders::_2),
                 std::bind(&WaypointsDisplay::visualEta, this, std::placeholders::_1, std::placeholders::_2)/*,
                 ((rviz::VisualizationFrame*)windowContext)->getManager()*/);
@@ -124,9 +153,6 @@ namespace whi_rviz_plugins
         updateStuckTimeout();
         updateRecoveryMaxTryCount();
         updateTolerance();
-        updateMotionStateTopic();
-        updateSwEstopTopic();
-        updateRcStateTopic();
     }
 
     void WaypointsDisplay::clearWaypointsLocationsDisplay()
@@ -265,8 +291,7 @@ namespace whi_rviz_plugins
 
     void WaypointsDisplay::updateBaselinkFrame()
     {
-        // panel_->setBaselinkFrame(frame_property_->getFrameStd());
-        panel_->setBaselinkFrame(tmp_frame_property_->getString().toStdString());
+        panel_->setBaselinkFrame(frame_property_->getFrameStd());
     }
 
     void WaypointsDisplay::updateStuckTimeout()
@@ -283,21 +308,6 @@ namespace whi_rviz_plugins
     {
         panel_->setTolerance(xy_goal_tolerance_property_->getFloat(),
             yaw_goal_tolerance_property_->getFloat());
-    }
-
-    void WaypointsDisplay::updateMotionStateTopic()
-    {
-        panel_->setMotionStateTopic(motion_state_topic_property_->getTopicStd());
-    }
-
-    void WaypointsDisplay::updateSwEstopTopic()
-    {
-        panel_->setSwEstopTopic(sw_estop_topic_property_->getTopicStd());
-    }
-
-    void WaypointsDisplay::updateRcStateTopic()
-    {
-        panel_->setRcStateTopic(rc_state_topic_property_->getTopicStd());
     }
 } // end namespace whi_rviz_plugins
 
