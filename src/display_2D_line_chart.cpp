@@ -25,12 +25,11 @@ namespace whi_rviz_plugins
     Display2DLineChart::Display2DLineChart()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for 2D line chart VERSION 02.02.1" << std::endl;
+        std::cout << "\nWHI RViz plugin for 2D line chart VERSION 02.02.2" << std::endl;
         std::cout << "Copyright @ 2024-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         data_topic_property_ = new rviz_common::properties::RosTopicProperty("Data topic", "line_data_2D",
-            "whi_interfaces/WhiLineChart2D", "Topic of 2D data",
-            this, SLOT(updateDataTopic()));
+            "whi_interfaces/WhiLineChart2D", "Topic of 2D data", this);
         max_data_length_property_ = new rviz_common::properties::IntProperty("Max data length", 100,
             "Maxium data length that recoreded for plotting", this, SLOT(updateMaxDataLength()));
         max_data_length_property_->setMin(1);
@@ -59,7 +58,22 @@ namespace whi_rviz_plugins
     {
         Display::onInitialize();
 
-        panel_ = new LineChart2DPanel();
+        // Access the abstract ROS Node and
+        // in the process lock it for exclusive use until the method is done.
+        // Get a pointer to the familiar rclcpp::Node for making subscriptions/publishers
+        // (as per normal rclcpp code)
+        node_handle_ = context_->getRosNodeAbstraction().lock()->get_raw_node();
+
+        data_topic_property_->initialize(context_->getRosNodeAbstraction());
+        connect(data_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
+        {
+            if (initialized())
+            {
+                panel_->setDataTopic(data_topic_property_->getTopicStd());
+            }
+        });
+
+        panel_ = new LineChart2DPanel(node_handle_);
         rviz_common::WindowManagerInterface* windowContext = context_->getWindowManager();
         if (windowContext)
         {
@@ -67,7 +81,6 @@ namespace whi_rviz_plugins
             frame_dock_->setIcon(getIcon()); // set the image name as same as the name of plugin
         }
 
-        updateDataTopic();
         updateMaxDataLength();
 		updateGridDataSize();
 		updateGridMajorSize();
@@ -76,11 +89,6 @@ namespace whi_rviz_plugins
 		updateMajorColor();
 		updateMinorColor();
 		updateCanvasColor();
-    }
-
-    void Display2DLineChart::updateDataTopic()
-    {
-        panel_->setDataTopic(data_topic_property_->getTopicStd());
     }
 
     void Display2DLineChart::updateMaxDataLength()

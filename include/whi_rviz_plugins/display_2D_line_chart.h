@@ -55,7 +55,6 @@ namespace whi_rviz_plugins
 
 	private Q_SLOTS:
 		// these Qt slots get connected to signals indicating changes in the user-editable properties
-		void updateDataTopic();
 		void updateMaxDataLength();
 		void updateGridDataSize();
 		void updateGridMajorSize();
@@ -66,6 +65,8 @@ namespace whi_rviz_plugins
 		void updateCanvasColor();
 
 	private:
+		rclcpp::Node::SharedPtr node_handle_{ nullptr };
+
         rviz_common::PanelDockWidget* frame_dock_{ nullptr };
         LineChart2DPanel* panel_{ nullptr };
 

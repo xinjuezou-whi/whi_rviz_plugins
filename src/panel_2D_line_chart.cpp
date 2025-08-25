@@ -130,9 +130,9 @@ namespace whi_rviz_plugins
     }
 
 
-    LineChart2DPanel::LineChart2DPanel(QWidget* Parent/* = nullptr*/)
+    LineChart2DPanel::LineChart2DPanel(std::shared_ptr<rclcpp::Node> Node, QWidget* Parent/* = nullptr*/)
 		: QWidget(Parent), ui_(new Ui::LineChart2D())
-        , node_handle_(std::make_unique<rclcpp::Node>("LineChart2DPanel"))
+        , node_handle_(Node)
 	{
 		// set up the GUI
 		ui_->setupUi(this);

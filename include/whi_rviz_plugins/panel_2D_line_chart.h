@@ -83,7 +83,7 @@ namespace whi_rviz_plugins
 	{
 		Q_OBJECT
 	public:
-		LineChart2DPanel(QWidget* Parent = nullptr);
+		LineChart2DPanel(std::shared_ptr<rclcpp::Node> Node, QWidget* Parent = nullptr);
 		~LineChart2DPanel() override;
 
 	public:
@@ -107,7 +107,7 @@ namespace whi_rviz_plugins
 		Ui::LineChart2D* ui_{ nullptr };
 		QwtPlotCurve* curve_{ nullptr };
 		QwtPlotGrid* grid_{ nullptr };
-		std::unique_ptr<rclcpp::Node> node_handle_{ nullptr };
+		std::shared_ptr<rclcpp::Node> node_handle_{ nullptr };
 		rclcpp::Subscription<whi_interfaces::msg::WhiLineChart2D>::SharedPtr sub_data_{ nullptr };
 		std::map<std::string, TimeSeriesData> chart_map_;
 		int max_data_length_{ 100 };
