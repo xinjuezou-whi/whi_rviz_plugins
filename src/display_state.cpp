@@ -15,6 +15,7 @@ All text above must be included in any redistribution.
 ******************************************************************/
 #include "whi_rviz_plugins/display_state.h"
 
+#include <rviz_common/ros_integration/ros_node_abstraction_iface.hpp>
 #include <rviz_common/window_manager_interface.hpp>
 #include <rviz_common/display_context.hpp>
 #include <rviz_common/properties/ros_topic_property.hpp>

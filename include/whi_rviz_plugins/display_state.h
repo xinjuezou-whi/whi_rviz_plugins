@@ -25,7 +25,6 @@ Changelog:
 #include <whi_interfaces/msg/whi_temperature_humidity.hpp>
 
 #include <rviz_common/display.hpp>
-#include <rviz_common/ros_integration/ros_node_abstraction_iface.hpp>
 #include <rviz_common/panel_dock_widget.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <sensor_msgs/msg/imu.hpp>

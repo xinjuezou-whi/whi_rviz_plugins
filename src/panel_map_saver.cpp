@@ -13,8 +13,9 @@ All text above must be included in any redistribution.
 ******************************************************************/
 #include "whi_rviz_plugins/panel_map_saver.h"
 
+#include <rviz_common/ros_integration/ros_node_abstraction_iface.hpp>
+#include <rviz_common/visualization_manager.hpp>
 #include <nav_msgs/srv/get_map.hpp>
-#include "rviz_common/visualization_manager.hpp"
 
 #include <iostream>
 #include <QVBoxLayout>

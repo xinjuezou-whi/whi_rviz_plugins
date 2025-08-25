@@ -19,7 +19,6 @@ Changelog:
 #include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <rviz_common/panel.hpp>
-#include <rviz_common/ros_integration/ros_node_abstraction_iface.hpp>
 
 #include <string>
 #include <memory>

@@ -108,12 +108,14 @@ qt5_wrap_cpp(MOC_FILES
   include/${PROJECT_NAME}/display_video_stream.h
   include/${PROJECT_NAME}/display_waypoints.h
   include/${PROJECT_NAME}/display_tf.h
+  include/${PROJECT_NAME}/display_robot_model_viewer.h
   include/${PROJECT_NAME}/panel_2D_line_chart.h
   include/${PROJECT_NAME}/panel_battery.h
   include/${PROJECT_NAME}/panel_map_saver.h
   include/${PROJECT_NAME}/panel_state.h
   include/${PROJECT_NAME}/panel_teleop.h
   include/${PROJECT_NAME}/panel_waypoints.h
+  include/${PROJECT_NAME}/panel_robot_model_viewer.h
   include/${PROJECT_NAME}/frame_info.h
   include/${PROJECT_NAME}/widget_twist.h
   )
