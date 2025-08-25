@@ -20,9 +20,9 @@ All text above must be included in any redistribution.
 
 namespace whi_rviz_plugins
 {
-    BatteryPanel::BatteryPanel(QWidget* Parent/* = nullptr*/)
+    BatteryPanel::BatteryPanel(std::shared_ptr<rclcpp::Node> Node, QWidget* Parent/* = nullptr*/)
 		: QWidget(Parent), ui_(new Ui::NaviBattery())
-        , node_handle_(std::make_unique<rclcpp::Node>("BatteryPanel"))
+        , node_handle_(Node)
 	{
 		// set up the GUI
 		ui_->setupUi(this);

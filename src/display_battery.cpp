@@ -23,13 +23,13 @@ All text above must be included in any redistribution.
 #include <rviz_common/properties/int_property.hpp>
 #include <rviz_common/properties/vector_property.hpp>
 #include <rviz_common/properties/bool_property.hpp>
-#include <rviz_common/properties/string_property.hpp>
+#include <rviz_common/properties/ros_topic_property.hpp>
 
 namespace whi_rviz_plugins
 {
     DisplayBat::DisplayBat()
     {
-        std::cout << "\nWHI RViz plugin for battery VERSION 02.08.1" << std::endl;
+        std::cout << "\nWHI RViz plugin for battery VERSION 02.08.2" << std::endl;
         std::cout << "Copyright © 2022-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         color_red_ = std::make_shared<Ogre::ColourValue>(239.0 / 255.0, 41.0 / 255.0, 41.0 / 255.0);
@@ -61,8 +61,9 @@ namespace whi_rviz_plugins
 
         show_panel_property_ = new rviz_common::properties::BoolProperty("Show info panel", false, 
             "Toggle the show of info panel", this, SLOT(updateShowPanel()));
-        charging_state_topic_property_ = new rviz_common::properties::StringProperty("Charging state topic",
-            "charging_state", "Topic of charging state", this, SLOT(updateChargingStateTopic()));
+
+        charging_state_topic_property_ = new rviz_common::properties::RosTopicProperty("Charging state topic", "charging_state",
+            "std_msgs/msg/String", "Topic of charging state", this);
     }
 
     DisplayBat::~DisplayBat()
@@ -84,6 +85,22 @@ namespace whi_rviz_plugins
     void DisplayBat::onInitialize()
     {
         MFDClass::onInitialize();
+
+        // Access the abstract ROS Node and
+        // in the process lock it for exclusive use until the method is done.
+        // Get a pointer to the familiar rclcpp::Node for making subscriptions/publishers
+        // (as per normal rclcpp code)
+        node_handle_ = context_->getRosNodeAbstraction().lock()->get_raw_node();
+
+        charging_state_topic_property_->initialize(context_->getRosNodeAbstraction());
+        connect(charging_state_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
+        {
+            if (initialized())
+            {
+                panel_->setChargingStateTopic(charging_state_topic_property_->getString().toStdString());
+            }
+        });
+
         updateHistoryLength();
         updateShowPanel();
     }
@@ -141,7 +158,7 @@ namespace whi_rviz_plugins
     {
         if (show_panel_property_->getBool())
         {
-            panel_ = new BatteryPanel();
+            panel_ = new BatteryPanel(node_handle_);
             rviz_common::WindowManagerInterface* windowContext = context_->getWindowManager();
             if (windowContext)
             {
@@ -153,14 +170,6 @@ namespace whi_rviz_plugins
         {
             delete frame_dock_;
             frame_dock_ = nullptr;
-        }
-    }
-
-    void DisplayBat::updateChargingStateTopic()
-    {
-        if (panel_)
-        {
-            panel_->setChargingStateTopic(charging_state_topic_property_->getString().toStdString());
         }
     }
 

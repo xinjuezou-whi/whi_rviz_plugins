@@ -33,7 +33,7 @@ namespace whi_rviz_plugins
 	{
 		Q_OBJECT
 	public:
-		BatteryPanel(QWidget* Parent = nullptr);
+		BatteryPanel(std::shared_ptr<rclcpp::Node> Node, QWidget* Parent = nullptr);
 		~BatteryPanel() override;
 
 	public:
@@ -47,7 +47,7 @@ namespace whi_rviz_plugins
 
 	private:
 		Ui::NaviBattery* ui_{ nullptr };
-		std::unique_ptr<rclcpp::Node> node_handle_{ nullptr };
+		std::shared_ptr<rclcpp::Node> node_handle_{ nullptr };
 		rclcpp::Subscription<std_msgs::msg::String>::SharedPtr sub_charging_state_{ nullptr };
 	};
 } // end namespace whi_rviz_plugins

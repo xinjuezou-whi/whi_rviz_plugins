@@ -41,7 +41,7 @@ namespace rviz_common
 		class IntProperty;
 		class VectorProperty;
 		class BoolProperty;
-		class StringProperty;
+		class RosTopicProperty;
 	}
 }
 
@@ -85,13 +85,14 @@ namespace whi_rviz_plugins
 		void updateOffsets();
 		void updateOrientation();
 		void updateShowPanel();
-		void updateChargingStateTopic();
 
 	private:
 		// function to handle an incoming ROS message
 		void processMessage(const whi_interfaces::msg::WhiBattery::ConstSharedPtr Msg);
 
 	private:
+		rclcpp::Node::SharedPtr node_handle_{ nullptr };
+
 		// storage for the list of visuals. It is a circular buffer,
 		// where data gets popped from the front (oldest) and pushed to the back (newest)
 		boost::circular_buffer<std::shared_ptr<BatteryVisual>> visuals_;
@@ -107,7 +108,7 @@ namespace whi_rviz_plugins
 		std::shared_ptr<Ogre::ColourValue> color_red_{ nullptr };
 		// panel
 		rviz_common::properties::BoolProperty* show_panel_property_;
-		rviz_common::properties::StringProperty* charging_state_topic_property_;
+		rviz_common::properties::RosTopicProperty* charging_state_topic_property_;
 
 		// dock and panel
 		rviz_common::PanelDockWidget* frame_dock_{ nullptr };

@@ -65,9 +65,6 @@ namespace whi_rviz_plugins
 		void updateAngularMin();
 		void updateAngularMax();
 		void updateAngularStep();
-		void updateMotionStateTopic();
-		void updateSwEstopTopic();
-		void updateRcStateTopic();
 
 	private:
         rviz_common::PanelDockWidget* frame_dock_{ nullptr };
