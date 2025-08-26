@@ -50,7 +50,7 @@ namespace whi_rviz_plugins
 		Q_OBJECT
 	public:
 		WaypointsPanel(std::shared_ptr<rclcpp::Node> Node, VisualizeWaypoints FuncWaypoints, VisualizeEta FuncEta,
-			/*rviz::VisualizationManager* VisualManager,*/ QWidget* Parent = nullptr);
+			QWidget* Parent = nullptr);
 		~WaypointsPanel() override;
 
 	public:
@@ -128,6 +128,5 @@ namespace whi_rviz_plugins
 		std::atomic_bool toggle_estop_{ false };
 		std::atomic_bool toggle_collision_{ false };
 		std::atomic_bool remote_mode_{ false };
-		// rviz::VisualizationManager* visual_manager_;
 	};
 } // end namespace whi_rviz_plugins

@@ -31,8 +31,8 @@ All text above must be included in any redistribution.
 namespace whi_rviz_plugins
 {
 	WaypointsPanel::WaypointsPanel(std::shared_ptr<rclcpp::Node> Node, VisualizeWaypoints FuncWaypoints, VisualizeEta FuncEta,
-		/*rviz::VisualizationManager* VisualManager,*/ QWidget* Parent/* = nullptr*/)
-		: QWidget(Parent), ui_(new Ui::NaviWaypoints())/*, visual_manager_(VisualManager)*/
+		QWidget* Parent/* = nullptr*/)
+		: QWidget(Parent), ui_(new Ui::NaviWaypoints())
 		, func_visualize_waypoints_(FuncWaypoints), func_visualize_eta_(FuncEta)
 		, node_handle_(Node)
 	{
