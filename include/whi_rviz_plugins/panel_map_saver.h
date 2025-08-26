@@ -30,7 +30,7 @@ namespace whi_rviz_plugins
         Q_OBJECT
     public:
         MapSaverPanel(QWidget* Parent = nullptr);
-        ~MapSaverPanel() = default;
+        virtual ~MapSaverPanel() = default;
 
     public:
         void onInitialize() override;
@@ -38,7 +38,7 @@ namespace whi_rviz_plugins
     private:
 		void initLayout();
         bool mapServerValid();
-        void save(std::string File);
+        bool save(std::string File);
         void subCallbackMap(const nav_msgs::msg::OccupancyGrid::SharedPtr Msg);
 
     private:

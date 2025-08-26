@@ -62,9 +62,9 @@ namespace whi_rviz_plugins
 		Ui::NaviRobotModelViewer* ui_{ nullptr };
 		rviz_common::DisplayContext* display_context_{ nullptr };
 		Ogre::SceneNode* scene_node_{ nullptr };
-        rviz_common::VisualizationManager* manager_;
-        rviz_common::RenderPanel* render_panel_;
-        rviz_common::Display* grid_;
-		rviz_common::Display* robot_model_;
+        rviz_common::VisualizationManager* manager_{ nullptr };
+        rviz_common::RenderPanel* render_panel_{ nullptr };
+        rviz_common::Display* grid_{ nullptr };
+		rviz_common::Display* robot_model_{ nullptr };
 	};
 } // end namespace whi_rviz_plugins

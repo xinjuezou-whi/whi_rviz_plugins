@@ -14,10 +14,11 @@ All text above must be included in any redistribution.
 #include "whi_rviz_plugins/panel_map_saver.h"
 
 #include <rviz_common/ros_integration/ros_node_abstraction_iface.hpp>
+#include <rviz_common/render_panel.hpp>
+#include <rviz_rendering/render_window.hpp>
 #include <rviz_common/visualization_manager.hpp>
 #include <nav_msgs/srv/get_map.hpp>
 
-#include <iostream>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QPushButton>
@@ -26,12 +27,50 @@ All text above must be included in any redistribution.
 #include <QFileDialog>
 #include <QMessageBox>
 
+#include <iostream>
+#include <algorithm>
+
 namespace whi_rviz_plugins
 {
+    static std::vector<std::string> pipeExecute(const char* Cmd)
+    {
+        std::vector<std::string> results;
+
+        const size_t BUF_LEN = 512;
+        char buf[BUF_LEN] = {0};
+
+        // Force line-buffered output and capture stderr too
+        std::string fullCmd = std::string("stdbuf -oL ") + Cmd + " 2>&1";
+
+        FILE* pipe = popen(fullCmd.c_str(), "r");
+        if (!pipe)
+        {
+            perror("popen failed");
+            return results;
+        }
+
+        while (fgets(buf, BUF_LEN, pipe) != NULL)
+        {
+            std::string line(buf);
+
+            // remove trailing newline safely
+            if (!line.empty() && line.back() == '\n')
+            {
+                line.pop_back();
+            }
+
+            std::cout << "pipe read line: " << line << std::endl;
+            results.push_back(line);
+        }
+        pclose(pipe);
+
+        return results;
+    }
+
     MapSaverPanel::MapSaverPanel(QWidget* Parent/* = nullptr*/)
         : rviz_common::Panel(Parent)
     {
-        std::cout << "\nWHI RViz plugin for saving map VERSION 02.02.2" << std::endl;
+        std::cout << "\nWHI RViz plugin for saving map VERSION 02.02.3" << std::endl;
         std::cout << "Copyright @ 2022-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         initLayout();
@@ -76,36 +115,80 @@ namespace whi_rviz_plugins
         layoutMain->addLayout(hBox);
 
         // signal
-        connect(buttonSave, &QPushButton::clicked, this, [&]()
+        connect(buttonSave, &QPushButton::clicked, this, [=]()
         {
             rclcpp::Duration duration = node_handle_->get_clock()->now() - map_received_;
             if (duration.seconds() < 5)
             {
-                // vis_manager_->stopUpdate();
-                QString fileName = QFileDialog::getSaveFileName(this, tr("Save map"),
-                    "/home/whi/untitled", tr("Map Files (*.pgm *.yaml)"));
-			    // vis_manager_->startUpdate();
-                if (!fileName.isEmpty())
-			    {
-                    if (fileName.contains(".pgm"))
+                // Create a QFileDialog object
+                QFileDialog dialog(this);
+                // Use the non-native dialog option to avoid blocking the main thread
+                dialog.setOption(QFileDialog::DontUseNativeDialog);
+                dialog.setAcceptMode(QFileDialog::AcceptSave);
+                // Set any other options, like filters or the file mode
+                dialog.setNameFilter("Map Files (*.pgm *.yaml)");
+                dialog.setFileMode(QFileDialog::AnyFile);
+                // Open the dialog. exec() is blocking, but because it's non-native,
+                // it doesn't freeze the entire application.
+                if (dialog.exec())
+                {
+                    QStringList selectedFiles = dialog.selectedFiles();
+                    if (!selectedFiles.isEmpty())
                     {
-                        fileName = fileName.remove(".pgm");
+                        if (selectedFiles.first().contains(".pgm"))
+                        {
+                            selectedFiles.first() = selectedFiles.first().remove(".pgm");
+                        }
+                        if (selectedFiles.first().contains(".yaml"))
+                        {
+                            selectedFiles.first() = selectedFiles.first().remove(".yaml");
+                        }
+                        if (save(selectedFiles.first().toStdString()))
+                        {
+                            labelSaved->setText(selectedFiles.first());
+                        }
+                        else
+                        {
+                            QMessageBox::critical(this, tr("Error"), tr("Failed to save map"));
+                        }
                     }
-                    if (fileName.contains(".yaml"))
-                    {
-                        fileName = fileName.remove(".yaml");
-                    }
-
-                    save(fileName.toStdString());
-                    labelSaved->setText(fileName);
-			    }
+                }
             }
             else
             {
-                QMessageBox::information(this, tr("Info"),
+                QMessageBox::warning(this, tr("Info"),
                 tr("There is no published map.\n"
                    "Please start mapping function first"));
             }
+
+            // rclcpp::Duration duration = node_handle_->get_clock()->now() - map_received_;
+            // if (duration.seconds() < 5)
+            // {
+            //     // manager_->stopUpdate();
+            //     QString fileName = QFileDialog::getSaveFileName(this, tr("Save map"),
+            //         "/home/whi/untitled", tr("Map Files (*.pgm *.yaml)"));
+			//     // manager_->startUpdate();
+            //     if (!fileName.isEmpty())
+			//     {
+            //         if (fileName.contains(".pgm"))
+            //         {
+            //             fileName = fileName.remove(".pgm");
+            //         }
+            //         if (fileName.contains(".yaml"))
+            //         {
+            //             fileName = fileName.remove(".yaml");
+            //         }
+
+            //         save(fileName.toStdString());
+            //         labelSaved->setText(fileName);
+			//     }
+            // }
+            // else
+            // {
+            //     QMessageBox::information(this, tr("Info"),
+            //     tr("There is no published map.\n"
+            //        "Please start mapping function first"));
+            // }
         });
     }
 
@@ -118,16 +201,22 @@ namespace whi_rviz_plugins
         }
         else
         {
-            QMessageBox::information(this, tr("Info"),
+            QMessageBox::warning(this, tr("Info"),
                 tr("There is no active map_server.\n"
                    "Please start map_server first"));
             return false;
         }
     }
 
-    void MapSaverPanel::save(std::string File)
+    bool MapSaverPanel::save(std::string File)
     {
-        system((std::string("ros2 run nav2_map_server map_saver_cli -f ") + File).c_str());
+        auto res = pipeExecute((std::string("ros2 run nav2_map_server map_saver_cli -f ") + File).c_str());
+        const auto it = std::find_if(res.begin(), res.end(), [](const std::string Item)
+        {
+            return Item.find("Failed to save the map") != std::string::npos;
+        });
+
+        return it == res.end();
     }
 
     void MapSaverPanel::subCallbackMap(const nav_msgs::msg::OccupancyGrid::SharedPtr Msg)
