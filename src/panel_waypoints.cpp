@@ -80,28 +80,50 @@ namespace whi_rviz_plugins
     	connect(ui_->tableWidget_waypoints, &QTableWidget::currentCellChanged, this, [=](int Row, int Column) { visualizeWaypoints(Row); });
 		connect(ui_->pushButton_load, &QPushButton::clicked, this, [=]()
 		{
-			// visual_manager_->stopUpdate();
-			QString fileName = QFileDialog::getOpenFileName(this, tr("Open Waypoints"), "/home/whi", tr("Waypoints Files (*.yaml)"));
-			// visual_manager_->startUpdate();
-			if (!fileName.isNull())
+			// Create a QFileDialog object
+			QFileDialog dialog(this);
+			// Use the non-native dialog option to avoid blocking the main thread
+			dialog.setOption(QFileDialog::DontUseNativeDialog);
+			dialog.setAcceptMode(QFileDialog::AcceptOpen);
+			// Set any other options, like filters or the file mode
+			dialog.setNameFilter("Waypoints Files (*.yaml)");
+			dialog.setFileMode(QFileDialog::ExistingFile);
+			// Open the dialog. exec() is blocking, but because it's non-native,
+			// it doesn't freeze the entire application.
+			if (dialog.exec())
 			{
-				loadWaypointsNs(fileName.toStdString());
+				QStringList selectedFiles = dialog.selectedFiles();
+				if (!selectedFiles.isEmpty())
+				{
+					loadWaypointsNs(selectedFiles.first().toStdString());
+				}
 			}
 		});
 		connect(ui_->pushButton_save, &QPushButton::clicked, this, [=]()
 		{
 			if (ui_->tableWidget_waypoints->rowCount() > 0)
 			{
-				// visual_manager_->stopUpdate();
-				QString fileName = QFileDialog::getSaveFileName(this, tr("Save Waypoints"), "/home/whi/untitled.yaml", tr("Waypoints Files (*.yaml)"));
-				// visual_manager_->startUpdate();
-				if (!fileName.isNull())
-				{
-					if (!fileName.contains(".yaml"))
+                // Create a QFileDialog object
+                QFileDialog dialog(this);
+                // Use the non-native dialog option to avoid blocking the main thread
+                dialog.setOption(QFileDialog::DontUseNativeDialog);
+                dialog.setAcceptMode(QFileDialog::AcceptSave);
+                // Set any other options, like filters or the file mode
+                dialog.setNameFilter("Waypoints Files (*.yaml)");
+                dialog.setFileMode(QFileDialog::AnyFile);
+                // Open the dialog. exec() is blocking, but because it's non-native,
+                // it doesn't freeze the entire application.
+                if (dialog.exec())
+                {
+					QStringList selectedFiles = dialog.selectedFiles();
+					if (!selectedFiles.isEmpty())
 					{
-						fileName += ".yaml";
+						if (!selectedFiles.first().contains(".yaml"))
+						{
+							selectedFiles.first() += ".yaml";
+						}
+						saveWaypoints(selectedFiles.first().toStdString());
 					}
-					saveWaypoints(fileName.toStdString());
 				}
 			}
 		});
