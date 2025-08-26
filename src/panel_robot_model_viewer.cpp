@@ -21,10 +21,9 @@ All text above must be included in any redistribution.
 #include <rviz_common/render_panel.hpp>
 #include <rviz_common/visualization_manager.hpp>
 #include <rviz_common/interaction/selection_manager.hpp>
-// #include <rviz/view_manager.h>
-// #include <rviz/tool_manager.h>
-// #include <rviz/properties/parse_color.h>
-// #include <rviz/ogre_helpers/shape.h>
+#include <rviz_common/view_manager.hpp>
+#include <rviz_common/properties/parse_color.hpp>
+#include <rviz_rendering/render_window.hpp>
 #include <rviz_default_plugins/view_controllers/orbit/orbit_view_controller.hpp>
 #include <OgreSceneManager.h>
 #include <OgreSceneNode.h>
@@ -50,11 +49,14 @@ namespace whi_rviz_plugins
         // other properties
         ui_->comboBox_view->addItems(QStringList({ "rviz/Orbit", "rviz/TopDownOrtho" }));
         // signals
-        connect(ui_->comboBox_view, QOverload<int>::of(&QComboBox::activated), this,
-			[=](int Index) { onViewIndexChanged(Index, this); });
+        connect(ui_->comboBox_view, QOverload<int>::of(&QComboBox::activated), this, [=](int Index)
+        {
+            onViewIndexChanged(Index, this);
+        });
 
         // construct and lay out render panel
         render_panel_ = new rviz_common::RenderPanel();
+        render_panel_->getRenderWindow()->initialize();
         ui_->horizontalLayout_main->insertWidget(0, render_panel_);
 
         // next we initialize the main RViz classes
@@ -64,8 +66,11 @@ namespace whi_rviz_plugins
         // very central and we will probably need one in every usage of librviz
         auto rvizRosNode = display_context_->getRosNodeAbstraction();
         auto clock = rvizRosNode.lock()->get_raw_node()->get_clock();
+std::cout << "000000000000000000000000000000000" << std::endl;
         manager_ = new rviz_common::VisualizationManager(render_panel_, rvizRosNode, display_context_->getWindowManager(), clock);
+std::cout << "111111111111111111111111111111111" << std::endl;
         render_panel_->initialize(manager_);
+std::cout << "222222222222222222222222222222222" << std::endl;
         
         Ogre::Light* light = manager_->getSceneManager()->createLight();
         // set some attributes of the light
@@ -120,7 +125,8 @@ namespace whi_rviz_plugins
     {
         if (render_panel_)
         {
-            // render_panel_->getViewport()->setBackgroundColour(rviz::qtToOgre(Color));
+            Ogre::ColourValue ogreColor = rviz_common::properties::qtToOgre(Color);
+            rviz_rendering::RenderWindowOgreAdapter::setBackgroundColor(render_panel_->getRenderWindow(), &ogreColor);
         }
     }
 
@@ -134,25 +140,25 @@ namespace whi_rviz_plugins
 
     void RobotModelViewerPanel::setRobotDescription(const QString& Description)
     {
-        // if (robot_model_)
-        // {
-        //     robot_model_->subProp("Robot Description")->setValue(Description.toStdString().c_str());
-        // }
+        if (robot_model_)
+        {
+            robot_model_->subProp("Robot Description")->setValue(Description.toStdString().c_str());
+        }
     }
 
     void RobotModelViewerPanel::setTfPrefix(const QString& Prefix)
     {
-        // if (robot_model_)
-        // {
-        //     robot_model_->subProp("TF Prefix")->setValue(Prefix.toStdString().c_str());
-        // }
+        if (robot_model_)
+        {
+            robot_model_->subProp("TF Prefix")->setValue(Prefix.toStdString().c_str());
+        }
     }
 
     void RobotModelViewerPanel::updateCameraParams()
     {
-        // leave for reference
-        QPoint mousePanel = render_panel_->mapFromGlobal(QCursor::pos());
-        Ogre::Vector3 pointWorld;
+//         // leave for reference
+//         QPoint mousePanel = render_panel_->mapFromGlobal(QCursor::pos());
+//         Ogre::Vector3 pointWorld;
 //         manager_->getSelectionManager()->get3DPoint(render_panel_->getViewport(), mousePanel.x(),
 //                                                     mousePanel.y(), pointWorld);
 //         auto camera = render_panel_->getCamera();
@@ -179,26 +185,26 @@ namespace whi_rviz_plugins
 
     void RobotModelViewerPanel::onViewIndexChanged(int Index, QWidget* Group)
     {
-        // manager_->getViewManager()->setCurrentViewControllerType(ui_->comboBox_view->itemText(Index));
+        manager_->getViewManager()->setCurrentViewControllerType(ui_->comboBox_view->itemText(Index));
     }
 
     void RobotModelViewerPanel::load(const rviz_common::Config& Config)
     {
-        // auto viewer = Config.mapGetChild("robot_model_viewer");
-        // QTimer::singleShot(500, this, [=]()
-		// {
-        //     ui_->comboBox_view->setCurrentText(viewer.mapGetChild("Class").getValue().toString());
-        //     if (manager_)
-        //     {
-        //         manager_->getViewManager()->setCurrentViewControllerType(ui_->comboBox_view->currentText());
-        //     }
-        //     manager_->getViewManager()->getCurrent()->load(viewer);
-		// });
+        auto viewer = Config.mapGetChild("robot_model_viewer");
+        QTimer::singleShot(500, this, [=]()
+		{
+            ui_->comboBox_view->setCurrentText(viewer.mapGetChild("Class").getValue().toString());
+            if (manager_)
+            {
+                manager_->getViewManager()->setCurrentViewControllerType(ui_->comboBox_view->currentText());
+            }
+            manager_->getViewManager()->getCurrent()->load(viewer);
+		});
     }
 
     void RobotModelViewerPanel::save(rviz_common::Config Config) const
     {
-        // auto viewer = Config.mapMakeChild("robot_model_viewer");
-        // manager_->getViewManager()->getCurrent()->save(viewer);
+        auto viewer = Config.mapMakeChild("robot_model_viewer");
+        manager_->getViewManager()->getCurrent()->save(viewer);
     }
 } // end namespace whi_rviz_plugins
