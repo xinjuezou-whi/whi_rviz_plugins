@@ -105,7 +105,7 @@ namespace whi_rviz_plugins
         Ogre::Matrix3 mat;
         orientation.ToRotationMatrix(mat);
         Ogre::Radian yaw, pitch, roll;
-        mat.ToEulerAnglesXYZ(yaw, pitch, roll);
+        mat.ToEulerAnglesXYZ(roll, pitch, yaw);
 		euler_property_->setVector(Ogre::Vector3(roll.valueRadians(), pitch.valueRadians(), yaw.valueRadians()));
 	}
 

@@ -68,6 +68,9 @@ namespace whi_rviz_plugins
 			  std::make_unique<rviz_default_plugins::transformation::TransformerGuard<
 				  rviz_default_plugins::transformation::TFFrameTransformer>>(this, "TF"))
 	{
+        std::cout << "\nWHI RViz plugin for TF with euler VERSION 00.01.2" << std::endl;
+        std::cout << "Copyright @ 2025-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
+
 		show_names_property_ = new BoolProperty(
 			"Show Names",
 			false,
@@ -585,11 +588,8 @@ namespace whi_rviz_plugins
 			transform.transform.rotation.w);
         double roll = 0.0, pitch = 0.0, yaw = 0.0;
   		tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-		auto vecEuler = geometry_msgs::msg::Vector3();
-		vecEuler.x = roll;
-		vecEuler.y = pitch;
-		vecEuler.z = yaw;
-		frame->rel_euler_property_->setVector(rviz_common::vector3MsgToOgre(vecEuler));
+		Ogre::Vector3 eulerVec(roll, pitch, yaw);
+		frame->rel_euler_property_->setVector(eulerVec);
 	}
 
 	void TFDisplay::updateParentArrowIfTransformExists(
