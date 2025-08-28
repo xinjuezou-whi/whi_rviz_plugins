@@ -394,36 +394,32 @@ namespace whi_rviz_plugins
 
     static bool killProcedure(const std::string& Name)
     {
-        std::string cmd("ps aux | grep " + Name);
+        std::string cmd("ps aux | grep " + Name + "| grep -v grep");
 		std::vector<std::string> res = pipeExecute(cmd.c_str());
-        if (res.size() > 1)
+        if (res.size() > 0)
         {
             for (const auto& it : res)
             {
-                if (it.find(" Ssl") != std::string::npos ||
-                    it.find(" Rsl") != std::string::npos)
-                {
-                    std::vector<std::string> separated = splitStringBySpace(it);
+                std::vector<std::string> separated = splitStringBySpace(it);
 #ifdef DEBUG
-                    for (const auto& itd : res)
-                    {
-                        std::cout << "----------------" << std::endl;
-                        std::cout << itd << std::endl;
-                    }
-                    std::cout << "===================" << std::endl;
-                    for (const auto& itd : separated)
-                    {
-                        std::cout << itd << ",";
-                    }
-                    std::cout << std::endl;
+                for (const auto& itd : res)
+                {
+                    std::cout << "----------------" << std::endl;
+                    std::cout << itd << std::endl;
+                }
+                std::cout << "===================" << std::endl;
+                for (const auto& itd : separated)
+                {
+                    std::cout << itd << ",";
+                }
+                std::cout << std::endl;
 #endif
-                    if (!separated.empty())
-                    {
-                        std::string cmd("sudo kill -9 " + separated[1]);
-                        system(cmd.c_str());
+                if (!separated.empty())
+                {
+                    std::string cmd("sudo kill -9 " + separated[1]);
+                    system(cmd.c_str());
 
-                        return true;
-                    }
+                    return true;
                 }
             }
         }
@@ -433,7 +429,7 @@ namespace whi_rviz_plugins
 
     static void launchProcedure(const std::string& Name)
     {
-        std::string cmd("${HOME}/catkin_workspace/./" + Name + ".sh &");
+        std::string cmd("${HOME}/ros2_ws/./" + Name + ".sh &");
         system(cmd.c_str());
     }
 
