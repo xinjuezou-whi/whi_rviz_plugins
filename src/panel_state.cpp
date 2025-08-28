@@ -12,6 +12,7 @@ All text above must be included in any redistribution.
 
 ******************************************************************/
 #include "whi_rviz_plugins/panel_state.h"
+#include "whi_rviz_plugins/utility.h"
 #include "ui_navi_state.h"
 
 #include <tf2/LinearMath/Quaternion.h>
@@ -375,28 +376,6 @@ namespace whi_rviz_plugins
         whi_interfaces::msg::WhiRcState msgState;
         msgState.state = whi_interfaces::msg::WhiRcState::STA_CLEAR_FAULT;
         pub_rc_state_->publish(msgState);
-    }
-
-    static std::vector<std::string> pipeExecute(const char* Cmd)
-    {
-        std::vector<std::string> results;
-
-        const size_t BUF_LEN = 512;
-        char buf[BUF_LEN] = { 0 };
-
-        FILE* pipe = NULL;
-        if ((pipe = popen(Cmd, "r")) != NULL)
-        {
-            while (fgets(buf, BUF_LEN, pipe) != NULL)
-            {
-                results.push_back(buf);
-                results.back().pop_back(); // remove \n character
-            }
-            pclose(pipe);
-            pipe = NULL;
-        }
-
-        return results;
     }
 
     static std::vector<std::string> splitStringBySpace(const std::string& Src)

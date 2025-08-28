@@ -39,7 +39,7 @@ namespace whi_rviz_plugins
     DisplayState::DisplayState()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for motion state VERSION 02.10.2" << std::endl;
+        std::cout << "\nWHI RViz plugin for motion state VERSION 02.10.3" << std::endl;
         std::cout << "Copyright @ 2023-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         odom_topic_property_ = new rviz_common::properties::RosTopicProperty("Odom topic", "odom",

@@ -12,6 +12,7 @@ All text above must be included in any redistribution.
 
 ******************************************************************/
 #include "whi_rviz_plugins/panel_map_saver.h"
+#include "whi_rviz_plugins/utility.h"
 
 #include <rviz_common/ros_integration/ros_node_abstraction_iface.hpp>
 #include <rviz_common/render_panel.hpp>
@@ -32,41 +33,6 @@ All text above must be included in any redistribution.
 
 namespace whi_rviz_plugins
 {
-    static std::vector<std::string> pipeExecute(const char* Cmd)
-    {
-        std::vector<std::string> results;
-
-        const size_t BUF_LEN = 512;
-        char buf[BUF_LEN] = {0};
-
-        // Force line-buffered output and capture stderr too
-        std::string fullCmd = std::string("stdbuf -oL ") + Cmd + " 2>&1";
-
-        FILE* pipe = popen(fullCmd.c_str(), "r");
-        if (!pipe)
-        {
-            perror("popen failed");
-            return results;
-        }
-
-        while (fgets(buf, BUF_LEN, pipe) != NULL)
-        {
-            std::string line(buf);
-
-            // remove trailing newline safely
-            if (!line.empty() && line.back() == '\n')
-            {
-                line.pop_back();
-            }
-
-            std::cout << "pipe read line: " << line << std::endl;
-            results.push_back(line);
-        }
-        pclose(pipe);
-
-        return results;
-    }
-
     MapSaverPanel::MapSaverPanel(QWidget* Parent/* = nullptr*/)
         : rviz_common::Panel(Parent)
     {
@@ -160,35 +126,6 @@ namespace whi_rviz_plugins
                 tr("There is no published map.\n"
                    "Please start mapping function first"));
             }
-
-            // rclcpp::Duration duration = node_handle_->get_clock()->now() - map_received_;
-            // if (duration.seconds() < 5)
-            // {
-            //     // manager_->stopUpdate();
-            //     QString fileName = QFileDialog::getSaveFileName(this, tr("Save map"),
-            //         "/home/whi/untitled", tr("Map Files (*.pgm *.yaml)"));
-			//     // manager_->startUpdate();
-            //     if (!fileName.isEmpty())
-			//     {
-            //         if (fileName.contains(".pgm"))
-            //         {
-            //             fileName = fileName.remove(".pgm");
-            //         }
-            //         if (fileName.contains(".yaml"))
-            //         {
-            //             fileName = fileName.remove(".yaml");
-            //         }
-
-            //         save(fileName.toStdString());
-            //         labelSaved->setText(fileName);
-			//     }
-            // }
-            // else
-            // {
-            //     QMessageBox::information(this, tr("Info"),
-            //     tr("There is no published map.\n"
-            //        "Please start mapping function first"));
-            // }
         });
     }
 
