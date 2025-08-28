@@ -29,11 +29,9 @@ Changelog:
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <nav2_msgs/action/navigate_to_pose.hpp>
-// #include <move_base_msgs/MoveBaseAction.h>
-// #include <move_base_msgs/MoveBaseActionGoal.h>
-// #include <actionlib/client/simple_action_client.h>
 
 #include <mutex>
+#include <thread>
 
 using VisualizeEta = std::function<void(const geometry_msgs::msg::Pose&, double)>;
 using ExecutionState = std::function<void(int, std::shared_ptr<std::string> Info)>;
@@ -82,8 +80,8 @@ public:
 
 public:
     GoalsHandle() = delete;
-	GoalsHandle(std::shared_ptr<rclcpp::Node> Node, const std::string& Namespace, bool Remote = false);
-    ~GoalsHandle() = default;
+	GoalsHandle(const std::string& Namespace, bool Remote = false);
+    ~GoalsHandle();
 
 public:
 	bool execute(const std::vector<WaypointPack>& WaypointPacks, double PointSpan, double StopSpan,
@@ -145,6 +143,8 @@ private:
 private:
 	std::string namespace_;
     std::shared_ptr<rclcpp::Node> node_handle_{ nullptr };
+	std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> executor_;
+	std::thread executor_thread_;
 	// nav2
 	rclcpp_action::Client<NavigateToPose>::SharedPtr client_nav_{ nullptr };
 	// tf

@@ -61,7 +61,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(interactive_markers REQUIRED)
 find_package(laser_geometry REQUIRED)
 find_package(map_msgs REQUIRED)
-find_package(nav_msgs REQUIRED)
+find_package(nav2_msgs REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(resource_retriever REQUIRED)
@@ -162,7 +162,7 @@ ament_target_dependencies(${PROJECT_NAME}
   geometry_msgs
   interactive_markers
   laser_geometry
-  nav_msgs
+  nav2_msgs
   map_msgs
   rclcpp
   resource_retriever
@@ -186,8 +186,8 @@ ament_export_dependencies(
   geometry_msgs
   interactive_markers
   laser_geometry
+  nav2_msgs
   map_msgs
-  nav_msgs
   rclcpp
   resource_retriever
   rviz_ogre_vendor

@@ -16,15 +16,31 @@ All text above must be included in any redistribution.
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 
-#include <thread>
-
-GoalsHandle::GoalsHandle(std::shared_ptr<rclcpp::Node> Node, const std::string& Namespace, bool Remote/* = false*/)
-	: node_handle_(Node)
+GoalsHandle::GoalsHandle(const std::string& Namespace, bool Remote/* = false*/)
+	: node_handle_(std::make_shared<rclcpp::Node>("goals_handler"))
 	, buffer_(std::make_shared<tf2_ros::Buffer>(node_handle_->get_clock()))
 	, tf_listener_(std::make_unique<tf2_ros::TransformListener>(*buffer_))
 {
+    // create the executor
+    executor_ = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
+    executor_->add_node(node_handle_);
+    // start executor in background thread
+    executor_thread_ = std::thread([this]()
+	{
+      	executor_->spin();
+    });
+
 	setNamespace(Namespace);
 	init(Remote);
+}
+
+GoalsHandle::~GoalsHandle()
+{
+    if (executor_thread_.joinable())
+	{
+		executor_->cancel();
+		executor_thread_.join();
+    }
 }
 
 bool GoalsHandle::execute(const std::vector<WaypointPack>& WaypointPacks, double PointSpan, double StopSpan,
@@ -92,7 +108,10 @@ bool GoalsHandle::execute(const std::vector<WaypointPack>& WaypointPacks, const 
 
 void GoalsHandle::cancel()
 {
-	task_plugin_->abort();
+	if (task_plugin_)
+	{
+		task_plugin_->abort();
+	}
 
 	cancelGoal();
 	goals_list_.clear();
@@ -427,7 +446,7 @@ void GoalsHandle::callbackNavGoalResponse(std::shared_future<NavGoalHandle::Shar
 	updateStateInfo(lastGoal);
 	lastGoal = active_goal_;
 
-#ifdef DEBUG
+#ifndef DEBUG
 	std::cout << "goal left count " << goals_list_.size() << std::endl;
 #endif
 }
@@ -440,8 +459,8 @@ void GoalsHandle::callbackNavGoalFeedback(NavGoalHandle::SharedPtr GoalHandle,
 
 void GoalsHandle::callbackNavGoalResult(const NavGoalHandle::WrappedResult& Result)
 {
-#ifdef DEBUG
-	std::cout << "goal state " << std::to_string(State.state_) << " goal left " << goals_list_.size() << std::endl;
+#ifndef DEBUG
+	std::cout << "goal state " << int(Result.code) << " goal left " << goals_list_.size() << std::endl;
 #endif
 	if (active_goal_.task_.empty())
 	{

@@ -455,7 +455,7 @@ namespace whi_rviz_plugins
 
 		if (!goals_map_[Namespace])
 		{
-			goals_map_[Namespace] = std::make_unique<GoalsHandle>(node_handle_, Namespace, is_remote_);
+			goals_map_[Namespace] = std::make_unique<GoalsHandle>(Namespace, is_remote_);
 			goals_map_[Namespace]->setBaselinkFrame(baselink_frame_);
 			goals_map_[Namespace]->setStuckTimeout(stuck_timeout_);
 		}
@@ -463,6 +463,7 @@ namespace whi_rviz_plugins
 		{
 			goals_map_[Namespace]->unbindCallback();
 		}
+
 		goals_map_[Namespace]->registerEatUpdater(func_visualize_eta_);
 		goals_map_[Namespace]->registerExecutionUpdater(std::bind(&WaypointsPanel::executionState,
 			this, std::placeholders::_1, std::placeholders::_2));
