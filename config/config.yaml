@@ -2,10 +2,10 @@ tasks_plugin:
   name: whi_waypoints_tasks_plugin/WaypointsTasks
   service_tcp: /whi/ur_combined/whi_moveit_cpp_bridge/tcp_pose
   service_joint: /whi/ur_combined/whi_moveit_cpp_bridge/joint_pose
-  estop_topic: /whi/estop
-  detection_topic: /pgnd_inspection
-  base_frame: whi/base_link
-  tcp_frame: whi/camera
+  estop_topic: estop
+  detection_topic: pgnd_inspection
+  base_frame: base_link
+  tcp_frame: camera
   pixel_size: 0.000003 # m
   focal_length: 0.00193 # m
   depth_multiplier: 1.0
