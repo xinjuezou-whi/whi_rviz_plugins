@@ -446,7 +446,7 @@ void GoalsHandle::callbackNavGoalResponse(std::shared_future<NavGoalHandle::Shar
 	updateStateInfo(lastGoal);
 	lastGoal = active_goal_;
 
-#ifndef DEBUG
+#ifdef DEBUG
 	std::cout << "goal left count " << goals_list_.size() << std::endl;
 #endif
 }
@@ -459,7 +459,7 @@ void GoalsHandle::callbackNavGoalFeedback(NavGoalHandle::SharedPtr GoalHandle,
 
 void GoalsHandle::callbackNavGoalResult(const NavGoalHandle::WrappedResult& Result)
 {
-#ifndef DEBUG
+#ifdef DEBUG
 	std::cout << "goal state " << int(Result.code) << " goal left " << goals_list_.size() << std::endl;
 #endif
 	if (active_goal_.task_.empty())

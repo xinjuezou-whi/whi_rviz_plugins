@@ -93,6 +93,8 @@ namespace whi_rviz_plugins
 
     void StatePanel::setVelocities(double Linear, double Angular)
     {
+        Linear = fabs(Linear) < 1e-5 ? 0.0 : Linear;
+        Angular = fabs(Angular) < 1e-5 ? 0.0 : Angular;
         ui_->label_linear->setText(QString::number(Linear, 'f', 2));
         ui_->label_angular->setText(QString::number(Angular, 'f', 2));
     }
@@ -131,7 +133,7 @@ namespace whi_rviz_plugins
         double hours = (rclcpp::Time(State->header.stamp) - rclcpp::Time(first_state_msg_->header.stamp)).seconds() / 3600.0;
         if (hours > 0.0)
         {
-            ui_->label_running_hours->setText(QString::number(hours, 'f', 2));
+            ui_->label_running_hours->setText(QString::number(hours, 'f', 4));
         }
 
         if (State->state == whi_interfaces::msg::WhiMotionState::STA_STANDBY)

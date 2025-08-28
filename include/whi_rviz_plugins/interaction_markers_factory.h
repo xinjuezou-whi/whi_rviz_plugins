@@ -15,6 +15,9 @@ Changelog:
 ******************************************************************/
 #pragma once
 #include <visualization_msgs/msg/interactive_marker.hpp>
+#include <visualization_msgs/msg/interactive_marker_pose.hpp>
+#include <visualization_msgs/msg/interactive_marker_feedback.hpp>
+#include <visualization_msgs/msg/interactive_marker_control.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <std_msgs/msg/color_rgba.hpp>
 

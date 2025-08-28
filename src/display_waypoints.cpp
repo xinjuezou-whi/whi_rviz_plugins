@@ -27,7 +27,6 @@ All text above must be included in any redistribution.
 #include <interactive_markers/tools.hpp>
 
 #include <OgreSceneNode.h>
-// #include <rviz/visualization_frame.h>
 
 #include <sstream>
 
@@ -204,7 +203,7 @@ namespace whi_rviz_plugins
 
             // connect signals
             connect(waypoint_markers_[i].get(), SIGNAL(userFeedback(visualization_msgs::msg::InteractiveMarkerFeedback&)),
-                this, SLOT(interactiveMarkerProcessFeedback(visualization_msgs::InteractiveMarkerFeedback&)));
+                this, SLOT(interactiveMarkerProcessFeedback(visualization_msgs::msg::InteractiveMarkerFeedback&)));
         }
     }
 
