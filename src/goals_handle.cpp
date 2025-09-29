@@ -425,7 +425,7 @@ void GoalsHandle::subCallbackTwistUnstamped(const geometry_msgs::msg::Twist::Sha
 	current_angular_ = Msg->angular.z;
 }
 
-void GoalsHandle::callbackNavGoalResponse(std::shared_future<NavGoalHandle::SharedPtr> Future)
+void GoalsHandle::callbackNavGoalResponse(const NavToGoalHandle::SharedPtr& GoalHandle)
 {
 	static GoalPack lastGoal;
 
@@ -451,13 +451,7 @@ void GoalsHandle::callbackNavGoalResponse(std::shared_future<NavGoalHandle::Shar
 #endif
 }
 
-void GoalsHandle::callbackNavGoalFeedback(NavGoalHandle::SharedPtr GoalHandle,
-	const std::shared_ptr<const NavigateToPose::Feedback> Feedback)
-{
-	handleGoalAndState(Feedback->current_pose);
-}
-
-void GoalsHandle::callbackNavGoalResult(const NavGoalHandle::WrappedResult& Result)
+void GoalsHandle::callbackNavGoalResult(const NavToGoalHandle::WrappedResult& Result)
 {
 #ifdef DEBUG
 	std::cout << "goal state " << int(Result.code) << " goal left " << goals_list_.size() << std::endl;
@@ -466,7 +460,7 @@ void GoalsHandle::callbackNavGoalResult(const NavGoalHandle::WrappedResult& Resu
 	{
 		double pointSpan = point_span_ < 0.0 ? 0.1 : point_span_;
 		double stopSpan = stop_span_ < 0.0 ? 0.1 : stop_span_;
-		rclcpp::Duration duration = active_goal_.is_last_ ? rclcpp::Duration(stopSpan) : rclcpp::Duration(pointSpan);
+		rclcpp::Duration duration = active_goal_.is_last_ ? rclcpp::Duration::from_seconds(stopSpan) : rclcpp::Duration::from_seconds(pointSpan);
 		auto period = active_goal_.is_last_ ? stopSpan : pointSpan;
         non_realtime_loop_ = node_handle_->create_wall_timer(
             std::chrono::milliseconds(static_cast<int>(period * 1000)),
@@ -493,6 +487,12 @@ void GoalsHandle::callbackNavGoalResult(const NavGoalHandle::WrappedResult& Resu
 			}
 		}
 	}
+}
+
+void GoalsHandle::callbackNavGoalFeedback(NavToGoalHandle::SharedPtr GoalHandle,
+    const std::shared_ptr<const nav2_msgs::action::NavigateToPose::Feedback> Feedback)
+{
+	handleGoalAndState(Feedback->current_pose);
 }
 
 void GoalsHandle::callbackTimer()

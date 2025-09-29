@@ -123,11 +123,11 @@ private:
 	// void callbackGoalActive();
 	// void callbackGoalFeedback(const move_base_msgs::MoveBaseFeedbackConstPtr& Feedback);
 	using NavigateToPose = nav2_msgs::action::NavigateToPose;
-	using NavGoalHandle = rclcpp_action::ClientGoalHandle<NavigateToPose>;
-	void callbackNavGoalResponse(std::shared_future<NavGoalHandle::SharedPtr> Future);
-	void callbackNavGoalFeedback(NavGoalHandle::SharedPtr GoalHandle,
-		const std::shared_ptr<const NavigateToPose::Feedback> Feedback);
-	void callbackNavGoalResult(const NavGoalHandle::WrappedResult& Result);
+	using NavToGoalHandle = rclcpp_action::ClientGoalHandle<NavigateToPose>;
+	void callbackNavGoalResponse(const NavToGoalHandle::SharedPtr& GoalHandle);
+	void callbackNavGoalResult(const NavToGoalHandle::WrappedResult& Result);
+	void callbackNavGoalFeedback(NavToGoalHandle::SharedPtr GoalHandle,
+        const std::shared_ptr<const nav2_msgs::action::NavigateToPose::Feedback> Feedback);
 	void callbackTimer();
 	int findBeginIndex(const std::vector<WaypointPack>& WaypointPacks);
 	void executeTask(bool ForceClean = false);

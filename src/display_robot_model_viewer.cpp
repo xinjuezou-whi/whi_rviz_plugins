@@ -108,5 +108,5 @@ namespace whi_rviz_plugins
         panel_->setTfPrefix(tf_prefix_property_->getString());
     }
 } // end namespace whi_rviz_plugins
-#include <pluginlib/class_list_macros.h>
+#include <pluginlib/class_list_macros.hpp>
 PLUGINLIB_EXPORT_CLASS(whi_rviz_plugins::DisplayRobotModelViewer, rviz_common::Display)

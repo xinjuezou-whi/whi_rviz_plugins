@@ -132,5 +132,5 @@ namespace whi_rviz_plugins
     }
 } // end namespace whi_rviz_plugins
 
-#include <pluginlib/class_list_macros.h>
+#include <pluginlib/class_list_macros.hpp>
 PLUGINLIB_EXPORT_CLASS(whi_rviz_plugins::Display2DLineChart, rviz_common::Display)

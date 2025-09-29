@@ -72,6 +72,7 @@ find_package(urdf REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(angles REQUIRED)
 find_package(whi_interfaces REQUIRED)
 
 # UI Files
@@ -175,6 +176,7 @@ ament_target_dependencies(${PROJECT_NAME}
   urdf
   visualization_msgs
   cv_bridge
+  angles
   whi_interfaces
 )
 
