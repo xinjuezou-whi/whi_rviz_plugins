@@ -39,20 +39,22 @@ namespace whi_rviz_plugins
     DisplayState::DisplayState()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for motion state VERSION 02.10.4" << std::endl;
+        std::cout << "\nWHI RViz plugin for motion state VERSION 02.11.2" << std::endl;
         std::cout << "Copyright @ 2023-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         odom_topic_property_ = new rviz_common::properties::RosTopicProperty("Odom topic", "odom",
             "nav_msgs/msg/Odometry", "Topic of odometry", this);
-        goal_topic_property_ = new rviz_common::properties::RosTopicProperty("Goal topic", "goal",
-            "geometry_msgs/msg/PoseStamped", "Topic of navigation goal", this);
+        // goal_topic_property_ = new rviz_common::properties::RosTopicProperty("Goal topic", "navigate_to_pose/_action/goal",
+        //     "nav2_msgs/action/NavigateToPose/Impl/SendGoalService/Request", "Topic of navigation goal", this);
+        // feedback_topic_property_ = new rviz_common::properties::RosTopicProperty("Navigation feedback topic", "navigate_to_pose/_action/feedback",
+        //     "nav2_msgs/action/NavigateToPose/Impl/FeedbackMessage", "Topic of navigation feedback", this);
         motion_state_topic_property_ = new rviz_common::properties::RosTopicProperty("Motion state topic", "motion_state",
             "whi_interfaces/msg/WhiMotionState", "Topic of motion state", this);
         battery_topic_property_ = new rviz_common::properties::RosTopicProperty("Battery info topic", "battery_data",
             "whi_interfaces/msg/WhiBattery", "Topic of battery info", this);
         rc_state_topic_property_ = new rviz_common::properties::RosTopicProperty("Remote controller state topic", "rc_state",
             "whi_interfaces/msg/WhiRcState", "Topic of remote controller state", this);
-        arm_state_topic_property_ = new rviz_common::properties::RosTopicProperty("manipulator state topic", "arm_motion_state",
+        arm_state_topic_property_ = new rviz_common::properties::RosTopicProperty("manipulator state topic", "actuator_state",
             "whi_interfaces/msg/WhiMotionState", "Topic of manipulator state", this);
         imu_topic_property_ = new rviz_common::properties::RosTopicProperty("IMU topic", "imu_data",
             "sensor_msgs/msg/Imu", "Topic of IMU data", this);
@@ -122,16 +124,40 @@ namespace whi_rviz_plugins
                     odom_topic_property_->getTopicStd(), 10, std::bind(&DisplayState::subCallbackOdom, this, std::placeholders::_1));
             }
         });
-        goal_topic_property_->initialize(context_->getRosNodeAbstraction());
-        connect(goal_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
-        {
-            if (initialized())
-            {
-                sub_goal_.reset();
-                sub_goal_ = node_handle_->create_subscription<geometry_msgs::msg::PoseStamped>(
-                    goal_topic_property_->getTopicStd(), 10, std::bind(&DisplayState::subCallbackGoal, this, std::placeholders::_1));
-            }
-        });
+        // goal_topic_property_->initialize(context_->getRosNodeAbstraction());
+        // connect(goal_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
+        // {
+        //     if (initialized())
+        //     {
+        //         sub_goal_.reset();
+                sub_goal_ = node_handle_->create_subscription<nav2_msgs::action::NavigateToPose::Impl::SendGoalService::Request>(
+                    "navigate_to_pose/_action/goal",//goal_topic_property_->getTopicStd(),
+                    rclcpp::SystemDefaultsQoS(),
+                    [this](const nav2_msgs::action::NavigateToPose::Impl::SendGoalService::Request::SharedPtr Request)
+                    {
+                        panel_->setGoal(Request->goal.pose.pose);
+                    });
+        //     }
+        // });
+        // feedback_topic_property_->initialize(context_->getRosNodeAbstraction());
+        // connect(feedback_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
+        // {
+        //     if (initialized())
+        //     {
+        //         sub_navi_feedback_.reset();
+                sub_navi_feedback_ = node_handle_->create_subscription<nav2_msgs::action::NavigateToPose::Impl::FeedbackMessage>(
+                    "navigate_to_pose/_action/feedback",//feedback_topic_property_->getTopicStd(),
+                    rclcpp::SystemDefaultsQoS(),
+                    [this](const nav2_msgs::action::NavigateToPose::Impl::FeedbackMessage::SharedPtr Msg)
+                    {
+                        std::string etaStr("remaining ");
+                        etaStr += toStringWithPrecision(Msg->feedback.distance_remaining, 2) + "m, in " +
+                            toStringWithPrecision(rclcpp::Duration(Msg->feedback.estimated_time_remaining).seconds(), 0) + "s";
+
+                        panel_->setEta(etaStr);
+                    });
+        //     }
+        // });
         motion_state_topic_property_->initialize(context_->getRosNodeAbstraction());
         connect(motion_state_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
         {
@@ -217,61 +243,7 @@ namespace whi_rviz_plugins
 
         updateBaselinkFrame();
 
-        buffer_ = std::make_shared<tf2_ros::Buffer>(node_handle_->get_clock());
-        tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*buffer_);
-
         frame_property_->setFrameManager(context_->getFrameManager());
-
-        auto period = std::chrono::milliseconds(200);
-        non_realtime_loop_ = node_handle_->create_wall_timer(period,
-            std::bind(&DisplayState::update, this));
-    }
-
-    void DisplayState::update()
-    {
-        std::string etaStr("no info");
-        if (fabs(velocities_.first) > 9.9e-4 || fabs(velocities_.second) > 9.9e-4)
-        {
-            auto tfBase2Map = listenTf("map", frame_property_->getFrame().toStdString());
-            geometry_msgs::msg::Pose baselink;
-            baselink.position.x = tfBase2Map.transform.translation.x;
-            baselink.position.y = tfBase2Map.transform.translation.y;
-            double dist = distance(baselink, goal_);
-            etaStr = dist < 0.1 ? "arrived" : "in " + toStringWithPrecision(dist / fabs(velocities_.first), 2);
-        }
-
-        panel_->setEta(etaStr);
-    }
-
-    geometry_msgs::msg::TransformStamped DisplayState::listenTf(const std::string& DstFrame, const std::string& SrcFrame) const
-    {
-        try
-        {
-            if (buffer_->canTransform(DstFrame, SrcFrame, tf2::TimePointZero, tf2::durationFromSec(1.0)))
-            {
-                return buffer_->lookupTransform(DstFrame, SrcFrame, tf2::TimePointZero, tf2::durationFromSec(1.0));
-            }
-            else
-            {
-                auto pose = geometry_msgs::msg::TransformStamped();
-                pose.transform.rotation.w = 1.0;
-                return pose;
-            }
-        }
-        catch (tf2::TransformException &e)
-        {
-            RCLCPP_ERROR_STREAM(node_handle_->get_logger(), "\033[1;31m" << "failed to listen TF: " << e.what() <<
-                "\033[0m");
-
-            auto pose = geometry_msgs::msg::TransformStamped();
-            pose.transform.rotation.w = 1.0;
-            return pose;
-        }
-    }
-
-    double DisplayState::distance(const geometry_msgs::msg::Pose& Pose1, const geometry_msgs::msg::Pose& Pose2)
-    {
-	    return sqrt(pow(Pose1.position.x - Pose2.position.x, 2.0) + pow(Pose1.position.y - Pose2.position.y, 2.0));
     }
 
     void DisplayState::subCallbackOdom(const nav_msgs::msg::Odometry::SharedPtr Msg)

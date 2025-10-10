@@ -30,6 +30,7 @@ Changelog:
 #include <sensor_msgs/msg/imu.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
+#include <nav2_msgs/action/navigate_to_pose.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -64,9 +65,6 @@ namespace whi_rviz_plugins
 		virtual void onInitialize();
 
     private:
-        void update();
-		geometry_msgs::msg::TransformStamped listenTf(const std::string& DstFrame, const std::string& SrcFrame) const;
-        double distance(const geometry_msgs::msg::Pose& Pose1, const geometry_msgs::msg::Pose& Pose2);
 		void subCallbackOdom(const nav_msgs::msg::Odometry::SharedPtr Msg);
 		void subCallbackGoal(const geometry_msgs::msg::PoseStamped::SharedPtr Msg);
 		void subCallbackMotionState(const whi_interfaces::msg::WhiMotionState::SharedPtr Msg);
@@ -85,7 +83,6 @@ namespace whi_rviz_plugins
 		StatePanel* panel_{ nullptr };
 
 		rclcpp::Node::SharedPtr node_handle_{ nullptr };
-        rclcpp::TimerBase::SharedPtr non_realtime_loop_{ nullptr };
 
 		// humble: multiple topic properties and subscribtion introduce undefined behavior
 		// based on node from context_->getRosNodeAbstraction().lock()->get_raw_node(),
@@ -95,7 +92,8 @@ namespace whi_rviz_plugins
 
 		// user-editable property variables
 		rviz_common::properties::RosTopicProperty* odom_topic_property_;
-        rviz_common::properties::RosTopicProperty* goal_topic_property_;
+        // rviz_common::properties::RosTopicProperty* goal_topic_property_;
+		// rviz_common::properties::RosTopicProperty* feedback_topic_property_;
         rviz_common::properties::RosTopicProperty* motion_state_topic_property_;
 		rviz_common::properties::RosTopicProperty* battery_topic_property_;
 		rviz_common::properties::RosTopicProperty* rc_state_topic_property_;
@@ -106,17 +104,15 @@ namespace whi_rviz_plugins
 		rviz_common::properties::TfFrameProperty* frame_property_;
         // subscriber
 		rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_{ nullptr };
-		rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr sub_goal_{ nullptr };
 		rclcpp::Subscription<whi_interfaces::msg::WhiMotionState>::SharedPtr sub_motion_state_{ nullptr };
 		rclcpp::Subscription<whi_interfaces::msg::WhiBattery>::SharedPtr sub_battery_{ nullptr };
 		rclcpp::Subscription<whi_interfaces::msg::WhiRcState>::SharedPtr sub_rc_state_{ nullptr };
 		rclcpp::Subscription<whi_interfaces::msg::WhiMotionState>::SharedPtr sub_arm_state_{ nullptr };
 		rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_{ nullptr };
 		rclcpp::Subscription<whi_interfaces::msg::WhiTemperatureHumidity>::SharedPtr sub_temp_hum_{ nullptr };
+		rclcpp::Subscription<nav2_msgs::action::NavigateToPose::Impl::SendGoalService::Request>::SharedPtr sub_goal_{ nullptr };
+		rclcpp::Subscription<nav2_msgs::action::NavigateToPose::Impl::FeedbackMessage>::SharedPtr sub_navi_feedback_;
         std::pair<double, double> velocities_;
         geometry_msgs::msg::Pose goal_;
-        // tf
-        std::shared_ptr<tf2_ros::Buffer> buffer_{ nullptr };
-        std::unique_ptr<tf2_ros::TransformListener> tf_listener_{ nullptr };
 	};
 } // end namespace whi_rviz_plugins
