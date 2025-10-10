@@ -84,6 +84,11 @@ namespace whi_rviz_plugins
 
         // advertised estop topic
         setEstopTopic("estop");
+
+        // initialize time
+        last_updated_imu_ = node_handle_->now();
+        last_updated_rc_ = node_handle_->now();
+        last_updated_estop_ = node_handle_->now();
     }
 
     StatePanel::~StatePanel()
@@ -121,7 +126,7 @@ namespace whi_rviz_plugins
         if (!first_state_msg_)
         {
             first_state_msg_ = std::make_unique<whi_interfaces::msg::WhiMotionState>();
-            first_state_msg_->header.stamp = node_handle_->get_clock()->now();
+            first_state_msg_->header.stamp = node_handle_->now();
         }
         rclcpp::Time stamp(first_state_msg_->header.stamp);
         std::time_t rawTime = static_cast<std::time_t>(stamp.seconds());
@@ -216,7 +221,7 @@ namespace whi_rviz_plugins
             setIndicatorText(ui_->label_indicator_cap_2, "remote");
         }
 
-        last_updated_rc_ = system_clock_.now();
+        last_updated_rc_ = node_handle_->now();
     }
 
     void StatePanel::setArmState(const whi_interfaces::msg::WhiMotionState::SharedPtr State)
@@ -241,11 +246,11 @@ namespace whi_rviz_plugins
 
             if (last_updated_arm_ == nullptr)
             {
-                last_updated_arm_ = std::make_unique<rclcpp::Time>(system_clock_.now());
+                last_updated_arm_ = std::make_unique<rclcpp::Time>(node_handle_->now());
             }
             else
             {
-                *last_updated_arm_ = system_clock_.now();
+                *last_updated_arm_ = node_handle_->now();
             }
         }
         else
@@ -267,16 +272,18 @@ namespace whi_rviz_plugins
         setIndicatorIcon(ui_->label_indicator_5, INDICATOR_GREEN);
         setIndicatorText(ui_->label_indicator_cap_5, "IMU");
 
-        last_updated_imu_ = system_clock_.now();
+        last_updated_imu_ = node_handle_->now();
     }
 
     void StatePanel::setRcStateTopic(const std::string& Topic)
     {
+        pub_rc_state_.reset();
         pub_rc_state_ = node_handle_->create_publisher<whi_interfaces::msg::WhiRcState>(Topic, 50);
     }
 
     void StatePanel::setEstopTopic(const std::string& Topic)
     {
+        pub_estop_.reset();
         pub_estop_ = node_handle_->create_publisher<std_msgs::msg::Bool>(Topic, 50);
     }
 
@@ -482,11 +489,17 @@ namespace whi_rviz_plugins
 
     void StatePanel::estopButtonToggled(bool Checked)
     {
-        std_msgs::msg::Bool msg;
-        msg.data = Checked;
-        pub_estop_->publish(msg);
+        auto current = node_handle_->now();
+        if ((current - last_updated_estop_).seconds() > 0.25)
+        {
+            std_msgs::msg::Bool msg;
+            msg.data = Checked;
+            pub_estop_->publish(msg);
 
-        setEstopIcon(Checked);
+            setEstopIcon(Checked);
+
+            last_updated_estop_ = current;
+        }
     }
 
     void StatePanel::setEstopIcon(bool Checked)
@@ -513,7 +526,7 @@ namespace whi_rviz_plugins
 
     void StatePanel::update()
     {
-        auto current = system_clock_.now();
+        auto current = node_handle_->now();
 
         if ((current - last_updated_imu_).seconds() > 2.0)
         {

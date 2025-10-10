@@ -79,6 +79,7 @@ namespace whi_rviz_plugins
 		rclcpp::TimerBase::SharedPtr non_realtime_loop_{ nullptr };
 		rclcpp::Time last_updated_imu_;
 		rclcpp::Time last_updated_rc_;
+		rclcpp::Time last_updated_estop_;
 		std::unique_ptr<rclcpp::Time> last_updated_arm_{ nullptr };
 		int estop_init_height_{ 50 };
 		rclcpp::Clock system_clock_{RCL_SYSTEM_TIME};

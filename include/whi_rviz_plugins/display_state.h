@@ -84,8 +84,14 @@ namespace whi_rviz_plugins
 		rviz_common::PanelDockWidget* frame_dock_{ nullptr };
 		StatePanel* panel_{ nullptr };
 
-        rclcpp::Node::SharedPtr node_handle_{ nullptr };
+		rclcpp::Node::SharedPtr node_handle_{ nullptr };
         rclcpp::TimerBase::SharedPtr non_realtime_loop_{ nullptr };
+
+		// humble: multiple topic properties and subscribtion introduce undefined behavior
+		// based on node from context_->getRosNodeAbstraction().lock()->get_raw_node(),
+		// taking the independent node so far and it is required to spin manually
+		std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> executor_;
+		std::thread executor_thread_;
 
 		// user-editable property variables
 		rviz_common::properties::RosTopicProperty* odom_topic_property_;

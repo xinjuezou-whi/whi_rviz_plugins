@@ -39,7 +39,7 @@ namespace whi_rviz_plugins
     DisplayState::DisplayState()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for motion state VERSION 02.10.3" << std::endl;
+        std::cout << "\nWHI RViz plugin for motion state VERSION 02.10.4" << std::endl;
         std::cout << "Copyright @ 2023-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         odom_topic_property_ = new rviz_common::properties::RosTopicProperty("Odom topic", "odom",
@@ -67,6 +67,12 @@ namespace whi_rviz_plugins
     DisplayState::~DisplayState()
     {
         delete frame_dock_;
+
+        if (executor_thread_.joinable())
+        {
+            executor_->cancel();
+            executor_thread_.join();
+        }
     }
     
     void DisplayState::onInitialize()
@@ -77,13 +83,41 @@ namespace whi_rviz_plugins
         // in the process lock it for exclusive use until the method is done.
         // Get a pointer to the familiar rclcpp::Node for making subscriptions/publishers
         // (as per normal rclcpp code)
-        node_handle_ = context_->getRosNodeAbstraction().lock()->get_raw_node();
+        // node_handle_ = context_->getRosNodeAbstraction().lock()->get_raw_node();
+
+        node_handle_ = std::make_shared<rclcpp::Node>("display_state");
+        // create the executor
+        executor_ = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
+        executor_->add_node(node_handle_);
+        // start executor in background thread
+        executor_thread_ = std::thread([this]()
+        {
+            executor_->spin();
+        });
+
+        panel_ = new StatePanel(node_handle_);
+        rviz_common::WindowManagerInterface* windowContext = context_->getWindowManager();
+        if (windowContext)
+        {
+            frame_dock_ = windowContext->addPane("Navi_state", panel_); // getName() return "" ???
+            auto main_window = dynamic_cast<QMainWindow*>(windowContext->getParentWindow());
+            if (main_window)
+            {
+                main_window->addDockWidget(Qt::BottomDockWidgetArea, frame_dock_);
+            }
+            else
+            {
+                RCLCPP_WARN(node_handle_->get_logger(), "failed to cast parent window to QMainWindow");
+            }
+            frame_dock_->setIcon(getIcon()); // set the image name as same as the name of plugin
+        }
 
         odom_topic_property_->initialize(context_->getRosNodeAbstraction());
         connect(odom_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
         {
             if (initialized())
             {
+                sub_odom_.reset();
                 sub_odom_ = node_handle_->create_subscription<nav_msgs::msg::Odometry>(
                     odom_topic_property_->getTopicStd(), 10, std::bind(&DisplayState::subCallbackOdom, this, std::placeholders::_1));
             }
@@ -93,6 +127,7 @@ namespace whi_rviz_plugins
         {
             if (initialized())
             {
+                sub_goal_.reset();
                 sub_goal_ = node_handle_->create_subscription<geometry_msgs::msg::PoseStamped>(
                     goal_topic_property_->getTopicStd(), 10, std::bind(&DisplayState::subCallbackGoal, this, std::placeholders::_1));
             }
@@ -102,6 +137,7 @@ namespace whi_rviz_plugins
         {
             if (initialized())
             {
+                sub_motion_state_.reset();
                 sub_motion_state_ = node_handle_->create_subscription<whi_interfaces::msg::WhiMotionState>(
                     motion_state_topic_property_->getTopicStd(), 10,
                     std::bind(&DisplayState::subCallbackMotionState, this, std::placeholders::_1));
@@ -112,6 +148,7 @@ namespace whi_rviz_plugins
         {
             if (initialized())
             {
+                sub_battery_.reset();
                 sub_battery_ = node_handle_->create_subscription<whi_interfaces::msg::WhiBattery>(
                     battery_topic_property_->getTopicStd(), 10,
                     std::bind(&DisplayState::subCallbackBattery, this, std::placeholders::_1));
@@ -122,6 +159,7 @@ namespace whi_rviz_plugins
         {
             if (initialized())
             {
+                sub_rc_state_.reset();
                 sub_rc_state_ = node_handle_->create_subscription<whi_interfaces::msg::WhiRcState>(
                     rc_state_topic_property_->getTopicStd(), 10,
                     std::bind(&DisplayState::subCallbackRcState, this, std::placeholders::_1));
@@ -140,6 +178,7 @@ namespace whi_rviz_plugins
                 }
                 else
                 {
+                    sub_arm_state_.reset();
                     sub_arm_state_ = node_handle_->create_subscription<whi_interfaces::msg::WhiMotionState>(
                         arm_state_topic_property_->getTopicStd(), 10,
                         std::bind(&DisplayState::subCallbackArmState, this, std::placeholders::_1));
@@ -151,6 +190,7 @@ namespace whi_rviz_plugins
         {
             if (initialized())
             {
+                sub_imu_.reset();
                 sub_imu_ = node_handle_->create_subscription<sensor_msgs::msg::Imu>(
                     imu_topic_property_->getTopicStd(), 10, std::bind(&DisplayState::subCallbackImu, this, std::placeholders::_1));
             }
@@ -168,6 +208,7 @@ namespace whi_rviz_plugins
         {
             if (initialized())
             {
+                sub_temp_hum_.reset();
                 sub_temp_hum_ = node_handle_->create_subscription<whi_interfaces::msg::WhiTemperatureHumidity>(
                     temp_hum_topic_property_->getTopicStd(), 10,
                     std::bind(&DisplayState::subCallbackTempHum, this, std::placeholders::_1));
@@ -180,23 +221,6 @@ namespace whi_rviz_plugins
         tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*buffer_);
 
         frame_property_->setFrameManager(context_->getFrameManager());
-
-        panel_ = new StatePanel(node_handle_);
-        rviz_common::WindowManagerInterface* windowContext = context_->getWindowManager();
-        if (windowContext)
-        {
-            frame_dock_ = windowContext->addPane("Navi_state", panel_); // getName() return "" ???
-            auto main_window = dynamic_cast<QMainWindow*>(windowContext->getParentWindow());
-            if (main_window)
-            {
-                main_window->addDockWidget(Qt::BottomDockWidgetArea, frame_dock_);
-            }
-            else
-            {
-                RCLCPP_WARN(node_handle_->get_logger(), "failed to cast parent window to QMainWindow");
-            }
-            frame_dock_->setIcon(getIcon()); // set the image name as same as the name of plugin
-        }
 
         auto period = std::chrono::milliseconds(200);
         non_realtime_loop_ = node_handle_->create_wall_timer(period,
