@@ -39,11 +39,13 @@ namespace whi_rviz_plugins
     DisplayState::DisplayState()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for motion state VERSION 02.11.2" << std::endl;
+        std::cout << "\nWHI RViz plugin for motion state VERSION 02.11.3" << std::endl;
         std::cout << "Copyright @ 2023-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         odom_topic_property_ = new rviz_common::properties::RosTopicProperty("Odom topic", "odom",
             "nav_msgs/msg/Odometry", "Topic of odometry", this);
+        path_topic_property_ = new rviz_common::properties::RosTopicProperty("Planned path topic", "plan",
+            "nav_msgs/msg/Path", "Topic of planned path", this);
         // goal_topic_property_ = new rviz_common::properties::RosTopicProperty("Goal topic", "navigate_to_pose/_action/goal",
         //     "nav2_msgs/action/NavigateToPose/Impl/SendGoalService/Request", "Topic of navigation goal", this);
         // feedback_topic_property_ = new rviz_common::properties::RosTopicProperty("Navigation feedback topic", "navigate_to_pose/_action/feedback",
@@ -122,6 +124,16 @@ namespace whi_rviz_plugins
                 sub_odom_.reset();
                 sub_odom_ = node_handle_->create_subscription<nav_msgs::msg::Odometry>(
                     odom_topic_property_->getTopicStd(), 10, std::bind(&DisplayState::subCallbackOdom, this, std::placeholders::_1));
+            }
+        });
+        path_topic_property_->initialize(context_->getRosNodeAbstraction());
+        connect(path_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
+        {
+            if (initialized())
+            {
+                sub_path_.reset();
+                sub_path_ = node_handle_->create_subscription<nav_msgs::msg::Path>(
+                    path_topic_property_->getTopicStd(), 10, std::bind(&DisplayState::subCallbackPath, this, std::placeholders::_1));
             }
         });
         // goal_topic_property_->initialize(context_->getRosNodeAbstraction());
@@ -252,6 +264,13 @@ namespace whi_rviz_plugins
         velocities_.second = Msg->twist.twist.angular.z;
 
         panel_->setVelocities(velocities_.first, velocities_.second);
+    }
+
+    void DisplayState::subCallbackPath(const nav_msgs::msg::Path::SharedPtr Msg)
+    {
+        goal_ = Msg->poses.back().pose;
+        
+        panel_->setGoal(goal_);
     }
 
     void DisplayState::subCallbackGoal(const geometry_msgs::msg::PoseStamped::SharedPtr Msg)

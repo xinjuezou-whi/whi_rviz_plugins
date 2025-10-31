@@ -27,6 +27,7 @@ Changelog:
 #include <rviz_common/display.hpp>
 #include <rviz_common/panel_dock_widget.hpp>
 #include <nav_msgs/msg/odometry.hpp>
+#include <nav_msgs/msg/path.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
@@ -66,6 +67,7 @@ namespace whi_rviz_plugins
 
     private:
 		void subCallbackOdom(const nav_msgs::msg::Odometry::SharedPtr Msg);
+		void subCallbackPath(const nav_msgs::msg::Path::SharedPtr Msg);
 		void subCallbackGoal(const geometry_msgs::msg::PoseStamped::SharedPtr Msg);
 		void subCallbackMotionState(const whi_interfaces::msg::WhiMotionState::SharedPtr Msg);
 		void subCallbackBattery(const whi_interfaces::msg::WhiBattery::SharedPtr Msg);
@@ -94,6 +96,7 @@ namespace whi_rviz_plugins
 		rviz_common::properties::RosTopicProperty* odom_topic_property_;
         // rviz_common::properties::RosTopicProperty* goal_topic_property_;
 		// rviz_common::properties::RosTopicProperty* feedback_topic_property_;
+		rviz_common::properties::RosTopicProperty* path_topic_property_;
         rviz_common::properties::RosTopicProperty* motion_state_topic_property_;
 		rviz_common::properties::RosTopicProperty* battery_topic_property_;
 		rviz_common::properties::RosTopicProperty* rc_state_topic_property_;
@@ -104,6 +107,7 @@ namespace whi_rviz_plugins
 		rviz_common::properties::TfFrameProperty* frame_property_;
         // subscriber
 		rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_{ nullptr };
+		rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_{ nullptr };
 		rclcpp::Subscription<whi_interfaces::msg::WhiMotionState>::SharedPtr sub_motion_state_{ nullptr };
 		rclcpp::Subscription<whi_interfaces::msg::WhiBattery>::SharedPtr sub_battery_{ nullptr };
 		rclcpp::Subscription<whi_interfaces::msg::WhiRcState>::SharedPtr sub_rc_state_{ nullptr };
