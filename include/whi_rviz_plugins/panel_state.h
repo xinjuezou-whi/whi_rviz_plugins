@@ -17,12 +17,17 @@ Changelog:
 ******************************************************************/
 #pragma once
 #include <whi_interfaces/msg/whi_motion_state.hpp>
+#include <whi_interfaces/msg/whi_state.hpp>
 #include <whi_interfaces/msg/whi_rc_state.hpp>
 
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <rviz_common/panel.hpp>
+#include <rviz_common/display_context.hpp>
+#include <rviz_common/ros_integration/ros_node_abstraction_iface.hpp>
+
+#include <QTimer>
 
 namespace Ui
 {
@@ -37,17 +42,14 @@ namespace whi_rviz_plugins
 	{
 		Q_OBJECT
 	public:
-		StatePanel(std::shared_ptr<rclcpp::Node> NodeHandle, QWidget* Parent = nullptr);
+		StatePanel(rviz_common::DisplayContext* DisplayContext, QWidget* Parent = nullptr);
 		~StatePanel() override;
 
 	public:
         void setVelocities(double Linear, double Angular);
         void setGoal(const geometry_msgs::msg::Pose& Goal);
         void setEta(const std::string& Eta);
-		void setMotionState(const whi_interfaces::msg::WhiMotionState::SharedPtr State);
-		void setRcState(const whi_interfaces::msg::WhiRcState::SharedPtr State);
-		void setArmState(const whi_interfaces::msg::WhiMotionState::SharedPtr State);
-		void setImuState();
+		void setWhiState(const whi_interfaces::msg::WhiState::SharedPtr State);
 		void setRcStateTopic(const std::string& Topic);
 		void setEstopTopic(const std::string& Topic);
 		void setBatteryInfo(int Soc, int Soh);
@@ -72,11 +74,12 @@ namespace whi_rviz_plugins
         enum IndicatorType { INDICATOR_GREY = 0, INDICATOR_RED, INDICATOR_ORANGE,
 			INDICATOR_YELLOW, INDICATOR_GREEN, INDICATOR_BLUE };
 		Ui::NaviState* ui_{ nullptr };
-		std::unique_ptr<whi_interfaces::msg::WhiMotionState> first_state_msg_{ nullptr };
-		std::shared_ptr<rclcpp::Node> node_handle_{ nullptr };
+		rviz_common::DisplayContext* context_;
+		rviz_common::ros_integration::RosNodeAbstractionIface::WeakPtr node_rviz_weak_;
 		rclcpp::Publisher<whi_interfaces::msg::WhiRcState>::SharedPtr pub_rc_state_{ nullptr };
 		rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pub_estop_{ nullptr };
-		rclcpp::TimerBase::SharedPtr non_realtime_loop_{ nullptr };
+		QTimer* qtimer_{ nullptr };
+		rclcpp::Time start_;
 		rclcpp::Time last_updated_imu_;
 		rclcpp::Time last_updated_rc_;
 		rclcpp::Time last_updated_estop_;

@@ -18,7 +18,7 @@ All text above must be included in any redistribution.
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <angles/angles.h>
-#include "ament_index_cpp/get_package_share_directory.hpp"
+#include <ament_index_cpp/get_package_share_directory.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -28,10 +28,20 @@ All text above must be included in any redistribution.
 
 namespace whi_rviz_plugins
 {
-    StatePanel::StatePanel(std::shared_ptr<rclcpp::Node> NodeHandle, QWidget* Parent/* = nullptr*/)
-		: node_handle_(NodeHandle)
+    StatePanel::StatePanel(rviz_common::DisplayContext* DisplayContext, QWidget* Parent/* = nullptr*/)
+		: context_(DisplayContext)
         , QWidget(Parent), ui_(new Ui::NaviState())
 	{
+        node_rviz_weak_ = context_->getRosNodeAbstraction();
+
+        // initialize times
+        rclcpp::Clock rosClock(RCL_ROS_TIME);
+        auto current = rosClock.now();
+        start_ = current;
+        last_updated_imu_ = current;
+        last_updated_rc_ = current;
+        last_updated_estop_ = current;
+
 		// set up the GUI
 		ui_->setupUi(this);
 
@@ -46,6 +56,13 @@ namespace whi_rviz_plugins
         // other properties
         ui_->label_goal->setText("none");
         ui_->label_eta->setText("no info");
+        ui_->label_started->setText("none");
+        std::time_t rawTime = static_cast<std::time_t>(start_.seconds());
+        struct tm* timeInfo = localtime(&rawTime);
+        const int LEN = 64;
+        char output[LEN];
+        std::strftime(output, LEN, "%Y.%m.%d-%H:%M:%S", timeInfo);
+        ui_->label_started->setText(output);
         // indicator
         setIndicatorIcon(ui_->label_indicator_1, INDICATOR_GREY);
         setIndicatorIcon(ui_->label_indicator_2, INDICATOR_GREY);
@@ -85,14 +102,15 @@ namespace whi_rviz_plugins
         // advertised estop topic
         setEstopTopic("estop");
 
-        // initialize time
-        last_updated_imu_ = node_handle_->now();
-        last_updated_rc_ = node_handle_->now();
-        last_updated_estop_ = node_handle_->now();
+        // create timer
+        qtimer_ = new QTimer(this);
+        connect(qtimer_, &QTimer::timeout, this, &StatePanel::update);
+        qtimer_->start(200); // 100 ms
     }
 
     StatePanel::~StatePanel()
 	{
+        qtimer_->stop();
 		delete ui_;
 	}
 
@@ -121,170 +139,173 @@ namespace whi_rviz_plugins
         ui_->label_eta->setText(Eta.c_str());
     }
 
-    void StatePanel::setMotionState(const whi_interfaces::msg::WhiMotionState::SharedPtr State)
+    void StatePanel::setWhiState(const whi_interfaces::msg::WhiState::SharedPtr State)
     {
-        if (!first_state_msg_)
+        if (State->hardware_id == "whi_motion_hw_interface")
         {
-            first_state_msg_ = std::make_unique<whi_interfaces::msg::WhiMotionState>();
-            first_state_msg_->header.stamp = node_handle_->now();
-        }
-        rclcpp::Time stamp(first_state_msg_->header.stamp);
-        std::time_t rawTime = static_cast<std::time_t>(stamp.seconds());
-        struct tm* timeInfo = localtime(&rawTime);
-        const int LEN = 64;
-        char output[LEN];
-        std::strftime(output, LEN, "%Y.%m.%d-%H:%M:%S", timeInfo);
-        ui_->label_started->setText(output);
-        double hours = (rclcpp::Time(State->header.stamp) - rclcpp::Time(first_state_msg_->header.stamp)).seconds() / 3600.0;
-        if (hours > 0.0)
-        {
-            ui_->label_running_hours->setText(QString::number(hours, 'f', 4));
-        }
-
-        if (State->state == whi_interfaces::msg::WhiMotionState::STA_STANDBY)
-        {
-            if (ui_->label_indicator_cap_1->text() != "SE-Stop")
+            for (const auto& it : State->values)
             {
-                ui_->pushButton_estop->setChecked(false);
-                setIndicatorIcon(ui_->label_indicator_1, INDICATOR_GREEN);
-                setIndicatorText(ui_->label_indicator_cap_1, "standby");
-            }
-            setIndicatorIcon(ui_->label_indicator_3, INDICATOR_GREY);
-            setIndicatorText(ui_->label_indicator_cap_3, "task");
-        }
-        else if (State->state == whi_interfaces::msg::WhiMotionState::STA_RUNNING)
-        {
-            if (ui_->label_indicator_cap_1->text() != "SE-Stop")
-            {
-                setIndicatorIcon(ui_->label_indicator_1, INDICATOR_YELLOW);
-                setIndicatorText(ui_->label_indicator_cap_1, "running");
-            }
-            setIndicatorIcon(ui_->label_indicator_3, INDICATOR_GREY);
-            setIndicatorText(ui_->label_indicator_cap_3, "task");
-        }
-        else if (State->state == whi_interfaces::msg::WhiMotionState::STA_OPERATING)
-        {
-            static double preSetSec = hours;
-            static bool toggle = true;
-            const double duration = 0.5 / 3600.0;
-            if (hours - preSetSec > duration)
-            {
-                if (toggle)
+                if (it.key == "state")
                 {
-                    setIndicatorIcon(ui_->label_indicator_3, INDICATOR_BLUE);
+                    if (it.value == "standby")
+                    {
+                        if (ui_->label_indicator_cap_1->text() != "SE-Stop")
+                        {
+                            ui_->pushButton_estop->setChecked(false);
+                            setIndicatorIcon(ui_->label_indicator_1, INDICATOR_GREEN);
+                            setIndicatorText(ui_->label_indicator_cap_1, "standby");
+                        }
+                        setIndicatorIcon(ui_->label_indicator_3, INDICATOR_GREY);
+                        setIndicatorText(ui_->label_indicator_cap_3, "task");
+                    }
+                    else if (it.value == "running")
+                    {
+                        if (ui_->label_indicator_cap_1->text() != "SE-Stop")
+                        {
+                            setIndicatorIcon(ui_->label_indicator_1, INDICATOR_YELLOW);
+                            setIndicatorText(ui_->label_indicator_cap_1, "running");
+                        }
+                        setIndicatorIcon(ui_->label_indicator_3, INDICATOR_GREY);
+                        setIndicatorText(ui_->label_indicator_cap_3, "task");
+                    }
+                    else if (it.value == "operating")
+                    {
+                        rclcpp::Clock rosClock(RCL_ROS_TIME);
+                        auto current = rosClock.now();
+                        static auto last = current;
+                        static bool toggle = true;
+                        if ((current - last).seconds() > 0.5)
+                        {
+                            if (toggle)
+                            {
+                                setIndicatorIcon(ui_->label_indicator_3, INDICATOR_BLUE);
+                            }
+                            else
+                            {
+                                setIndicatorIcon(ui_->label_indicator_3, INDICATOR_GREY);
+                            }
+                            toggle = !toggle;
+                            last = current;
+                        }
+                        setIndicatorText(ui_->label_indicator_cap_3, "operating");
+                    }
+                    else if (it.value == "fault")
+                    {
+                        setIndicatorIcon(ui_->label_indicator_1, INDICATOR_RED);
+                        setIndicatorText(ui_->label_indicator_cap_1, "fault");
+                    }
+                    else if (it.value == "estopped")
+                    {
+                        ui_->pushButton_estop->setChecked(true);
+
+                        setIndicatorText(ui_->label_indicator_cap_1, "E-Stop");
+                        setIndicatorIcon(ui_->label_indicator_3, INDICATOR_GREY);
+                    }
+                    else if (it.value == "critical_collision")
+                    {
+                        setIndicatorIcon(ui_->label_indicator_1, INDICATOR_ORANGE);
+                        setIndicatorText(ui_->label_indicator_cap_1, "collision");
+                    }
                 }
-                else
+            }
+        }
+        else if (State->hardware_id == "whi_rc_bridge")
+        {
+            for (const auto& it : State->values)
+            {
+                if (it.key == "state")
                 {
-                    setIndicatorIcon(ui_->label_indicator_3, INDICATOR_GREY);
+                    if (it.value == "active")
+                    {
+                        setIndicatorIcon(ui_->label_indicator_2, INDICATOR_BLUE);
+                        setIndicatorText(ui_->label_indicator_cap_2, "remote");
+                    }
+                    else if (it.value == "inactive")
+                    {
+                        setIndicatorIcon(ui_->label_indicator_2, INDICATOR_GREEN);
+                        setIndicatorText(ui_->label_indicator_cap_2, "auto");
+                    }
                 }
-                toggle = !toggle;
-                preSetSec = hours;
             }
-            setIndicatorText(ui_->label_indicator_cap_3, "operating");
-        }
-        else if (State->state == whi_interfaces::msg::WhiMotionState::STA_FAULT)
-        {
-            setIndicatorIcon(ui_->label_indicator_1, INDICATOR_RED);
-            setIndicatorText(ui_->label_indicator_cap_1, "fault");
-        }
-        else if (State->state == whi_interfaces::msg::WhiMotionState::STA_ESTOP)
-        {
-            ui_->pushButton_estop->setChecked(true);
 
-            setIndicatorText(ui_->label_indicator_cap_1, "E-Stop");
-            setIndicatorIcon(ui_->label_indicator_3, INDICATOR_GREY);
+            rclcpp::Clock rosClock(RCL_ROS_TIME);
+            last_updated_rc_ = rosClock.now();
         }
-        else if (State->state == whi_interfaces::msg::WhiMotionState::STA_CRITICAL_COLLISION)
+        else if (State->hardware_id == "whi_arm_interface")
         {
-            setIndicatorIcon(ui_->label_indicator_1, INDICATOR_ORANGE);
-            setIndicatorText(ui_->label_indicator_cap_1, "collision");
-        }
-    }
-
-    void StatePanel::setRcState(const whi_interfaces::msg::WhiRcState::SharedPtr State)
-    {
-        if (!non_realtime_loop_)
-        {
-            auto period = std::chrono::milliseconds(200);
-            non_realtime_loop_ = node_handle_->create_wall_timer(
-                period, std::bind(&StatePanel::update, this));  
-        }
-
-        if (State->state == whi_interfaces::msg::WhiRcState::STA_AUTO)
-        {
-            setIndicatorIcon(ui_->label_indicator_2, INDICATOR_GREEN);
-            setIndicatorText(ui_->label_indicator_cap_2, "auto");
-        }
-        else if (State->state == whi_interfaces::msg::WhiRcState::STA_REMOTE)
-        {
-            setIndicatorIcon(ui_->label_indicator_2, INDICATOR_BLUE);
-            setIndicatorText(ui_->label_indicator_cap_2, "remote");
-        }
-
-        last_updated_rc_ = node_handle_->now();
-    }
-
-    void StatePanel::setArmState(const whi_interfaces::msg::WhiMotionState::SharedPtr State)
-    {
-        if (State != nullptr)
-        {
-            if (State->state == whi_interfaces::msg::WhiMotionState::STA_BOOTING)
+            for (const auto& it : State->values)
             {
-                setIndicatorIcon(ui_->label_indicator_4, INDICATOR_YELLOW);
-                setIndicatorText(ui_->label_indicator_cap_4, "arm booting");
-            }
-            else if (State->state == whi_interfaces::msg::WhiMotionState::STA_STANDBY)
-            {
-                setIndicatorIcon(ui_->label_indicator_4, INDICATOR_GREEN);
-                setIndicatorText(ui_->label_indicator_cap_4, "arm standby");
-            }
-            else if (State->state == whi_interfaces::msg::WhiMotionState::STA_FAULT)
-            {
-                setIndicatorIcon(ui_->label_indicator_4, INDICATOR_RED);
-                setIndicatorText(ui_->label_indicator_cap_4, "arm fault");
+                if (it.key == "state")
+                {
+                    if (it.value == "booting")
+                    {
+                        setIndicatorIcon(ui_->label_indicator_4, INDICATOR_YELLOW);
+                        setIndicatorText(ui_->label_indicator_cap_4, "arm booting");
+                    }
+                    else if (it.value == "standby")
+                    {
+                        setIndicatorIcon(ui_->label_indicator_4, INDICATOR_GREEN);
+                        setIndicatorText(ui_->label_indicator_cap_4, "arm standby");
+                    }
+                    else if (it.value == "fault")
+                    {
+                        setIndicatorIcon(ui_->label_indicator_4, INDICATOR_RED);
+                        setIndicatorText(ui_->label_indicator_cap_4, "arm fault");
+                    }
+                }
             }
 
+            rclcpp::Clock rosClock(RCL_ROS_TIME);
             if (last_updated_arm_ == nullptr)
             {
-                last_updated_arm_ = std::make_unique<rclcpp::Time>(node_handle_->now());
+                last_updated_arm_ = std::make_unique<rclcpp::Time>(rosClock.now());
             }
             else
             {
-                *last_updated_arm_ = node_handle_->now();
+                *last_updated_arm_ = rosClock.now();
             }
         }
-        else
+        else if (State->hardware_id == "whi_imu")
         {
-            setIndicatorIcon(ui_->label_indicator_4, INDICATOR_GREY);
-            setIndicatorText(ui_->label_indicator_cap_4, "reserved");
-        }
-    }
+            for (const auto& it : State->values)
+            {
+                if (it.key == "state")
+                {
+                    if (it.value == "running")
+                    {
+                        setIndicatorIcon(ui_->label_indicator_5, INDICATOR_GREEN);
+                    }
+                    else if (it.value == "fault")
+                    {
+                        setIndicatorIcon(ui_->label_indicator_5, INDICATOR_RED);
+                    }
+                    setIndicatorText(ui_->label_indicator_cap_5, "IMU");
+                }
+            }
 
-    void StatePanel::setImuState()
-    {
-        if (!non_realtime_loop_)
-        {
-            auto updateFreq = std::chrono::milliseconds(200);
-            non_realtime_loop_ = node_handle_->create_wall_timer(
-                updateFreq, std::bind(&StatePanel::update, this));  
+            rclcpp::Clock rosClock(RCL_ROS_TIME);
+            last_updated_imu_ = rosClock.now();
         }
-        
-        setIndicatorIcon(ui_->label_indicator_5, INDICATOR_GREEN);
-        setIndicatorText(ui_->label_indicator_cap_5, "IMU");
-
-        last_updated_imu_ = node_handle_->now();
     }
 
     void StatePanel::setRcStateTopic(const std::string& Topic)
     {
         pub_rc_state_.reset();
-        pub_rc_state_ = node_handle_->create_publisher<whi_interfaces::msg::WhiRcState>(Topic, 50);
+        rclcpp::Node::SharedPtr node = node_rviz_weak_.lock()->get_raw_node();
+        if (node)
+        {
+            pub_rc_state_ = node->create_publisher<whi_interfaces::msg::WhiRcState>(Topic, 50);
+        }
     }
 
     void StatePanel::setEstopTopic(const std::string& Topic)
     {
         pub_estop_.reset();
-        pub_estop_ = node_handle_->create_publisher<std_msgs::msg::Bool>(Topic, 50);
+        rclcpp::Node::SharedPtr node = node_rviz_weak_.lock()->get_raw_node();
+        if (node)
+        {
+            pub_estop_ = node->create_publisher<std_msgs::msg::Bool>(Topic, 50);
+        }
     }
 
     void StatePanel::setBatteryInfo(int Soc, int Soh)
@@ -447,7 +468,7 @@ namespace whi_rviz_plugins
         std::string name("whi_imu_node");
         if (killProcedure(name))
         {
-            RCLCPP_INFO_STREAM(node_handle_->get_logger(), name << " was successfully terminated");
+            RCLCPP_INFO_STREAM(rclcpp::get_logger("panel_state"), name << " was successfully terminated");
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             launchProcedure(name);
         }
@@ -462,7 +483,7 @@ namespace whi_rviz_plugins
         std::string name("whi_rc_bridge_node");
         if (killProcedure(name))
         {
-            RCLCPP_INFO_STREAM(node_handle_->get_logger(), name << " was successfully terminated");
+            RCLCPP_INFO_STREAM(rclcpp::get_logger("panel_state"), name << " was successfully terminated");
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             launchProcedure(name);
         }
@@ -477,7 +498,7 @@ namespace whi_rviz_plugins
         std::string name("whi_realsense2_camera_node");
         if (killProcedure(name))
         {
-            RCLCPP_INFO_STREAM(node_handle_->get_logger(), name << " was successfully terminated");
+            RCLCPP_INFO_STREAM(rclcpp::get_logger("panel_state"), name << " was successfully terminated");
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             launchProcedure(name);
         }
@@ -489,7 +510,9 @@ namespace whi_rviz_plugins
 
     void StatePanel::estopButtonToggled(bool Checked)
     {
-        auto current = node_handle_->now();
+        rclcpp::Clock rosClock(RCL_ROS_TIME);
+        auto current = rosClock.now();
+
         if ((current - last_updated_estop_).seconds() > 0.25)
         {
             std_msgs::msg::Bool msg;
@@ -526,7 +549,14 @@ namespace whi_rviz_plugins
 
     void StatePanel::update()
     {
-        auto current = node_handle_->now();
+        rclcpp::Clock rosClock(RCL_ROS_TIME);
+        auto current = rosClock.now();
+
+        double hours = (current - start_).seconds() / 3600.0;
+        if (hours > 0.0)
+        {
+            ui_->label_running_hours->setText(QString::number(hours, 'f', 4));
+        }
 
         if ((current - last_updated_imu_).seconds() > 2.0)
         {

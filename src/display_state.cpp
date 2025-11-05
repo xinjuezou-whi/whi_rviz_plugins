@@ -39,31 +39,25 @@ namespace whi_rviz_plugins
     DisplayState::DisplayState()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for motion state VERSION 02.11.3" << std::endl;
+        std::cout << "\nWHI RViz plugin for motion state VERSION 02.12.1" << std::endl;
         std::cout << "Copyright @ 2023-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
-        odom_topic_property_ = new rviz_common::properties::RosTopicProperty("Odom topic", "odom",
-            "nav_msgs/msg/Odometry", "Topic of odometry", this);
-        path_topic_property_ = new rviz_common::properties::RosTopicProperty("Planned path topic", "plan",
-            "nav_msgs/msg/Path", "Topic of planned path", this);
-        // goal_topic_property_ = new rviz_common::properties::RosTopicProperty("Goal topic", "navigate_to_pose/_action/goal",
-        //     "nav2_msgs/action/NavigateToPose/Impl/SendGoalService/Request", "Topic of navigation goal", this);
         // feedback_topic_property_ = new rviz_common::properties::RosTopicProperty("Navigation feedback topic", "navigate_to_pose/_action/feedback",
         //     "nav2_msgs/action/NavigateToPose/Impl/FeedbackMessage", "Topic of navigation feedback", this);
-        motion_state_topic_property_ = new rviz_common::properties::RosTopicProperty("Motion state topic", "motion_state",
-            "whi_interfaces/msg/WhiMotionState", "Topic of motion state", this);
+        odom_topic_property_ = new rviz_common::properties::RosTopicProperty("Odom topic", "odom",
+            "", "Topic of odometry", this, SLOT(updateTopicOdom()));
+        path_topic_property_ = new rviz_common::properties::RosTopicProperty("Planned path topic", "plan",
+            "", "Topic of planned path", this, SLOT(updateTopicPath()));
         battery_topic_property_ = new rviz_common::properties::RosTopicProperty("Battery info topic", "battery_data",
-            "whi_interfaces/msg/WhiBattery", "Topic of battery info", this);
-        rc_state_topic_property_ = new rviz_common::properties::RosTopicProperty("Remote controller state topic", "rc_state",
-            "whi_interfaces/msg/WhiRcState", "Topic of remote controller state", this);
-        arm_state_topic_property_ = new rviz_common::properties::RosTopicProperty("manipulator state topic", "actuator_state",
-            "whi_interfaces/msg/WhiMotionState", "Topic of manipulator state", this);
-        imu_topic_property_ = new rviz_common::properties::RosTopicProperty("IMU topic", "imu_data",
-            "sensor_msgs/msg/Imu", "Topic of IMU data", this);
+            "", "Topic of battery info", this, SLOT(updateTopicBattery()));
+        temp_hum_topic_property_ = new rviz_common::properties::RosTopicProperty("temperature and humidity topic", "temp_hum",
+            "", "Topic of environmental temperature and humidity", this, SLOT(updateTopicTempHum()));
+        whi_state_topic_property_ = new rviz_common::properties::RosTopicProperty("WHI state topic", "whi_state",
+            "", "Topic of WHI state", this, SLOT(updateTopicWhiState()));
         estop_topic_property_ = new rviz_common::properties::RosTopicProperty("Estop topic", "estop",
-            "std_msgs/msg/Bool", "Topic of EStop", this);
-        temp_hum_topic_property_ = new rviz_common::properties::RosTopicProperty("temperature and humidity topic", "temperature_humidity",
-            "whi_interfaces/msg/WhiTemperatureHumidity", "Topic of environmental temperature and humidity", this);
+            "", "Topic of EStop", this, SLOT(updateTopicEstop()));
+        rc_state_topic_property_ = new rviz_common::properties::RosTopicProperty("Remote controller state topic", "rc_state",
+            "", "Topic of remote controller state", this, SLOT(updateTopicRc()));
         frame_property_ = new rviz_common::properties::TfFrameProperty("base_frame", "base_link", "Base link frame of robot",
             this, nullptr, false, SLOT(updateBaselinkFrame()));
     }
@@ -71,35 +65,26 @@ namespace whi_rviz_plugins
     DisplayState::~DisplayState()
     {
         delete frame_dock_;
-
-        if (executor_thread_.joinable())
-        {
-            executor_->cancel();
-            executor_thread_.join();
-        }
     }
     
     void DisplayState::onInitialize()
     {
-        Display::onInitialize();
-
         // Access the abstract ROS Node and
         // in the process lock it for exclusive use until the method is done.
         // Get a pointer to the familiar rclcpp::Node for making subscriptions/publishers
         // (as per normal rclcpp code)
-        // node_handle_ = context_->getRosNodeAbstraction().lock()->get_raw_node();
+        node_rviz_weak_ = context_->getRosNodeAbstraction();
 
-        node_handle_ = std::make_shared<rclcpp::Node>("display_state");
-        // create the executor
-        executor_ = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
-        executor_->add_node(node_handle_);
-        // start executor in background thread
-        executor_thread_ = std::thread([this]()
-        {
-            executor_->spin();
-        });
-
-        panel_ = new StatePanel(node_handle_);
+        // feedback_topic_property_->initialize(context_->getRosNodeAbstraction());
+        odom_topic_property_->initialize(context_->getRosNodeAbstraction());
+        path_topic_property_->initialize(context_->getRosNodeAbstraction());
+        battery_topic_property_->initialize(context_->getRosNodeAbstraction());
+        temp_hum_topic_property_->initialize(context_->getRosNodeAbstraction());
+        whi_state_topic_property_->initialize(context_->getRosNodeAbstraction());
+        estop_topic_property_->initialize(context_->getRosNodeAbstraction());
+        rc_state_topic_property_->initialize(context_->getRosNodeAbstraction());
+        
+        panel_ = new StatePanel(context_);
         rviz_common::WindowManagerInterface* windowContext = context_->getWindowManager();
         if (windowContext)
         {
@@ -111,151 +96,130 @@ namespace whi_rviz_plugins
             }
             else
             {
-                RCLCPP_WARN(node_handle_->get_logger(), "failed to cast parent window to QMainWindow");
+                RCLCPP_WARN(rclcpp::get_logger("display_state"), "failed to cast parent window to QMainWindow");
             }
             frame_dock_->setIcon(getIcon()); // set the image name as same as the name of plugin
         }
 
-        odom_topic_property_->initialize(context_->getRosNodeAbstraction());
-        connect(odom_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
-        {
-            if (initialized())
-            {
-                sub_odom_.reset();
-                sub_odom_ = node_handle_->create_subscription<nav_msgs::msg::Odometry>(
-                    odom_topic_property_->getTopicStd(), 10, std::bind(&DisplayState::subCallbackOdom, this, std::placeholders::_1));
-            }
-        });
-        path_topic_property_->initialize(context_->getRosNodeAbstraction());
-        connect(path_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
-        {
-            if (initialized())
-            {
-                sub_path_.reset();
-                sub_path_ = node_handle_->create_subscription<nav_msgs::msg::Path>(
-                    path_topic_property_->getTopicStd(), 10, std::bind(&DisplayState::subCallbackPath, this, std::placeholders::_1));
-            }
-        });
-        // goal_topic_property_->initialize(context_->getRosNodeAbstraction());
-        // connect(goal_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
-        // {
-        //     if (initialized())
-        //     {
-        //         sub_goal_.reset();
-                sub_goal_ = node_handle_->create_subscription<nav2_msgs::action::NavigateToPose::Impl::SendGoalService::Request>(
-                    "navigate_to_pose/_action/goal",//goal_topic_property_->getTopicStd(),
-                    rclcpp::SystemDefaultsQoS(),
-                    [this](const nav2_msgs::action::NavigateToPose::Impl::SendGoalService::Request::SharedPtr Request)
-                    {
-                        panel_->setGoal(Request->goal.pose.pose);
-                    });
-        //     }
-        // });
-        // feedback_topic_property_->initialize(context_->getRosNodeAbstraction());
-        // connect(feedback_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
-        // {
-        //     if (initialized())
-        //     {
-        //         sub_navi_feedback_.reset();
-                sub_navi_feedback_ = node_handle_->create_subscription<nav2_msgs::action::NavigateToPose::Impl::FeedbackMessage>(
-                    "navigate_to_pose/_action/feedback",//feedback_topic_property_->getTopicStd(),
-                    rclcpp::SystemDefaultsQoS(),
-                    [this](const nav2_msgs::action::NavigateToPose::Impl::FeedbackMessage::SharedPtr Msg)
-                    {
-                        std::string etaStr("remaining ");
-                        etaStr += toStringWithPrecision(Msg->feedback.distance_remaining, 2) + "m, in " +
-                            toStringWithPrecision(rclcpp::Duration(Msg->feedback.estimated_time_remaining).seconds(), 0) + "s";
-
-                        panel_->setEta(etaStr);
-                    });
-        //     }
-        // });
-        motion_state_topic_property_->initialize(context_->getRosNodeAbstraction());
-        connect(motion_state_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
-        {
-            if (initialized())
-            {
-                sub_motion_state_.reset();
-                sub_motion_state_ = node_handle_->create_subscription<whi_interfaces::msg::WhiMotionState>(
-                    motion_state_topic_property_->getTopicStd(), 10,
-                    std::bind(&DisplayState::subCallbackMotionState, this, std::placeholders::_1));
-            }
-        });
-        battery_topic_property_->initialize(context_->getRosNodeAbstraction());
-        connect(battery_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
-        {
-            if (initialized())
-            {
-                sub_battery_.reset();
-                sub_battery_ = node_handle_->create_subscription<whi_interfaces::msg::WhiBattery>(
-                    battery_topic_property_->getTopicStd(), 10,
-                    std::bind(&DisplayState::subCallbackBattery, this, std::placeholders::_1));
-            }
-        });
-        rc_state_topic_property_->initialize(context_->getRosNodeAbstraction());
-        connect(rc_state_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
-        {
-            if (initialized())
-            {
-                sub_rc_state_.reset();
-                sub_rc_state_ = node_handle_->create_subscription<whi_interfaces::msg::WhiRcState>(
-                    rc_state_topic_property_->getTopicStd(), 10,
-                    std::bind(&DisplayState::subCallbackRcState, this, std::placeholders::_1));
-                
-                panel_->setRcStateTopic(rc_state_topic_property_->getTopicStd());
-            }
-        });
-        arm_state_topic_property_->initialize(context_->getRosNodeAbstraction());
-        connect(arm_state_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
-        {
-            if (initialized())
-            {
-                if (arm_state_topic_property_->getTopicStd().empty())
-                {
-                    panel_->setArmState(nullptr);
-                }
-                else
-                {
-                    sub_arm_state_.reset();
-                    sub_arm_state_ = node_handle_->create_subscription<whi_interfaces::msg::WhiMotionState>(
-                        arm_state_topic_property_->getTopicStd(), 10,
-                        std::bind(&DisplayState::subCallbackArmState, this, std::placeholders::_1));
-                }
-            }
-        });
-        imu_topic_property_->initialize(context_->getRosNodeAbstraction());
-        connect(imu_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
-        {
-            if (initialized())
-            {
-                sub_imu_.reset();
-                sub_imu_ = node_handle_->create_subscription<sensor_msgs::msg::Imu>(
-                    imu_topic_property_->getTopicStd(), 10, std::bind(&DisplayState::subCallbackImu, this, std::placeholders::_1));
-            }
-        });
-        estop_topic_property_->initialize(context_->getRosNodeAbstraction());
-        connect(estop_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
-        {
-            if (initialized())
-            {
-                panel_->setEstopTopic(estop_topic_property_->getTopicStd());
-            }
-        });
-        temp_hum_topic_property_->initialize(context_->getRosNodeAbstraction());
-        connect(temp_hum_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
-        {
-            if (initialized())
-            {
-                sub_temp_hum_.reset();
-                sub_temp_hum_ = node_handle_->create_subscription<whi_interfaces::msg::WhiTemperatureHumidity>(
-                    temp_hum_topic_property_->getTopicStd(), 10,
-                    std::bind(&DisplayState::subCallbackTempHum, this, std::placeholders::_1));
-            }
-        });
-
         updateBaselinkFrame();
 
         frame_property_->setFrameManager(context_->getFrameManager());
+    }
+
+    void DisplayState::onEnable()
+    {
+        if (!isEnabled())
+        {
+            return;
+        }
+
+		updateTopicOdom();
+		updateTopicPath();
+        updateTopicBattery();
+        updateTopicTempHum();
+        updateTopicWhiState();
+		updateTopicEstop();
+		updateTopicRc();
+        
+        rclcpp::Node::SharedPtr node = node_rviz_weak_.lock()->get_raw_node();
+        if (node)
+        {
+            sub_navi_feedback_ = node->create_subscription<nav2_msgs::action::NavigateToPose::Impl::FeedbackMessage>(
+                "navigate_to_pose/_action/feedback",//feedback_topic_property_->getTopicStd(),
+                1,
+                [this](const nav2_msgs::action::NavigateToPose::Impl::FeedbackMessage::SharedPtr Msg)
+                {
+                    std::string etaStr("remaining ");
+                    etaStr += toStringWithPrecision(Msg->feedback.distance_remaining, 2) + "m, in " +
+                        toStringWithPrecision(rclcpp::Duration(Msg->feedback.estimated_time_remaining).seconds(), 0) + "s";
+
+                    panel_->setEta(etaStr);
+                });
+            context_->queueRender();
+        }
+    }
+
+    void DisplayState::onDisable()
+    {
+        sub_navi_feedback_.reset();
+        sub_odom_.reset();
+        sub_path_.reset();
+        sub_battery_.reset();
+        sub_temp_hum_.reset();
+        sub_whi_state_.reset();
+    }
+
+    void DisplayState::updateTopicOdom()
+    {
+        sub_odom_.reset();
+        rclcpp::Node::SharedPtr node = node_rviz_weak_.lock()->get_raw_node();
+        if (node)
+        {
+            sub_odom_ = node->create_subscription<nav_msgs::msg::Odometry>(
+                odom_topic_property_->getTopicStd(), 1, std::bind(&DisplayState::subCallbackOdom, this, std::placeholders::_1));
+            context_->queueRender();
+        }
+    }
+
+    void DisplayState::updateTopicPath()
+    {
+        sub_path_.reset();
+        rclcpp::Node::SharedPtr node = node_rviz_weak_.lock()->get_raw_node();
+        if (node)
+        {
+            sub_path_ = node->create_subscription<nav_msgs::msg::Path>(
+                path_topic_property_->getTopicStd(), 1, std::bind(&DisplayState::subCallbackPath, this, std::placeholders::_1));
+            context_->queueRender();
+        }
+    }
+
+    void DisplayState::updateTopicBattery()
+    {
+        sub_battery_.reset();
+        rclcpp::Node::SharedPtr node = node_rviz_weak_.lock()->get_raw_node();
+        if (node)
+        {
+            sub_battery_ = node->create_subscription<whi_interfaces::msg::WhiBattery>(
+                battery_topic_property_->getTopicStd(), 1,
+                std::bind(&DisplayState::subCallbackBattery, this, std::placeholders::_1));
+            context_->queueRender();
+        }
+    }
+
+    void DisplayState::updateTopicTempHum()
+    {
+        sub_temp_hum_.reset();
+        rclcpp::Node::SharedPtr node = node_rviz_weak_.lock()->get_raw_node();
+        if (node)
+        {
+            sub_temp_hum_ = node->create_subscription<whi_interfaces::msg::WhiTemperatureHumidity>(
+                temp_hum_topic_property_->getTopicStd(), 1,
+                std::bind(&DisplayState::subCallbackTempHum, this, std::placeholders::_1));
+            context_->queueRender();
+        }
+    }
+
+    void DisplayState::updateTopicWhiState()
+    {
+        sub_whi_state_.reset();
+        rclcpp::Node::SharedPtr node = node_rviz_weak_.lock()->get_raw_node();
+        if (node)
+        {
+            sub_whi_state_ = node->create_subscription<whi_interfaces::msg::WhiState>(
+                whi_state_topic_property_->getTopicStd(), 1,
+                std::bind(&DisplayState::subCallbackWhiState, this, std::placeholders::_1));
+            context_->queueRender();
+        }
+    }
+
+    void DisplayState::updateTopicEstop()
+    {
+        panel_->setEstopTopic(estop_topic_property_->getTopicStd());
+    }
+
+    void DisplayState::updateTopicRc()
+    {   
+        panel_->setRcStateTopic(rc_state_topic_property_->getTopicStd());
     }
 
     void DisplayState::subCallbackOdom(const nav_msgs::msg::Odometry::SharedPtr Msg)
@@ -273,41 +237,19 @@ namespace whi_rviz_plugins
         panel_->setGoal(goal_);
     }
 
-    void DisplayState::subCallbackGoal(const geometry_msgs::msg::PoseStamped::SharedPtr Msg)
-    {
-        goal_ = Msg->pose;
-
-        panel_->setGoal(goal_);
-    }
-
-    void DisplayState::subCallbackMotionState(const whi_interfaces::msg::WhiMotionState::SharedPtr Msg)
-    {
-        panel_->setMotionState(Msg);
-    }
-
     void DisplayState::subCallbackBattery(const whi_interfaces::msg::WhiBattery::SharedPtr Msg)
     {
         panel_->setBatteryInfo(Msg->soc, Msg->soh);
     }
 
-    void DisplayState::subCallbackRcState(const whi_interfaces::msg::WhiRcState::SharedPtr Msg)
-    {
-        panel_->setRcState(Msg);
-    }
-
-    void DisplayState::subCallbackArmState(const whi_interfaces::msg::WhiMotionState::SharedPtr Msg)
-    {
-        panel_->setArmState(Msg);
-    }
-
-    void DisplayState::subCallbackImu(const sensor_msgs::msg::Imu::SharedPtr Msg)
-    {
-        panel_->setImuState();
-    }
-
     void DisplayState::subCallbackTempHum(const whi_interfaces::msg::WhiTemperatureHumidity::SharedPtr Msg)
     {
         panel_->setTempHum(Msg->temperature, Msg->humidity);
+    }
+
+    void DisplayState::subCallbackWhiState(const whi_interfaces::msg::WhiState::SharedPtr Msg)
+    {
+        panel_->setWhiState(Msg);
     }
 
     void DisplayState::updateBaselinkFrame()
