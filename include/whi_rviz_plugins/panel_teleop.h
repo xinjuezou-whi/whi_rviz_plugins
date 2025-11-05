@@ -17,12 +17,12 @@ Changelog:
 ******************************************************************/
 #pragma once
 #include "widget_twist.h"
-#include <whi_interfaces/msg/whi_motion_state.hpp>
-#include <whi_interfaces/msg/whi_rc_state.hpp>
+#include <whi_interfaces/msg/whi_state.hpp>
 
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 
 #include <memory>
 #include <thread>
@@ -57,18 +57,18 @@ namespace whi_rviz_plugins
 		void moveLinear(int Dir);
 		void moveAngular(int Dir);
 		void halt();
-		void setMotionStateTopic(const std::string& Topic);
+		void setWhiStateTopic(const std::string& Topic);
 		void setSwEstopTopic(const std::string& Topic);
-		void setRcStateTopic(const std::string& Topic);
+		void setOdomTopic(const std::string& Topic);
 
 	private:
 		void keyPressEvent(QKeyEvent* Event) override;
 		void focusOutEvent(QFocusEvent* Event) override;
 		void focusInEvent(QFocusEvent* Event) override;
 
-		void subCallbackMotionState(const whi_interfaces::msg::WhiMotionState::SharedPtr Msg);
+		void subCallbackWhiState(const whi_interfaces::msg::WhiState::SharedPtr Msg);
 		void subCallbackSwEstop(const std_msgs::msg::Bool::SharedPtr Msg);
-		void subCallbackRcState(const whi_interfaces::msg::WhiRcState::SharedPtr Msg);
+		void subCallbackOdom(const nav_msgs::msg::Odometry::SharedPtr Msg);
 		bool isBypassed();
 		void refreshTopic();
 
@@ -86,9 +86,9 @@ namespace whi_rviz_plugins
 		std::string topic_;
 		float linear_{ 0.0 };
 		float angular_{ 0.0 };
-		rclcpp::Subscription<whi_interfaces::msg::WhiMotionState>::SharedPtr sub_motion_state_{ nullptr };
+		rclcpp::Subscription<whi_interfaces::msg::WhiState>::SharedPtr sub_whi_state_{ nullptr };
 		rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr sub_sw_estop_{ nullptr };
-		rclcpp::Subscription<whi_interfaces::msg::WhiRcState>::SharedPtr sub_rc_state_{ nullptr };
+		rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_{ nullptr };
 		bool sw_estopped_{ false };
 		bool use_stamped_vel_{ true };
 		std::atomic_bool toggle_estop_{ false };

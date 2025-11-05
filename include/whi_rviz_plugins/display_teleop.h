@@ -83,8 +83,8 @@ namespace whi_rviz_plugins
 		rviz_common::properties::FloatProperty* angular_min_;
 		rviz_common::properties::FloatProperty* angular_max_;
 		rviz_common::properties::FloatProperty* angular_step_;
-		rviz_common::properties::RosTopicProperty* motion_state_topic_property_;
+		rviz_common::properties::RosTopicProperty* whi_state_topic_property_;
 		rviz_common::properties::RosTopicProperty* sw_estop_topic_property_;
-		rviz_common::properties::RosTopicProperty* rc_state_topic_property_;
+		rviz_common::properties::RosTopicProperty* odom_topic_property_;
 	};
 } // end namespace whi_rviz_plugins

@@ -188,6 +188,20 @@
           </widget>
          </item>
          <item>
+          <widget class="QLabel" name="label_5">
+           <property name="text">
+            <string>Actual:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_linear_actual">
+           <property name="text">
+            <string>0.0</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <spacer name="horizontalSpacer_3">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
@@ -220,6 +234,20 @@
          </item>
          <item>
           <widget class="QLabel" name="label_angular">
+           <property name="text">
+            <string>0.0</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_6">
+           <property name="text">
+            <string>Actual:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_angular_actual">
            <property name="text">
             <string>0.0</string>
            </property>

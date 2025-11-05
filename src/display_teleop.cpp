@@ -25,7 +25,7 @@ namespace whi_rviz_plugins
     DisplayTeleop::DisplayTeleop()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for teleop VERSION 02.08.3" << std::endl;
+        std::cout << "\nWHI RViz plugin for teleop VERSION 02.09.1" << std::endl;
         std::cout << "Copyright @ 2022-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         enable_property_ = new rviz_common::properties::BoolProperty("Enable teleop", true, "Toggle the functionality of teleop",
@@ -46,7 +46,7 @@ namespace whi_rviz_plugins
         linear_step_ = new rviz_common::properties::FloatProperty("Linear step", 0.01, "Delta of linear per jog",
             this, SLOT(updateLinearStep()));
         linear_step_->setMin(0.01);
-        angular_min_ = new rviz_common::properties::FloatProperty("Min angular", 0.01, "Min limit of angular velocity",
+        angular_min_ = new rviz_common::properties::FloatProperty("Min angular", 0.1, "Min limit of angular velocity",
             this, SLOT(updateAngularMin()));
         angular_min_->setMin(0.0);
         angular_max_ = new rviz_common::properties::FloatProperty("Max angular", 1.57, "Max limit of angular velocity",
@@ -55,12 +55,12 @@ namespace whi_rviz_plugins
         angular_step_ = new rviz_common::properties::FloatProperty("Angular step", 0.1, "Delta of angular per jog",
             this, SLOT(updateAngularStep()));
         angular_step_->setMin(0.01);
-        motion_state_topic_property_ = new rviz_common::properties::RosTopicProperty("Motion state topic", "motion_state",
-            "whi_interfaces/msg/WhiMotionState", "Topic of motion state", this);
+        whi_state_topic_property_ = new rviz_common::properties::RosTopicProperty("WHI state topic", "whi_state",
+            "whi_interfaces/msg/WhiState", "Topic of WHI state", this);
         sw_estop_topic_property_ = new rviz_common::properties::RosTopicProperty("Software EStop topic", "estop",
             "std_msgs/msg/Bool", "Topic of software EStop", this);
-        rc_state_topic_property_ = new rviz_common::properties::RosTopicProperty("Remote controller state topic", "rc_state",
-            "whi_interfaces/msg/WhiRcState", "Topic of remote controller state", this);
+        odom_topic_property_ = new rviz_common::properties::RosTopicProperty("Odom topic", "odom",
+            "nav_msgs/msg/Odometry", "Topic of Odom", this);
     }
 
     DisplayTeleop::~DisplayTeleop()
@@ -78,12 +78,12 @@ namespace whi_rviz_plugins
         // (as per normal rclcpp code)
         node_handle_ = context_->getRosNodeAbstraction().lock()->get_raw_node();
 
-        motion_state_topic_property_->initialize(context_->getRosNodeAbstraction());
-        connect(motion_state_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
+        whi_state_topic_property_->initialize(context_->getRosNodeAbstraction());
+        connect(whi_state_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
         {
             if (initialized())
             {
-                panel_->setMotionStateTopic(motion_state_topic_property_->getTopicStd());
+                panel_->setWhiStateTopic(whi_state_topic_property_->getTopicStd());
             }
         });
         sw_estop_topic_property_->initialize(context_->getRosNodeAbstraction());
@@ -94,12 +94,12 @@ namespace whi_rviz_plugins
                 panel_->setSwEstopTopic(sw_estop_topic_property_->getTopicStd());
             }
         });
-        rc_state_topic_property_->initialize(context_->getRosNodeAbstraction());
-        connect(rc_state_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
+        odom_topic_property_->initialize(context_->getRosNodeAbstraction());
+        connect(odom_topic_property_, &rviz_common::properties::RosTopicProperty::changed, this, [&]()
         {
             if (initialized())
             {
-                panel_->setRcStateTopic(rc_state_topic_property_->getTopicStd());
+                panel_->setOdomTopic(odom_topic_property_->getTopicStd());
             }
         });
 

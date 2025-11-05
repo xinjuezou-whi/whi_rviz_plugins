@@ -247,12 +247,13 @@ namespace whi_rviz_plugins
         ui_->label_angular->setText("0.0");
     }
 
-	void TeleopPanel::setMotionStateTopic(const std::string& Topic)
+	void TeleopPanel::setWhiStateTopic(const std::string& Topic)
 	{
 		if (!Topic.empty())
 		{
-            sub_motion_state_ = node_handle_->create_subscription<whi_interfaces::msg::WhiMotionState>(
-                Topic, 10, std::bind(&TeleopPanel::subCallbackMotionState, this, std::placeholders::_1));
+            sub_whi_state_.reset();
+            sub_whi_state_ = node_handle_->create_subscription<whi_interfaces::msg::WhiState>(
+                Topic, 10, std::bind(&TeleopPanel::subCallbackWhiState, this, std::placeholders::_1));
 		}
 	}
 
@@ -260,18 +261,20 @@ namespace whi_rviz_plugins
     {
 		if (!Topic.empty())
 		{
+            sub_sw_estop_.reset();
             sub_sw_estop_ = node_handle_->create_subscription<std_msgs::msg::Bool>(
                 Topic, 10, std::bind(&TeleopPanel::subCallbackSwEstop, this, std::placeholders::_1));
 		}
     }
 
-    void TeleopPanel::setRcStateTopic(const std::string& Topic)
+    void TeleopPanel::setOdomTopic(const std::string& Topic)
     {
 		if (!Topic.empty())
 		{
-            sub_rc_state_ = node_handle_->create_subscription<whi_interfaces::msg::WhiRcState>(
-                Topic, 10, std::bind(&TeleopPanel::subCallbackRcState, this, std::placeholders::_1));
-		}
+            sub_odom_.reset();
+            sub_odom_ = node_handle_->create_subscription<nav_msgs::msg::Odometry>(
+                Topic, 10, std::bind(&TeleopPanel::subCallbackOdom, this, std::placeholders::_1));
+        }
     }
 
     void TeleopPanel::keyPressEvent(QKeyEvent* Event)
@@ -309,54 +312,73 @@ namespace whi_rviz_plugins
         ui_->label_key_active->setStyleSheet("background-color: rgb(146, 208, 80);");
     }
 
-    void TeleopPanel::subCallbackMotionState(const whi_interfaces::msg::WhiMotionState::SharedPtr Msg)
+    void TeleopPanel::subCallbackWhiState(const whi_interfaces::msg::WhiState::SharedPtr Msg)
     {
-        if (Msg->state == whi_interfaces::msg::WhiMotionState::STA_ESTOP)
-	    {
-		    if (!toggle_estop_.load())
-		    {
-			    halt();
-		    }
-		    toggle_estop_.store(true);
-	    }
-	    else if (Msg->state == whi_interfaces::msg::WhiMotionState::STA_STANDBY)
-	    {
-            toggle_estop_.store(false);
-	    }
-
-        if (Msg->state == whi_interfaces::msg::WhiMotionState::STA_CRITICAL_COLLISION)
-	    {
-		    if (!toggle_collision_.load())
-		    {
-			    halt();
-		    }
-		    toggle_collision_.store(true);
-	    }
-	    else if (Msg->state == whi_interfaces::msg::WhiMotionState::STA_CRITICAL_COLLISION_CLEAR)
-	    {
-		    toggle_collision_.store(false);
-	    }
+        if (Msg->hardware_id == "whi_motion_hw_interface")
+        {
+            for (const auto& it : Msg->values)
+            {
+                if (it.key == "state")
+                {
+                    if (it.value == "standby")
+                    {
+                        toggle_estop_.store(false);
+                    }
+                    else if (it.value == "estopped")
+                    {
+                        if (!toggle_estop_.load())
+                        {
+                            halt();
+                        }
+                        toggle_estop_.store(true);
+                    }
+                    else if (it.value == "critical_collision")
+                    {
+                        if (!toggle_collision_.load())
+                        {
+                            halt();
+                        }
+                        toggle_collision_.store(true);
+                    }
+                    else if (it.value == "collision_clear")
+                    {
+                        toggle_collision_.store(false);
+                    }
+                }
+            }
+        }
+        else if (Msg->hardware_id == "whi_rc_bridge")
+        {
+            for (const auto& it : Msg->values)
+            {
+                if (it.key == "state")
+                {
+                    if (it.value == "active")
+                    {
+                        if (!remote_mode_.load())
+                        {
+                            halt();
+                        }
+                        remote_mode_.store(true);
+                    }
+                    else if (it.value == "inactive")
+                    {
+                        remote_mode_.store(false);
+                    }
+                }
+            }
+        }
     }
 
     void TeleopPanel::subCallbackSwEstop(const std_msgs::msg::Bool::SharedPtr Msg)
     {
         sw_estopped_ = Msg->data;
     }
-    
-    void TeleopPanel::subCallbackRcState(const whi_interfaces::msg::WhiRcState::SharedPtr Msg)
+
+    void TeleopPanel::subCallbackOdom(const nav_msgs::msg::Odometry::SharedPtr Msg)
     {
-        if (Msg->state == whi_interfaces::msg::WhiRcState::STA_ACTIVE)
-        {
-            if (!remote_mode_.load())
-            {
-                halt();
-            }
-            remote_mode_.store(true);
-        }
-        else if (Msg->state == whi_interfaces::msg::WhiRcState::STA_INACTIVE)
-        {
-            remote_mode_.store(false);
-        }
+        ui_->label_linear_actual->setText(to_string_with_precision(Msg->twist.twist.linear.x, 2).c_str());
+        ui_->label_angular_actual->setText(to_string_with_precision(Msg->twist.twist.angular.z, 2).c_str());
     }
 
     bool TeleopPanel::isBypassed()
