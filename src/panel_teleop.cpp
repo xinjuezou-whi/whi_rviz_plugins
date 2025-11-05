@@ -345,7 +345,7 @@ namespace whi_rviz_plugins
     
     void TeleopPanel::subCallbackRcState(const whi_interfaces::msg::WhiRcState::SharedPtr Msg)
     {
-        if (Msg->state == whi_interfaces::msg::WhiRcState::STA_REMOTE)
+        if (Msg->state == whi_interfaces::msg::WhiRcState::STA_ACTIVE)
         {
             if (!remote_mode_.load())
             {
@@ -353,7 +353,7 @@ namespace whi_rviz_plugins
             }
             remote_mode_.store(true);
         }
-        else if (Msg->state == whi_interfaces::msg::WhiRcState::STA_AUTO)
+        else if (Msg->state == whi_interfaces::msg::WhiRcState::STA_INACTIVE)
         {
             remote_mode_.store(false);
         }
