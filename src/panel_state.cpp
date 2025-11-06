@@ -149,9 +149,14 @@ namespace whi_rviz_plugins
                 {
                     if (it.value == "standby")
                     {
-                        if (ui_->label_indicator_cap_1->text() != "SE-Stop")
+                        if (estop_state_ == ESTOP_HW)
                         {
                             ui_->pushButton_estop->setChecked(false);
+                            setEstopIcon(false);
+                            estop_state_ = ESTOP_CLEAR;
+                        }
+                        if (estop_state_ != ESTOP_SW)
+                        {
                             setIndicatorIcon(ui_->label_indicator_1, INDICATOR_GREEN);
                             setIndicatorText(ui_->label_indicator_cap_1, "standby");
                         }
@@ -160,7 +165,13 @@ namespace whi_rviz_plugins
                     }
                     else if (it.value == "running")
                     {
-                        if (ui_->label_indicator_cap_1->text() != "SE-Stop")
+                        if (estop_state_ == ESTOP_HW)
+                        {
+                            ui_->pushButton_estop->setChecked(false);
+                            setEstopIcon(false);
+                            estop_state_ = ESTOP_CLEAR;
+                        }
+                        if (estop_state_ != ESTOP_SW)
                         {
                             setIndicatorIcon(ui_->label_indicator_1, INDICATOR_YELLOW);
                             setIndicatorText(ui_->label_indicator_cap_1, "running");
@@ -191,12 +202,20 @@ namespace whi_rviz_plugins
                     }
                     else if (it.value == "fault")
                     {
+                        if (estop_state_ == ESTOP_HW)
+                        {
+                            ui_->pushButton_estop->setChecked(false);
+                            setEstopIcon(false);
+                            estop_state_ = ESTOP_CLEAR;
+                        }
                         setIndicatorIcon(ui_->label_indicator_1, INDICATOR_RED);
                         setIndicatorText(ui_->label_indicator_cap_1, "fault");
                     }
                     else if (it.value == "estopped")
                     {
                         ui_->pushButton_estop->setChecked(true);
+                        setEstopIcon(true);
+                        estop_state_ = ESTOP_HW;
 
                         setIndicatorText(ui_->label_indicator_cap_1, "E-Stop");
                         setIndicatorIcon(ui_->label_indicator_3, INDICATOR_GREY);
@@ -510,6 +529,11 @@ namespace whi_rviz_plugins
 
     void StatePanel::estopButtonToggled(bool Checked)
     {
+        if (estop_state_ == ESTOP_HW && !Checked)
+        {
+            return;
+        }
+
         rclcpp::Clock rosClock(RCL_ROS_TIME);
         auto current = rosClock.now();
 
@@ -520,6 +544,10 @@ namespace whi_rviz_plugins
             pub_estop_->publish(msg);
 
             setEstopIcon(Checked);
+            if (Checked)
+            {
+                estop_state_ = ESTOP_SW;
+            }
 
             last_updated_estop_ = current;
         }

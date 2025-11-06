@@ -85,6 +85,8 @@ namespace whi_rviz_plugins
 		rclcpp::Time last_updated_estop_;
 		std::unique_ptr<rclcpp::Time> last_updated_arm_{ nullptr };
 		int estop_init_height_{ 50 };
+		enum EstopState { ESTOP_CLEAR = 0, ESTOP_HW, ESTOP_SW };
+		int estop_state_{ ESTOP_CLEAR };
 		rclcpp::Clock system_clock_{RCL_SYSTEM_TIME};
 	};
 } // end namespace whi_rviz_plugins

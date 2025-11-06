@@ -39,7 +39,7 @@ namespace whi_rviz_plugins
     DisplayState::DisplayState()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for motion state VERSION 02.12.1" << std::endl;
+        std::cout << "\nWHI RViz plugin for motion state VERSION 02.12.2" << std::endl;
         std::cout << "Copyright @ 2023-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         // feedback_topic_property_ = new rviz_common::properties::RosTopicProperty("Navigation feedback topic", "navigate_to_pose/_action/feedback",
