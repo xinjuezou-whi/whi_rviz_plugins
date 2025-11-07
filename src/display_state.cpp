@@ -101,6 +101,7 @@ namespace whi_rviz_plugins
             frame_dock_->setIcon(getIcon()); // set the image name as same as the name of plugin
         }
 
+        updateTopicFeedback();
         updateBaselinkFrame();
 
         frame_property_->setFrameManager(context_->getFrameManager());
@@ -113,6 +114,7 @@ namespace whi_rviz_plugins
             return;
         }
 
+        updateTopicFeedback();
 		updateTopicOdom();
 		updateTopicPath();
         updateTopicBattery();
@@ -120,7 +122,20 @@ namespace whi_rviz_plugins
         updateTopicWhiState();
 		updateTopicEstop();
 		updateTopicRc();
-        
+    }
+
+    void DisplayState::onDisable()
+    {
+        sub_navi_feedback_.reset();
+        sub_odom_.reset();
+        sub_path_.reset();
+        sub_battery_.reset();
+        sub_temp_hum_.reset();
+        sub_whi_state_.reset();
+    }
+
+    void DisplayState::updateTopicFeedback()
+    {
         rclcpp::Node::SharedPtr node = node_rviz_weak_.lock()->get_raw_node();
         if (node)
         {
@@ -137,16 +152,6 @@ namespace whi_rviz_plugins
                 });
             context_->queueRender();
         }
-    }
-
-    void DisplayState::onDisable()
-    {
-        sub_navi_feedback_.reset();
-        sub_odom_.reset();
-        sub_path_.reset();
-        sub_battery_.reset();
-        sub_temp_hum_.reset();
-        sub_whi_state_.reset();
     }
 
     void DisplayState::updateTopicOdom()
@@ -249,7 +254,14 @@ namespace whi_rviz_plugins
 
     void DisplayState::subCallbackWhiState(const whi_interfaces::msg::WhiState::SharedPtr Msg)
     {
-        panel_->setWhiState(Msg);
+        rclcpp::Clock rosClock(RCL_ROS_TIME);
+        auto current = rosClock.now();
+        static auto last = current;
+        if ((current - last).seconds() > 0.1)
+        {
+            panel_->setWhiState(Msg);
+            last = current;
+        }
     }
 
     void DisplayState::updateBaselinkFrame()

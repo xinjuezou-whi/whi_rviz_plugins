@@ -69,6 +69,7 @@ namespace whi_rviz_plugins
 		void onDisable() override;
 
 	protected Q_SLOTS:
+		void updateTopicFeedback();
 		void updateTopicOdom();
 		void updateTopicPath();
 		void updateTopicBattery();
