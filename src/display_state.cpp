@@ -229,10 +229,18 @@ namespace whi_rviz_plugins
 
     void DisplayState::subCallbackOdom(const nav_msgs::msg::Odometry::SharedPtr Msg)
     {
-        velocities_.first = Msg->twist.twist.linear.x;
-        velocities_.second = Msg->twist.twist.angular.z;
+        rclcpp::Clock rosClock(RCL_ROS_TIME);
+        auto current = rosClock.now();
+        static auto last = current;
+        if ((current - last).seconds() > 0.1)
+        {
+            velocities_.first = Msg->twist.twist.linear.x;
+            velocities_.second = Msg->twist.twist.angular.z;
 
-        panel_->setVelocities(velocities_.first, velocities_.second);
+            panel_->setVelocities(velocities_.first, velocities_.second);
+
+            last = current;
+        }
     }
 
     void DisplayState::subCallbackPath(const nav_msgs::msg::Path::SharedPtr Msg)
@@ -260,6 +268,7 @@ namespace whi_rviz_plugins
         if ((current - last).seconds() > 0.1)
         {
             panel_->setWhiState(Msg);
+
             last = current;
         }
     }
