@@ -28,7 +28,6 @@ Changelog:
 #include <rviz_common/display.hpp>
 #include <rviz_common/panel_dock_widget.hpp>
 #include <rviz_common/ros_integration/ros_node_abstraction_iface.hpp>
-#include <nav_msgs/msg/odometry.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
@@ -70,19 +69,15 @@ namespace whi_rviz_plugins
 
 	protected Q_SLOTS:
 		void updateTopicFeedback();
-		void updateTopicOdom();
 		void updateTopicPath();
 		void updateTopicBattery();
-		void updateTopicTempHum();
 		void updateTopicWhiState();
 		void updateTopicEstop();
 		void updateTopicRc();
 
     private:
-		void subCallbackOdom(const nav_msgs::msg::Odometry::SharedPtr Msg);
 		void subCallbackPath(const nav_msgs::msg::Path::SharedPtr Msg);
 		void subCallbackBattery(const whi_interfaces::msg::WhiBattery::SharedPtr Msg);
-		void subCallbackTempHum(const whi_interfaces::msg::WhiTemperatureHumidity::SharedPtr Msg);
 		void subCallbackWhiState(const whi_interfaces::msg::WhiState::SharedPtr Msg);
 
 	private Q_SLOTS:
@@ -97,10 +92,8 @@ namespace whi_rviz_plugins
 
 		// user-editable property variables
 		// rviz_common::properties::RosTopicProperty* feedback_topic_property_;
-		rviz_common::properties::RosTopicProperty* odom_topic_property_;
 		rviz_common::properties::RosTopicProperty* path_topic_property_;
 		rviz_common::properties::RosTopicProperty* battery_topic_property_;
-		rviz_common::properties::RosTopicProperty* temp_hum_topic_property_;
         rviz_common::properties::RosTopicProperty* whi_state_topic_property_;
 		rviz_common::properties::RosTopicProperty* estop_topic_property_;
 		rviz_common::properties::RosTopicProperty* rc_state_topic_property_;
@@ -108,13 +101,10 @@ namespace whi_rviz_plugins
 		rviz_common::properties::TfFrameProperty* frame_property_;
         // subscriber
 		rclcpp::Subscription<nav2_msgs::action::NavigateToPose::Impl::FeedbackMessage>::SharedPtr sub_navi_feedback_;
-		rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_{ nullptr };
 		rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_{ nullptr };
 		rclcpp::Subscription<whi_interfaces::msg::WhiBattery>::SharedPtr sub_battery_{ nullptr };
-		rclcpp::Subscription<whi_interfaces::msg::WhiTemperatureHumidity>::SharedPtr sub_temp_hum_{ nullptr };
 		rclcpp::Subscription<whi_interfaces::msg::WhiState>::SharedPtr sub_whi_state_{ nullptr };
 		
-        std::pair<double, double> velocities_;
         geometry_msgs::msg::Pose goal_;
 	};
 } // end namespace whi_rviz_plugins

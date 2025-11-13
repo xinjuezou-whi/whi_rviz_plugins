@@ -39,19 +39,15 @@ namespace whi_rviz_plugins
     DisplayState::DisplayState()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for motion state VERSION 02.12.2" << std::endl;
+        std::cout << "\nWHI RViz plugin for motion state VERSION 02.12.3" << std::endl;
         std::cout << "Copyright @ 2023-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         // feedback_topic_property_ = new rviz_common::properties::RosTopicProperty("Navigation feedback topic", "navigate_to_pose/_action/feedback",
         //     "nav2_msgs/action/NavigateToPose/Impl/FeedbackMessage", "Topic of navigation feedback", this);
-        odom_topic_property_ = new rviz_common::properties::RosTopicProperty("Odom topic", "odom",
-            "", "Topic of odometry", this, SLOT(updateTopicOdom()));
         path_topic_property_ = new rviz_common::properties::RosTopicProperty("Planned path topic", "plan",
             "", "Topic of planned path", this, SLOT(updateTopicPath()));
         battery_topic_property_ = new rviz_common::properties::RosTopicProperty("Battery info topic", "battery_data",
             "", "Topic of battery info", this, SLOT(updateTopicBattery()));
-        temp_hum_topic_property_ = new rviz_common::properties::RosTopicProperty("temperature and humidity topic", "temp_hum",
-            "", "Topic of environmental temperature and humidity", this, SLOT(updateTopicTempHum()));
         whi_state_topic_property_ = new rviz_common::properties::RosTopicProperty("WHI state topic", "whi_state",
             "", "Topic of WHI state", this, SLOT(updateTopicWhiState()));
         estop_topic_property_ = new rviz_common::properties::RosTopicProperty("Estop topic", "estop",
@@ -76,10 +72,8 @@ namespace whi_rviz_plugins
         node_rviz_weak_ = context_->getRosNodeAbstraction();
 
         // feedback_topic_property_->initialize(context_->getRosNodeAbstraction());
-        odom_topic_property_->initialize(context_->getRosNodeAbstraction());
         path_topic_property_->initialize(context_->getRosNodeAbstraction());
         battery_topic_property_->initialize(context_->getRosNodeAbstraction());
-        temp_hum_topic_property_->initialize(context_->getRosNodeAbstraction());
         whi_state_topic_property_->initialize(context_->getRosNodeAbstraction());
         estop_topic_property_->initialize(context_->getRosNodeAbstraction());
         rc_state_topic_property_->initialize(context_->getRosNodeAbstraction());
@@ -115,10 +109,8 @@ namespace whi_rviz_plugins
         }
 
         updateTopicFeedback();
-		updateTopicOdom();
 		updateTopicPath();
         updateTopicBattery();
-        updateTopicTempHum();
         updateTopicWhiState();
 		updateTopicEstop();
 		updateTopicRc();
@@ -127,10 +119,8 @@ namespace whi_rviz_plugins
     void DisplayState::onDisable()
     {
         sub_navi_feedback_.reset();
-        sub_odom_.reset();
         sub_path_.reset();
         sub_battery_.reset();
-        sub_temp_hum_.reset();
         sub_whi_state_.reset();
     }
 
@@ -150,18 +140,6 @@ namespace whi_rviz_plugins
 
                     panel_->setEta(etaStr);
                 });
-            context_->queueRender();
-        }
-    }
-
-    void DisplayState::updateTopicOdom()
-    {
-        sub_odom_.reset();
-        rclcpp::Node::SharedPtr node = node_rviz_weak_.lock()->get_raw_node();
-        if (node)
-        {
-            sub_odom_ = node->create_subscription<nav_msgs::msg::Odometry>(
-                odom_topic_property_->getTopicStd(), 1, std::bind(&DisplayState::subCallbackOdom, this, std::placeholders::_1));
             context_->queueRender();
         }
     }
@@ -191,19 +169,6 @@ namespace whi_rviz_plugins
         }
     }
 
-    void DisplayState::updateTopicTempHum()
-    {
-        sub_temp_hum_.reset();
-        rclcpp::Node::SharedPtr node = node_rviz_weak_.lock()->get_raw_node();
-        if (node)
-        {
-            sub_temp_hum_ = node->create_subscription<whi_interfaces::msg::WhiTemperatureHumidity>(
-                temp_hum_topic_property_->getTopicStd(), 1,
-                std::bind(&DisplayState::subCallbackTempHum, this, std::placeholders::_1));
-            context_->queueRender();
-        }
-    }
-
     void DisplayState::updateTopicWhiState()
     {
         sub_whi_state_.reset();
@@ -227,22 +192,6 @@ namespace whi_rviz_plugins
         panel_->setRcStateTopic(rc_state_topic_property_->getTopicStd());
     }
 
-    void DisplayState::subCallbackOdom(const nav_msgs::msg::Odometry::SharedPtr Msg)
-    {
-        rclcpp::Clock rosClock(RCL_ROS_TIME);
-        auto current = rosClock.now();
-        static auto last = current;
-        if ((current - last).seconds() > 0.1)
-        {
-            velocities_.first = Msg->twist.twist.linear.x;
-            velocities_.second = Msg->twist.twist.angular.z;
-
-            panel_->setVelocities(velocities_.first, velocities_.second);
-
-            last = current;
-        }
-    }
-
     void DisplayState::subCallbackPath(const nav_msgs::msg::Path::SharedPtr Msg)
     {
         goal_ = Msg->poses.back().pose;
@@ -253,11 +202,6 @@ namespace whi_rviz_plugins
     void DisplayState::subCallbackBattery(const whi_interfaces::msg::WhiBattery::SharedPtr Msg)
     {
         panel_->setBatteryInfo(Msg->soc, Msg->soh);
-    }
-
-    void DisplayState::subCallbackTempHum(const whi_interfaces::msg::WhiTemperatureHumidity::SharedPtr Msg)
-    {
-        panel_->setTempHum(Msg->temperature, Msg->humidity);
     }
 
     void DisplayState::subCallbackWhiState(const whi_interfaces::msg::WhiState::SharedPtr Msg)
@@ -276,6 +220,7 @@ namespace whi_rviz_plugins
     void DisplayState::updateBaselinkFrame()
     {
         // do nothing so far
+        panel_->setRobotFrame(frame_property_->getFrameStd());
     }
 } // end namespace whi_rviz_plugins
 

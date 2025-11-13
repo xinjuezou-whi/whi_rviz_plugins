@@ -17,6 +17,7 @@ All text above must be included in any redistribution.
 
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/utils.hpp>
 #include <angles/angles.h>
 #include <ament_index_cpp/get_package_share_directory.hpp>
 
@@ -105,7 +106,15 @@ namespace whi_rviz_plugins
         // create timer
         qtimer_ = new QTimer(this);
         connect(qtimer_, &QTimer::timeout, this, &StatePanel::update);
-        qtimer_->start(200); // 100 ms
+        qtimer_->start(200); // 200 ms
+
+        rclcpp::Node::SharedPtr node = node_rviz_weak_.lock()->get_raw_node();
+        if (node)
+        {
+            tf_ = std::make_shared<tf2_ros::Buffer>(node->get_clock());
+            tf_->setUsingDedicatedThread(true);
+            tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_);
+        }
     }
 
     StatePanel::~StatePanel()
@@ -114,24 +123,14 @@ namespace whi_rviz_plugins
 		delete ui_;
 	}
 
-    void StatePanel::setVelocities(double Linear, double Angular)
+    void StatePanel::setRobotFrame(const std::string& Frame)
     {
-        Linear = fabs(Linear) < 1e-5 ? 0.0 : Linear;
-        Angular = fabs(Angular) < 1e-5 ? 0.0 : Angular;
-        ui_->label_linear->setText(QString::number(Linear, 'f', 2));
-        ui_->label_angular->setText(QString::number(Angular, 'f', 2));
+        robot_frame_ = Frame;
     }
 
     void StatePanel::setGoal(const geometry_msgs::msg::Pose& Goal)
     {
-        tf2::Quaternion quaternion(Goal.orientation.x, Goal.orientation.y, Goal.orientation.z, Goal.orientation.w);
-        double roll = 0.0, pitch = 0.0, yaw = 0.0;
-  		tf2::Matrix3x3(quaternion).getRPY(roll, pitch, yaw);
-
-        QString goal;
-        goal = "x: " + QString::number(Goal.position.x, 'f', 2) + ", y:" + QString::number(Goal.position.y, 'f', 2) +
-            ", yaw: " + QString::number(angles::to_degrees(yaw), 'f', 2);
-        ui_->label_goal->setText(goal);
+        setPose(ui_->label_goal, Goal);
     }
 
     void StatePanel::setEta(const std::string& Eta)
@@ -305,6 +304,22 @@ namespace whi_rviz_plugins
             rclcpp::Clock rosClock(RCL_ROS_TIME);
             last_updated_imu_ = rosClock.now();
         }
+        else if (State->hardware_id == "whi_temperature_humidity")
+        {
+            setTempHumVisibility(true);
+
+            for (const auto& it : State->values)
+            {
+                if (it.key == "temperature")
+                {
+                    ui_->label_temperature_text->setText(it.value.c_str() + QString("°C"));
+                }
+                else if (it.key == "humidity")
+                {
+                    ui_->label_humidity_text->setText(it.value.c_str() + QString("%"));
+                }
+            }
+        }
     }
 
     void StatePanel::setRcStateTopic(const std::string& Topic)
@@ -335,11 +350,24 @@ namespace whi_rviz_plugins
         setBatteryIcon(ui_->label_battery, Soc);
     }
 
-    void StatePanel::setTempHum(double Temperature, double Humidity)
+    void StatePanel::setPose(QLabel* Label, const geometry_msgs::msg::Pose& Pose)
     {
-        setTempHumVisibility(true);
-        ui_->label_temperature_text->setText(QString::number(Temperature, 'f', 1) + "°C");
-        ui_->label_humidity_text->setText(QString::number(Humidity, 'f', 1) + "%");
+        tf2::Quaternion quaternion(Pose.orientation.x, Pose.orientation.y, Pose.orientation.z, Pose.orientation.w);
+        double roll = 0.0, pitch = 0.0, yaw = 0.0;
+  		tf2::Matrix3x3(quaternion).getRPY(roll, pitch, yaw);
+
+        QString pose;
+        pose = "x: " + QString::number(Pose.position.x, 'f', 2) + ", y:" + QString::number(Pose.position.y, 'f', 2) +
+            ", yaw: " + QString::number(angles::to_degrees(yaw), 'f', 2);
+        Label->setText(pose);
+    }
+
+    void StatePanel::setVelocities(double Linear, double Angular)
+    {
+        Linear = fabs(Linear) < 1e-5 ? 0.0 : Linear;
+        Angular = fabs(Angular) < 1e-5 ? 0.0 : Angular;
+        ui_->label_linear->setText(QString::number(Linear, 'f', 2));
+        ui_->label_angular->setText(QString::number(Angular, 'f', 2));
     }
 
     void StatePanel::setIndicatorIcon(QLabel* Label, int Type)
@@ -375,6 +403,14 @@ namespace whi_rviz_plugins
         Label->setText(Text.c_str());
     }
 
+	void StatePanel::setTempHumVisibility(bool Visibale)
+    {
+        ui_->label_temperature->setVisible(Visibale);
+        ui_->label_temperature_text->setVisible(Visibale);
+        ui_->label_humidity->setVisible(Visibale);
+        ui_->label_humidity_text->setVisible(Visibale);
+    }
+
     void StatePanel::setBatteryIcon(QLabel* Label, int Soc)
     {
         std::string iconFile("/icons/classes/bat_");
@@ -400,14 +436,6 @@ namespace whi_rviz_plugins
         }
 
         setLabelIcon(Label, iconFile, 24);
-    }
-
-	void StatePanel::setTempHumVisibility(bool Visibale)
-    {
-        ui_->label_temperature->setVisible(Visibale);
-        ui_->label_temperature_text->setVisible(Visibale);
-        ui_->label_humidity->setVisible(Visibale);
-        ui_->label_humidity_text->setVisible(Visibale);
     }
 
     void StatePanel::setLabelIcon(QLabel* Label, const std::string& IconFile, int Scale)
@@ -579,11 +607,37 @@ namespace whi_rviz_plugins
     {
         rclcpp::Clock rosClock(RCL_ROS_TIME);
         auto current = rosClock.now();
+        static auto last = current;
+        double dt = (current - last).seconds();
+        last = current;
 
         double hours = (current - start_).seconds() / 3600.0;
         if (hours > 0.0)
         {
             ui_->label_running_hours->setText(QString::number(hours, 'f', 4));
+        }
+
+        geometry_msgs::msg::PoseStamped currentPose;
+        static auto lastPose = currentPose;
+        if (getCurrentPose(currentPose, "map", robot_frame_))
+        {
+            // update current pose
+            setPose(ui_->label_current, currentPose.pose);
+
+            // update linear and angular
+            double dx = currentPose.pose.position.x - lastPose.pose.position.x;
+            double dy = currentPose.pose.position.y - lastPose.pose.position.y;
+            auto dist = std::hypot(dx, dy);
+            double linearVel = dist / dt;
+
+            const double currentYaw = tf2::getYaw(currentPose.pose.orientation);
+            const double lastYaw = tf2::getYaw(lastPose.pose.orientation);
+            double dYaw = angles::shortest_angular_distance(lastYaw, currentYaw);
+            double angularVel = fabs(dYaw) / dt;
+
+            setVelocities(linearVel, angularVel);
+
+            lastPose = currentPose;
         }
 
         if ((current - last_updated_imu_).seconds() > 2.0)
@@ -608,5 +662,47 @@ namespace whi_rviz_plugins
     std::string StatePanel::getPackagePath() const
     {
         return ament_index_cpp::get_package_share_directory("whi_rviz_plugins");
+    }
+
+    bool StatePanel::getCurrentPose(geometry_msgs::msg::PoseStamped& GlobalPose, const std::string& GlobalFrame/* = "map"*/,
+        const std::string& RobotFrame/* = "base_link"*/, const double TransformTimeout/* = 0.2*/,
+        const rclcpp::Time Stamp/* = rclcpp::Time()*/)
+    {
+        tf2::toMsg(tf2::Transform::getIdentity(), GlobalPose.pose);
+        GlobalPose.header.frame_id = RobotFrame;
+        GlobalPose.header.stamp = Stamp;
+
+        try
+        {
+            GlobalPose = tf_->transform(GlobalPose, GlobalFrame, tf2::durationFromSec(TransformTimeout));
+            return true;
+        }
+        catch (tf2::LookupException& ex)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("panel_state"),
+                "No Transform available Error looking up target frame: %s\n", ex.what());
+        }
+        catch (tf2::ConnectivityException& ex)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("panel_state"),
+                "Connectivity Error looking up target frame: %s\n", ex.what());
+        }
+        catch (tf2::ExtrapolationException& ex)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("panel_state"),
+                "Extrapolation Error looking up target frame: %s\n", ex.what());
+        }
+        catch (tf2::TimeoutException& ex)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("panel_state"),
+                "Transform timeout with tolerance: %.4f", TransformTimeout);
+        }
+        catch (tf2::TransformException& ex)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("panel_state"), "Failed to transform from %s to %s",
+                GlobalPose.header.frame_id.c_str(), RobotFrame.c_str());
+        }
+
+        return false;
     }
 } // end namespace whi_rviz_plugins

@@ -21,11 +21,14 @@ Changelog:
 #include <whi_interfaces/msg/whi_rc_state.hpp>
 
 #include <rclcpp/rclcpp.hpp>
-#include <geometry_msgs/msg/pose.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <rviz_common/panel.hpp>
 #include <rviz_common/display_context.hpp>
 #include <rviz_common/ros_integration/ros_node_abstraction_iface.hpp>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 #include <QTimer>
 
@@ -46,16 +49,17 @@ namespace whi_rviz_plugins
 		~StatePanel() override;
 
 	public:
-        void setVelocities(double Linear, double Angular);
+		void setRobotFrame(const std::string& Frame);
         void setGoal(const geometry_msgs::msg::Pose& Goal);
         void setEta(const std::string& Eta);
 		void setWhiState(const whi_interfaces::msg::WhiState::SharedPtr State);
 		void setRcStateTopic(const std::string& Topic);
 		void setEstopTopic(const std::string& Topic);
 		void setBatteryInfo(int Soc, int Soh);
-		void setTempHum(double Temperature, double Humidity);
 
 	private:
+		void setPose(QLabel* Label, const geometry_msgs::msg::Pose& Pose);
+		void setVelocities(double Linear, double Angular);
         void setIndicatorIcon(QLabel* Label, int Type);
 		void setIndicatorText(QLabel* Label, const std::string& Text);
 		void setTempHumVisibility(bool Visibale);
@@ -69,6 +73,9 @@ namespace whi_rviz_plugins
 		void setEstopIcon(bool Checked);
 		void update();
 		std::string getPackagePath() const;
+		bool getCurrentPose(geometry_msgs::msg::PoseStamped& GlobalPose, const std::string& GlobalFrame = "map",
+			const std::string& RobotFrame = "base_link", const double TransformTimeout = 0.2,
+			const rclcpp::Time Stamp = rclcpp::Time());
 
 	private:
         enum IndicatorType { INDICATOR_GREY = 0, INDICATOR_RED, INDICATOR_ORANGE,
@@ -88,5 +95,8 @@ namespace whi_rviz_plugins
 		enum EstopState { ESTOP_CLEAR = 0, ESTOP_HW, ESTOP_SW };
 		int estop_state_{ ESTOP_CLEAR };
 		rclcpp::Clock system_clock_{RCL_SYSTEM_TIME};
+		std::shared_ptr<tf2_ros::Buffer> tf_;
+		std::unique_ptr<tf2_ros::TransformListener> tf_listener_{ nullptr };
+		std::string robot_frame_{ "base_link" };
 	};
 } // end namespace whi_rviz_plugins
