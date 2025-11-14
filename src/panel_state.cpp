@@ -640,19 +640,19 @@ namespace whi_rviz_plugins
             lastPose = currentPose;
         }
 
-        if ((current - last_updated_imu_).seconds() > 2.0)
+        if ((current - last_updated_imu_).seconds() > 5.0)
         {
             setIndicatorIcon(ui_->label_indicator_5, INDICATOR_RED);
             setIndicatorText(ui_->label_indicator_cap_5, "IMU");
         }
-        if ((current - last_updated_rc_).seconds() > 2.0)
+        if ((current - last_updated_rc_).seconds() > 5.0)
         {
             if (ui_->label_indicator_cap_2->text() == "remote")
             {
                 setIndicatorIcon(ui_->label_indicator_2, INDICATOR_RED);
             }
         }
-        if (last_updated_arm_ && (current - *last_updated_arm_).seconds() > 2.0)
+        if (last_updated_arm_ && (current - *last_updated_arm_).seconds() > 5.0)
         {
             setIndicatorIcon(ui_->label_indicator_4, INDICATOR_RED);
             setIndicatorText(ui_->label_indicator_cap_4, "arm fault");

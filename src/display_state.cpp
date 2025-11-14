@@ -39,7 +39,7 @@ namespace whi_rviz_plugins
     DisplayState::DisplayState()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for motion state VERSION 02.12.3" << std::endl;
+        std::cout << "\nWHI RViz plugin for motion state VERSION 02.12.4" << std::endl;
         std::cout << "Copyright @ 2023-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         // feedback_topic_property_ = new rviz_common::properties::RosTopicProperty("Navigation feedback topic", "navigate_to_pose/_action/feedback",
@@ -206,13 +206,15 @@ namespace whi_rviz_plugins
 
     void DisplayState::subCallbackWhiState(const whi_interfaces::msg::WhiState::SharedPtr Msg)
     {
+        static auto lastID = std::string("");
         rclcpp::Clock rosClock(RCL_ROS_TIME);
         auto current = rosClock.now();
         static auto last = current;
-        if ((current - last).seconds() > 0.1)
+        if ((current - last).seconds() > 0.1 || lastID != Msg->hardware_id)
         {
             panel_->setWhiState(Msg);
 
+            lastID = Msg->hardware_id;
             last = current;
         }
     }
