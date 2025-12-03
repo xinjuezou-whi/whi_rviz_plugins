@@ -28,7 +28,7 @@ All text above must be included in any redistribution.
 #include "rviz_default_plugins/displays/image/ros_image_texture.hpp"
 #include <sensor_msgs/image_encodings.hpp>
 #include "ament_index_cpp/get_package_share_directory.hpp"
-#include <cv_bridge/cv_bridge.h>
+#include <cv_bridge/cv_bridge.hpp>
 
 namespace whi_rviz_plugins
 {
