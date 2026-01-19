@@ -26,7 +26,7 @@ Changelog:
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <nav2_msgs/action/navigate_to_pose.hpp>
 

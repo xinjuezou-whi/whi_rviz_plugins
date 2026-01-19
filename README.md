@@ -82,7 +82,14 @@ A general 2D line plot plugin fed by message whi_interfaces/WhiLineChart2D. This
 
 
 ## Build
-Clone package `whi_interfaces` and `whi_rviz_plugins` to your workspace:
+
+### Dependencies
+
+```
+sudo apt install -y libqwt-qt5-dev
+```
+
+Then clone package `whi_interfaces` and `whi_rviz_plugins` to your workspace:
 
 ```
 cd <your_workspace>/src
