@@ -70,4 +70,11 @@
       Displays the TF transform hierarchy
     </description>
   </class>
+  <class name="whi_rviz_plugins/PCD_selection"
+         type="whi_rviz_plugins::PcdSelectionPanel"
+         base_class_type="rviz_common::Panel">
+    <description>
+      A panel widget for selecting and saving point clouds
+    </description>
+  </class>
 </library>

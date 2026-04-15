@@ -73,6 +73,8 @@ find_package(visualization_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(angles REQUIRED)
+find_package(PCL REQUIRED COMPONENTS common io)
+find_package(pcl_conversions REQUIRED)
 find_package(whi_interfaces REQUIRED)
 
 # UI Files
@@ -117,6 +119,7 @@ qt5_wrap_cpp(MOC_FILES
   include/${PROJECT_NAME}/panel_teleop.h
   include/${PROJECT_NAME}/panel_waypoints.h
   include/${PROJECT_NAME}/panel_robot_model_viewer.h
+  include/${PROJECT_NAME}/panel_pcd_selection.h
   include/${PROJECT_NAME}/frame_info.h
   include/${PROJECT_NAME}/widget_twist.h
   )
@@ -136,6 +139,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   $<INSTALL_INTERFACE:include>
   ${Qt5Widgets_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
   /usr/include/qwt/
 )
 
@@ -145,6 +149,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   rviz_common::rviz_common
   rviz_rendering::rviz_rendering
   rviz_default_plugins::rviz_default_plugins
+  ${PCL_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${QWT_LIBRARIES}
 )
