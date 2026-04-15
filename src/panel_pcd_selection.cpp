@@ -41,7 +41,7 @@ namespace whi_rviz_plugins
     PcdSelectionPanel::PcdSelectionPanel(QWidget* Parent/* = nullptr*/)
         : rviz_common::Panel(Parent)
     {
-        std::cout << "\nWHI RViz plugin for pcd selection and saving VERSION 00.02.1" << std::endl;
+        std::cout << "\nWHI RViz plugin for pcd selection and saving VERSION 00.02.2" << std::endl;
         std::cout << "Copyright@2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         initLayout();
@@ -93,8 +93,12 @@ namespace whi_rviz_plugins
         layoutMain->addLayout(hBox);
         // line 2
         hBox = new QHBoxLayout();
+        QVBoxLayout* vBox = new QVBoxLayout();
         QLabel* labelSaved = new QLabel("no saved PCD yet");
-        hBox->addWidget(labelSaved);
+        vBox->addWidget(labelSaved);
+        QLabel* labelNum = new QLabel("");
+        vBox->addWidget(labelNum);
+        hBox->addLayout(vBox);
         layoutMain->addLayout(hBox);
 
         // signal
@@ -130,6 +134,7 @@ namespace whi_rviz_plugins
                         if (save(selectedFiles.first().toStdString(), points))
                         {
                             labelSaved->setText(selectedFiles.first() + ".pcd");
+                            labelNum->setText(QString::number(points.size()) + " points");
                         }
                         else
                         {
