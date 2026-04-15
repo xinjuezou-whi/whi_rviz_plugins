@@ -36,7 +36,7 @@ namespace whi_rviz_plugins
     MapSaverPanel::MapSaverPanel(QWidget* Parent/* = nullptr*/)
         : rviz_common::Panel(Parent)
     {
-        std::cout << "\nWHI RViz plugin for saving map VERSION 02.02.3" << std::endl;
+        std::cout << "\nWHI RViz plugin for saving map VERSION 02.02.4" << std::endl;
         std::cout << "Copyright @ 2022-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         initLayout();
@@ -145,7 +145,7 @@ namespace whi_rviz_plugins
         }
     }
 
-    bool MapSaverPanel::save(std::string File)
+    bool MapSaverPanel::save(const std::string& File)
     {
         auto res = pipeExecute((std::string("ros2 run nav2_map_server map_saver_cli -f ") + File).c_str());
         const auto it = std::find_if(res.begin(), res.end(), [](const std::string Item)

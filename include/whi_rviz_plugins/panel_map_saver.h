@@ -38,7 +38,7 @@ namespace whi_rviz_plugins
     private:
 		void initLayout();
         bool mapServerValid();
-        bool save(std::string File);
+        bool save(const std::string& File);
         void subCallbackMap(const nav_msgs::msg::OccupancyGrid::SharedPtr Msg);
 
     private:
