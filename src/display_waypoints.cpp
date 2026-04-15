@@ -35,7 +35,7 @@ namespace whi_rviz_plugins
     WaypointsDisplay::WaypointsDisplay()
         : Display()
     {
-        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 02.30.6" << std::endl;
+        std::cout << "\nWHI RViz plugin for navigation waypoints VERSION 02.30.7" << std::endl;
         std::cout << "Copyright @ 2022-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         use_stamped_vel_bool_property_ = new rviz_common::properties::BoolProperty("Whether to use stamped twist", true,
