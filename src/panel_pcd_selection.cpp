@@ -5,6 +5,9 @@ Features:
 - mouse selection in rviz
 - xxx
 
+Dependency:
+- pcl-tools: sudo apt install pcl-tools
+
 Written by Xinjue Zou, xinjue.zou@outlook.com
 
 Apache License Version 2.0, check LICENSE for more information.
@@ -12,6 +15,7 @@ All text above must be included in any redistribution.
 
 ******************************************************************/
 #include "whi_rviz_plugins/panel_pcd_selection.h"
+#include "whi_rviz_plugins/utility.h"
 
 #include <rviz_common/visualization_manager.hpp>
 #include <rviz_common/properties/property_tree_widget.hpp>
@@ -37,7 +41,7 @@ namespace whi_rviz_plugins
     PcdSelectionPanel::PcdSelectionPanel(QWidget* Parent/* = nullptr*/)
         : rviz_common::Panel(Parent)
     {
-        std::cout << "\nWHI RViz plugin for pcd selection and saving VERSION 00.01.1" << std::endl;
+        std::cout << "\nWHI RViz plugin for pcd selection and saving VERSION 00.02.1" << std::endl;
         std::cout << "Copyright@2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
         initLayout();
@@ -64,7 +68,98 @@ namespace whi_rviz_plugins
         }
     }
 
-    void extractPoints(rviz_common::properties::Property* Prop, std::vector<PointXYZI>& Points)
+    void PcdSelectionPanel::initLayout()
+    {
+        tree_widget_ = new rviz_common::properties::PropertyTreeWidget();
+
+        QVBoxLayout* layoutMain = new QVBoxLayout(this);
+        // line 1
+        QHBoxLayout* hBox = new QHBoxLayout();
+        QPushButton* buttonSave = new QPushButton("Save");
+        hBox->addWidget(buttonSave);
+        QPushButton* buttonView = new QPushButton("View");
+        hBox->addWidget(buttonView);
+        QSpacerItem* horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+        hBox->addItem(horizontalSpacer);
+        QLabel* labelLogo = new QLabel("");
+        hBox->addWidget(labelLogo);
+        std::string package_path = ament_index_cpp::get_package_share_directory("whi_rviz_plugins");
+		QImage logo;
+		if (logo.load(QString((package_path + "/icons/classes/whi_logo.png").c_str())))
+		{
+			QImage scaled = logo.scaledToHeight(48);
+			labelLogo->setPixmap(QPixmap::fromImage(scaled));
+		}
+        layoutMain->addLayout(hBox);
+        // line 2
+        hBox = new QHBoxLayout();
+        QLabel* labelSaved = new QLabel("no saved PCD yet");
+        hBox->addWidget(labelSaved);
+        layoutMain->addLayout(hBox);
+
+        // signal
+        connect(buttonSave, &QPushButton::clicked, this, [=]()
+        {
+            rviz_common::properties::PropertyTreeModel* treeModel = tree_widget_->getModel();
+
+            std::vector<PointXYZI> points;
+            extractPoints(treeModel->getRoot(), points);
+
+            if (!points.empty())
+            {
+                // Create a QFileDialog object
+                QFileDialog dialog(this);
+                // Use the non-native dialog option to avoid blocking the main thread
+                dialog.setOption(QFileDialog::DontUseNativeDialog);
+                dialog.setAcceptMode(QFileDialog::AcceptSave);
+                // Set any other options, like filters or the file mode
+                dialog.setNameFilter("PCD Files (*.pcd)");
+                dialog.setFileMode(QFileDialog::AnyFile);
+                // Open the dialog. exec() is blocking, but because it's non-native,
+                // it doesn't freeze the entire application.
+                if (dialog.exec())
+                {
+                    QStringList selectedFiles = dialog.selectedFiles();
+                    if (!selectedFiles.isEmpty())
+                    {
+                        if (selectedFiles.first().contains(".pcd"))
+                        {
+                            selectedFiles.first() = selectedFiles.first().remove(".pcd");
+                        }
+
+                        if (save(selectedFiles.first().toStdString(), points))
+                        {
+                            labelSaved->setText(selectedFiles.first() + ".pcd");
+                        }
+                        else
+                        {
+                            QMessageBox::critical(this, tr("Error"), tr("Failed to save PCD"));
+                        }
+                    }
+                }
+            }
+            else
+            {
+                QMessageBox::warning(this, "No Points Selected", "Please select some points in RViz before saving.");
+                return;
+            }
+        });
+
+        connect(buttonView, &QPushButton::clicked, this, [=]()
+        {
+            auto text = labelSaved->text();
+            if (text.contains(".pcd"))
+            {
+                pipeExecute((std::string("pcl_viewer ") + text.toStdString()).c_str());
+            }
+            else   
+            {
+                QMessageBox::warning(this, "No PCD Saved", "Please save a PCD file first before viewing.");
+            }
+        });
+    }
+
+    void PcdSelectionPanel::extractPoints(rviz_common::properties::Property* Prop, std::vector<PointXYZI>& Points)
     {
         if (!Prop)
         {
@@ -110,84 +205,6 @@ namespace whi_rviz_plugins
         {
             extractPoints(Prop->childAt(i), Points);
         }
-    }
-
-    void PcdSelectionPanel::initLayout()
-    {
-        tree_widget_ = new rviz_common::properties::PropertyTreeWidget();
-
-        QVBoxLayout* layoutMain = new QVBoxLayout(this);
-        // line 1
-        QHBoxLayout* hBox = new QHBoxLayout();
-        QPushButton* buttonSave = new QPushButton("Save");
-        hBox->addWidget(buttonSave);
-        QSpacerItem* horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-        hBox->addItem(horizontalSpacer);
-        QLabel* labelLogo = new QLabel("");
-        hBox->addWidget(labelLogo);
-        std::string package_path = ament_index_cpp::get_package_share_directory("whi_rviz_plugins");
-		QImage logo;
-		if (logo.load(QString((package_path + "/icons/classes/whi_logo.png").c_str())))
-		{
-			QImage scaled = logo.scaledToHeight(48);
-			labelLogo->setPixmap(QPixmap::fromImage(scaled));
-		}
-        layoutMain->addLayout(hBox);
-        // line 2
-        hBox = new QHBoxLayout();
-        QLabel* labelSaved = new QLabel("no saved map yet");
-        hBox->addWidget(labelSaved);
-        layoutMain->addLayout(hBox);
-
-        // signal
-        connect(buttonSave, &QPushButton::clicked, this, [=]()
-        {
-            rviz_common::properties::PropertyTreeModel* treeModel = tree_widget_->getModel();
-
-            std::vector<PointXYZI> points;
-            extractPoints(treeModel->getRoot(), points);
-            // traverseProperty(treeModel->getRoot());
-            // traverseModel(treeModel);
-
-            if (!points.empty())
-            {
-                // Create a QFileDialog object
-                QFileDialog dialog(this);
-                // Use the non-native dialog option to avoid blocking the main thread
-                dialog.setOption(QFileDialog::DontUseNativeDialog);
-                dialog.setAcceptMode(QFileDialog::AcceptSave);
-                // Set any other options, like filters or the file mode
-                dialog.setNameFilter("PCD Files (*.pcd)");
-                dialog.setFileMode(QFileDialog::AnyFile);
-                // Open the dialog. exec() is blocking, but because it's non-native,
-                // it doesn't freeze the entire application.
-                if (dialog.exec())
-                {
-                    QStringList selectedFiles = dialog.selectedFiles();
-                    if (!selectedFiles.isEmpty())
-                    {
-                        if (selectedFiles.first().contains(".pcd"))
-                        {
-                            selectedFiles.first() = selectedFiles.first().remove(".pcd");
-                        }
-
-                        if (save(selectedFiles.first().toStdString(), points))
-                        {
-                            labelSaved->setText(selectedFiles.first() + ".pcd");
-                        }
-                        else
-                        {
-                            QMessageBox::critical(this, tr("Error"), tr("Failed to save PCD"));
-                        }
-                    }
-                }
-            }
-            else
-            {
-                QMessageBox::warning(this, "No Points Selected", "Please select some points in RViz before saving.");
-                return;
-            }
-        });
     }
 
     bool PcdSelectionPanel::save(const std::string& File, const std::vector<PointXYZI>& Points)

@@ -5,6 +5,9 @@ Features:
 - mouse selection in rviz
 - xxx
 
+Dependency:
+- pcl-tools: sudo apt install pcl-tools
+
 Written by Xinjue Zou, xinjue.zou@outlook.com
 
 Apache License Version 2.0, check LICENSE for more information.
@@ -25,6 +28,7 @@ namespace rviz_common
 {
     namespace properties
     {
+        class Property;
         class PropertyTreeWidget;
     }
     class ViewportMouseEvent;
@@ -49,6 +53,7 @@ namespace whi_rviz_plugins
 
     private:
 		void initLayout();
+        void extractPoints(rviz_common::properties::Property* Prop, std::vector<PointXYZI>& Points);
         bool save(const std::string& File, const std::vector<PointXYZI>& Points);
 
     private:
