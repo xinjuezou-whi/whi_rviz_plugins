@@ -182,6 +182,7 @@ ament_target_dependencies(${PROJECT_NAME}
   visualization_msgs
   cv_bridge
   angles
+  pcl_conversions
   whi_interfaces
 )
 
