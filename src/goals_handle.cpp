@@ -421,7 +421,7 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 	else
 	{
 		if (movebase_client_->getState().state_ == actionlib::SimpleClientGoalState::SUCCEEDED &&
-			metDistance(active_goal_.absolute_pose_, getCurrentPose(), 0.2))
+			metTolerance(active_goal_.absolute_pose_, getCurrentPose()))
 		{
 			// execute task then to approach the next waypoint
 			// IMPORTANT: DO NOT CALL ACTION in its own callback
