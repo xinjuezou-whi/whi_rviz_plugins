@@ -181,6 +181,8 @@ void GoalsHandle::init(bool IsRemote/* = false*/)
 		topicMap, 10, std::bind(&GoalsHandle::subCallbackMapData, this, std::placeholders::_1)));
 	sub_cmd_vel_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<geometry_msgs::Twist>(
 		namespace_ + "cmd_vel", 10, std::bind(&GoalsHandle::subCallbackCmdVel, this, std::placeholders::_1)));
+	sub_paused_ = std::make_unique<ros::Subscriber>(node_handle_->subscribe<std_msgs::Bool>(
+		namespace_ + "movebase_pause", 10, std::bind(&GoalsHandle::subCallbackPause, this, std::placeholders::_1)));
 
 	movebase_client_ = std::make_unique<MoveBaseClient>(namespace_ + "move_base", true);
 }
@@ -277,7 +279,7 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::PoseStamped& Pose)
 					}
 					else
 					{
-						if (!state_task_)
+						if (!state_task_ && !paused_)
 						{
 							// execute waypoint task then to approach the next waypoint
 							// IMPORTANT: DO NOT CALL ACTION in its own callback
@@ -307,7 +309,7 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::PoseStamped& Pose)
 					}
 					else
 					{
-						if (!state_task_)
+						if (!state_task_ && !paused_)
 						{
 							// execute waypoint task then to approach the next waypoint
 							// IMPORTANT: DO NOT CALL ACTION in its own callback
@@ -394,6 +396,11 @@ void GoalsHandle::subCallbackCmdVel(const geometry_msgs::Twist::ConstPtr& CmdVel
 {
 	current_linear_ = CmdVel->linear.x;
 	current_angular_ = CmdVel->angular.z;
+}
+
+void GoalsHandle::subCallbackPause(const std_msgs::Bool::ConstPtr& Pause)
+{
+	paused_ = Pause->data;
 }
 
 void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State,

@@ -19,6 +19,7 @@ Changelog:
 #include "base_plugin.h"
 
 #include <ros/ros.h>
+#include <std_msgs/Bool.h>
 #include <nav_msgs/Path.h>
 #include <nav_msgs/MapMetaData.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
@@ -113,6 +114,7 @@ private:
 	void updateStateInfo(const GoalPack& Goal);
 	void subCallbackMapData(const nav_msgs::MapMetaData::ConstPtr& MapData);
 	void subCallbackCmdVel(const geometry_msgs::Twist::ConstPtr& CmdVel);
+	void subCallbackPause(const std_msgs::Bool::ConstPtr& Pause);
 	void callbackGoalDone(const actionlib::SimpleClientGoalState& State,
 		const move_base_msgs::MoveBaseResultConstPtr& Result);
 	void callbackGoalActive();
@@ -150,6 +152,7 @@ private:
 	// subscriber
 	std::unique_ptr<ros::Subscriber> sub_map_data_{ nullptr };
 	std::unique_ptr<ros::Subscriber> sub_cmd_vel_{ nullptr };
+	std::unique_ptr<ros::Subscriber> sub_paused_{ nullptr };
 	// updater
 	VisualizeEta func_eta_{ nullptr };
 	ExecutionState func_execution_state_{ nullptr };
@@ -165,4 +168,5 @@ private:
 	bool is_recovery_{ false };
 	double xy_goal_tolerance_{ 0.15 };
 	double yaw_goal_tolerance_{ 0.15 };
+	bool paused_{ false };
 };
