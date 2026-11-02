@@ -88,7 +88,7 @@ public:
 		bool Loop = false);
 	bool execute(const std::vector<WaypointPack>& WaypointPacks, const std::map<int, std::string>& Tasks,
 		double PointSpan, double StopSpan, bool Loop = false);
-	void cancel();
+	void cancel(int Index = -1);
 	void reset();
 	void setLooping(bool Looping);
 	void setPointSpan(double Span);
@@ -118,10 +118,6 @@ private:
 	void subCallbackMapData(const nav_msgs::msg::MapMetaData::SharedPtr Msg);
 	void subCallbackTwist(const Twist::SharedPtr Msg);
 	void subCallbackTwistUnstamped(const geometry_msgs::msg::Twist::SharedPtr Msg);
-	// void callbackGoalDone(const actionlib::SimpleClientGoalState& State,
-	// 	const move_base_msgs::MoveBaseResultConstPtr& Result);
-	// void callbackGoalActive();
-	// void callbackGoalFeedback(const move_base_msgs::MoveBaseFeedbackConstPtr& Feedback);
 	using NavigateToPose = nav2_msgs::action::NavigateToPose;
 	using NavToGoalHandle = rclcpp_action::ClientGoalHandle<NavigateToPose>;
 	void callbackNavGoalResponse(const NavToGoalHandle::SharedPtr& GoalHandle);
@@ -180,4 +176,5 @@ private:
 	bool is_recovery_{ false };
 	double xy_goal_tolerance_{ 0.15 };
 	double yaw_goal_tolerance_{ 0.15 };
+	std::vector<WaypointPack> original_list_;
 };

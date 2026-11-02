@@ -83,6 +83,7 @@ namespace whi_rviz_plugins
 		void storeAll2Map(const std::string& Namespace);
 		void addWaypoint();
 		void insertWaypoint();
+		void updateAbortToList();
 		QCheckBox* getCheckBox(int Row) const;
 		std::array<double, 3> getAbsolute(int CurrentRow) const;
 		std::vector<geometry_msgs::msg::PoseStamped> convertToAbsolute(const std::vector<WaypointPack>& WaypointPacks) const;
