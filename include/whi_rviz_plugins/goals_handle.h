@@ -85,7 +85,7 @@ public:
 		bool Loop = false);
 	bool execute(const std::vector<WaypointPack>& WaypointPacks, const std::map<int, std::string>& Tasks,
 		double PointSpan, double StopSpan, bool Loop = false);
-	void cancel();
+	void cancel(int Index = -1);
 	void reset();
 	void setLooping(bool Looping);
 	void setPointSpan(double Span);
@@ -169,4 +169,5 @@ private:
 	double xy_goal_tolerance_{ 0.15 };
 	double yaw_goal_tolerance_{ 0.15 };
 	bool paused_{ false };
+	std::vector<WaypointPack> original_list_;
 };

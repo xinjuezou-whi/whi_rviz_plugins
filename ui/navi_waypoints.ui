@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>587</width>
-    <height>326</height>
+    <width>596</width>
+    <height>332</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -88,6 +88,9 @@
                <string>Abort</string>
               </property>
              </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="comboBox_abort_to"/>
             </item>
             <item>
              <spacer name="verticalSpacer_3">

@@ -39,18 +39,19 @@ bool GoalsHandle::execute(const std::vector<WaypointPack>& WaypointPacks, double
 bool GoalsHandle::execute(const std::vector<WaypointPack>& WaypointPacks, const std::map<int, std::string>& Tasks,
 	double PointSpan, double StopSpan, bool Loop/* = false*/)
 {
+	original_list_ = WaypointPacks;
 	goals_list_.clear();
 
-	for (std::size_t i = findBeginIndex(WaypointPacks); ; i = (i + 1) % WaypointPacks.size())
+	for (std::size_t i = findBeginIndex(original_list_); ; i = (i + 1) % original_list_.size())
 	{
 		std::string config;
 		if (auto search = Tasks.find(i); search != Tasks.end())
 		{
 			config = Tasks.at(i);
 		}
-		goals_list_.emplace_back(WaypointPacks[i].first.pose, WaypointPacks[i].second, config);
+		goals_list_.emplace_back(original_list_[i].first.pose, original_list_[i].second, config);
 
-		if (goals_list_.size() == WaypointPacks.size())
+		if (goals_list_.size() == original_list_.size())
 		{
 			goals_list_.back().is_last_ = true;
 			break;
@@ -90,12 +91,21 @@ bool GoalsHandle::execute(const std::vector<WaypointPack>& WaypointPacks, const 
 	}
 }
 
-void GoalsHandle::cancel()
+void GoalsHandle::cancel(int Index/* = -1*/)
 {
 	task_plugin_->abort();
 
-	cancelGoal();
 	goals_list_.clear();
+	if (Index >= 0 && Index < static_cast<int>(original_list_.size()))
+	{
+		auto pose = original_list_[Index].first.pose;
+		std::cout << "cancel goal " << Index << " at (" << pose.position.x << ", " << pose.position.y << ")" << std::endl;
+		setGoal(pose);
+	}
+	else
+	{
+		cancelGoal();
+	}
 }
 
 void GoalsHandle::reset()
@@ -336,7 +346,7 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::PoseStamped& Pose)
 	}
 	else
 	{
-		if (active_goal_.task_.empty() && !goals_list_.front().is_relative_ &&
+		if (active_goal_.task_.empty() && !goals_list_.empty() && !goals_list_.front().is_relative_ &&
 			((!active_goal_.is_last_ && point_span_ < 0.0) || (active_goal_.is_last_ && stop_span_ < 0.0)))
 		{
 			double tolerance = active_goal_.is_last_ ? -stop_span_ * current_linear_ : -point_span_ * current_linear_;
@@ -381,6 +391,12 @@ void GoalsHandle::updateStateInfo(const GoalPack& Goal)
 			std::shared_ptr<std::string> info = std::make_shared<std::string>(
 				std::to_string(waypoints_num_ - goals_list_.size()) + " approached " +
 				std::to_string(goals_list_.size()) + " left");
+
+			if (goals_list_.empty())
+			{
+				info = std::make_shared<std::string>("aborted. returning to the required pose");
+			}
+
 			func_execution_state_(STA_POINT_APPROACHED, info);
 		}
 	}
@@ -420,8 +436,9 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 	}
 	else
 	{
-		if (movebase_client_->getState().state_ == actionlib::SimpleClientGoalState::SUCCEEDED &&
-			metTolerance(active_goal_.absolute_pose_, getCurrentPose()))
+		if (/*movebase_client_->getState().state_ == actionlib::SimpleClientGoalState::SUCCEEDED &&*/
+			metTolerance(getCurrentPose(), active_goal_.absolute_pose_) &&
+			!paused_)
 		{
 			// execute task then to approach the next waypoint
 			// IMPORTANT: DO NOT CALL ACTION in its own callback
@@ -445,17 +462,20 @@ void GoalsHandle::callbackGoalActive()
 {
 	static GoalPack lastGoal;
 
-	active_goal_ = goals_list_.front();
-	goals_list_.pop_front();
-	if (looping_)
+	if (!goals_list_.empty())
 	{
-		goals_list_.push_back(active_goal_);
-	}
-	else
-	{
-		if (active_goal_.is_last_)
+		active_goal_ = goals_list_.front();
+		goals_list_.pop_front();
+		if (looping_)
 		{
-			goals_list_.clear();
+			goals_list_.push_back(active_goal_);
+		}
+		else
+		{
+			if (active_goal_.is_last_)
+			{
+				goals_list_.clear();
+			}
 		}
 	}
 
@@ -604,7 +624,7 @@ bool GoalsHandle::metTolerance(const geometry_msgs::Pose& PoseA, const geometry_
 
 	return fabs(PoseA.position.x - active_goal_.absolute_pose_.position.x) < xy_goal_tolerance_ &&
 		fabs(PoseA.position.y - active_goal_.absolute_pose_.position.y) < xy_goal_tolerance_ &&
-		fabs(curYaw - activeYaw) < yaw_goal_tolerance_;
+		fabs(fabs(curYaw) - fabs(activeYaw)) < yaw_goal_tolerance_;
 }
 
 static void rangeRadians(double& Radians)

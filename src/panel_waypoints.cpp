@@ -72,6 +72,7 @@ namespace whi_rviz_plugins
 		ui_->tableWidget_waypoints->setContextMenuPolicy(Qt::CustomContextMenu);
 		ui_->groupBox_waypoints->setTitle(QString("Waypoints (0)"));
 		ui_->comboBox_ns->setInsertPolicy(QComboBox::NoInsert);
+		ui_->comboBox_abort_to->addItem("none");
 		// signals
 		connect(ui_->pushButton_add, &QPushButton::clicked, this, [=]() { addButtonClicked(); });
 		connect(ui_->pushButton_insert, &QPushButton::clicked, this, [=]() { insertButtonClicked(); });
@@ -540,6 +541,9 @@ namespace whi_rviz_plugins
 		{
 			addWaypoint();
 		}
+
+		// update abort to list
+		updateAbortToList();
 	}
 
 	void WaypointsPanel::insertButtonClicked()
@@ -563,6 +567,9 @@ namespace whi_rviz_plugins
 		{
 			insertWaypoint();
 		}
+
+		// update abort to list
+		updateAbortToList();
 	}
 
 	void WaypointsPanel::removeButtonClicked()
@@ -698,6 +705,9 @@ namespace whi_rviz_plugins
 				ui_->tableWidget_waypoints->setRowCount(0);
 				ui_->tableWidget_waypoints->blockSignals(false);
 				// load from yaml
+				tasks_map_.clear();
+				ui_->comboBox_abort_to->clear();
+				ui_->comboBox_abort_to->addItem("none");
 				const auto& points = node["waypoints"];
 				for (size_t i = 0; i < points.size(); ++i)
 				{
@@ -709,6 +719,9 @@ namespace whi_rviz_plugins
 
 					ui_->tableWidget_waypoints->insertRow(i);
 					fillWaypoint(i, false, &pose);
+
+					// add abort to list
+					ui_->comboBox_abort_to->addItem("row " +QString::number(i + 1));
 
 					if (plugins_map_[task_plugin_name_])
 					{
@@ -743,6 +756,16 @@ namespace whi_rviz_plugins
 				ui_->groupBox_waypoints->setTitle(QString("Waypoints (") + QString::number(ui_->tableWidget_waypoints->rowCount())
 					+ QString(")"));
 				ui_->tableWidget_waypoints->setCurrentCell(0, 0);
+
+				const auto& abortToRow = node["abort_to_row"];
+				if (abortToRow)
+				{
+					ui_->comboBox_abort_to->setCurrentIndex(abortToRow.as<int>() + 1);
+				}
+				else
+				{
+					ui_->comboBox_abort_to->setCurrentIndex(0);
+				}
 
 				if (goals_map_[ns])
 				{
@@ -784,6 +807,9 @@ namespace whi_rviz_plugins
 			line.assign("point_span: " + ui_->doubleSpinBox_point_span->text().toStdString() + "\n");
 			ofs.write(line.c_str(), line.length());
 			line.assign("stop_span: " + ui_->doubleSpinBox_stop_span->text().toStdString() + "\n");
+			ofs.write(line.c_str(), line.length());
+			// save the abort to row index
+			line.assign("abort_to_row: " + std::to_string(ui_->comboBox_abort_to->currentIndex() - 1) + "\n");
 			ofs.write(line.c_str(), line.length());
 			// waypoints
 			line.assign("waypoints:\n");
@@ -884,6 +910,16 @@ namespace whi_rviz_plugins
 			+ QString(")"));
 
 		ui_->tableWidget_waypoints->setCurrentCell(rowIndex, 0);
+	}
+
+	void WaypointsPanel::updateAbortToList()
+	{
+		ui_->comboBox_abort_to->clear();
+		ui_->comboBox_abort_to->addItem("none");
+		for (int i = 0; i < ui_->tableWidget_waypoints->rowCount(); ++i)
+		{
+			ui_->comboBox_abort_to->addItem("row " +QString::number(i + 1));
+		}
 	}
 
 	QCheckBox* WaypointsPanel::getCheckBox(int Row) const
@@ -1211,13 +1247,17 @@ namespace whi_rviz_plugins
 
 	void WaypointsPanel::abort()
 	{
+		int abortIndex = ui_->comboBox_abort_to->currentIndex() - 1;
 		if (goals_map_[ui_->comboBox_ns->currentText().toStdString()])
 		{
-			goals_map_[ui_->comboBox_ns->currentText().toStdString()]->cancel();
+			goals_map_[ui_->comboBox_ns->currentText().toStdString()]->cancel(abortIndex);
 		}
 
-		ui_->label_state->setText("Standby");
-		enableUi(true);
+		if (abortIndex < 0)
+		{
+			ui_->label_state->setText("Standby");
+			enableUi(true);
+		}
 	}
 
 	bool WaypointsPanel::isBypassed()
