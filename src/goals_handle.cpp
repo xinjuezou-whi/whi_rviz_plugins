@@ -294,6 +294,7 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::PoseStamped& Pose)
 							// execute waypoint task then to approach the next waypoint
 							// IMPORTANT: DO NOT CALL ACTION in its own callback
 							std::thread{ &GoalsHandle::executeTask, this, true }.detach();
+std::cout << "executed at 0000000000000000000000000000000000000000000000" << std::endl;
 						}
 					}
 				}
@@ -324,6 +325,7 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::PoseStamped& Pose)
 							// execute waypoint task then to approach the next waypoint
 							// IMPORTANT: DO NOT CALL ACTION in its own callback
 							std::thread{ &GoalsHandle::executeTask, this, true }.detach();
+std::cout << "executed at 1111111111111111111111111111111111111111111111111" << std::endl;
 						}
 					}	
 				}
@@ -443,9 +445,11 @@ void GoalsHandle::callbackGoalDone(const actionlib::SimpleClientGoalState& State
 			// execute task then to approach the next waypoint
 			// IMPORTANT: DO NOT CALL ACTION in its own callback
 			std::thread{ &GoalsHandle::executeTask, this, false }.detach();
+std::cout << "executed at goal reacheddddddddddddddddddddddddddddddddddddd" << std::endl;
 		}
 		else
 		{
+std::cout << "000000000000000000000000000000 paused: " << int(paused_) << std::endl;
 			if (goals_list_.empty())
 			{
 				// set finish state
@@ -622,8 +626,8 @@ bool GoalsHandle::metTolerance(const geometry_msgs::Pose& PoseA, const geometry_
     double activeRoll = 0.0, activePitch = 0.0, activeYaw = 0.0;
 	tf2::Matrix3x3(activeQ).getRPY(activeRoll, activePitch, activeYaw);
 
-	return fabs(PoseA.position.x - active_goal_.absolute_pose_.position.x) < xy_goal_tolerance_ &&
-		fabs(PoseA.position.y - active_goal_.absolute_pose_.position.y) < xy_goal_tolerance_ &&
+	return fabs(PoseA.position.x - PoseB.position.x) < xy_goal_tolerance_ &&
+		fabs(PoseA.position.y - PoseB.position.y) < xy_goal_tolerance_ &&
 		fabs(fabs(curYaw) - fabs(activeYaw)) < yaw_goal_tolerance_;
 }
 
