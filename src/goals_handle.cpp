@@ -265,7 +265,7 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::PoseStamped& Pose)
 	ros::Time current = ros::Time::now();
 	double dist = distance(Pose.pose, active_goal_.absolute_pose_);
 
-	if (isStill())
+	if (isStill() && !paused_)
 	{
 		// mechanics of break from stuck
 		if ((current - state_last_).toSec() > stuck_timeout_)
@@ -288,7 +288,7 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::PoseStamped& Pose)
 					}
 					else
 					{
-						if (!state_task_ && metTolerance(getCurrentPose(), active_goal_.absolute_pose_) && !paused_)
+						if (!state_task_ && metTolerance(getCurrentPose(), active_goal_.absolute_pose_))
 						{
 							// execute waypoint task then to approach the next waypoint
 							// IMPORTANT: DO NOT CALL ACTION in its own callback
@@ -319,7 +319,7 @@ std::cout << "executed at 0000000000000000000000000000000000000000000000" << std
 					}
 					else
 					{
-						if (!state_task_ && metTolerance(getCurrentPose(), active_goal_.absolute_pose_) && !paused_)
+						if (!state_task_ && metTolerance(getCurrentPose(), active_goal_.absolute_pose_))
 						{
 							// execute waypoint task then to approach the next waypoint
 							// IMPORTANT: DO NOT CALL ACTION in its own callback
