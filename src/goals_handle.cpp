@@ -270,8 +270,7 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::PoseStamped& Pose)
 		// mechanics of break from stuck
 		if ((current - state_last_).toSec() > stuck_timeout_)
 		{
-			if (metTolerance(getCurrentPose(), active_goal_.absolute_pose_) ||
-				stuck_relocate_count_++ >= recovery_max_try_count_)
+			if (stuck_relocate_count_++ >= recovery_max_try_count_)
 			{
 				if (goals_list_.empty())
 				{
@@ -289,7 +288,7 @@ void GoalsHandle::handleGoalAndState(const geometry_msgs::PoseStamped& Pose)
 					}
 					else
 					{
-						if (!state_task_ && !paused_)
+						if (!state_task_ && metTolerance(getCurrentPose(), active_goal_.absolute_pose_) && !paused_)
 						{
 							// execute waypoint task then to approach the next waypoint
 							// IMPORTANT: DO NOT CALL ACTION in its own callback
@@ -320,7 +319,7 @@ std::cout << "executed at 0000000000000000000000000000000000000000000000" << std
 					}
 					else
 					{
-						if (!state_task_ && !paused_)
+						if (!state_task_ && metTolerance(getCurrentPose(), active_goal_.absolute_pose_) && !paused_)
 						{
 							// execute waypoint task then to approach the next waypoint
 							// IMPORTANT: DO NOT CALL ACTION in its own callback
@@ -332,16 +331,19 @@ std::cout << "executed at 1111111111111111111111111111111111111111111111111" << 
 			}
 			else
 			{
-				// to re-execute the current goal
-				goals_list_.insert(goals_list_.begin(), active_goal_);
-				if (goals_list_.front().is_relative_)
+				if (!metTolerance(getCurrentPose(), active_goal_.absolute_pose_))
 				{
-					goals_list_.front().absolute_pose_ = constructAbsGoal(goals_list_.front().request_pose_);
-					setGoal(goals_list_.front().absolute_pose_, true);
-				}
-				else
-				{
-					setGoal(goals_list_.front().request_pose_, true);
+					// to re-execute the current goal
+					goals_list_.insert(goals_list_.begin(), active_goal_);
+					if (goals_list_.front().is_relative_)
+					{
+						goals_list_.front().absolute_pose_ = constructAbsGoal(goals_list_.front().request_pose_);
+						setGoal(goals_list_.front().absolute_pose_, true);
+					}
+					else
+					{
+						setGoal(goals_list_.front().request_pose_, true);
+					}
 				}
 			}
 		}
