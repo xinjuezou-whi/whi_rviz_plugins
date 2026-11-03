@@ -1108,7 +1108,7 @@ namespace whi_rviz_plugins
         catch (const pluginlib::PluginlibException& ex)
         {
             RCLCPP_FATAL_STREAM(node_handle_->get_logger(), "\033[1;31m" << "failed to create the " << task_plugin_name_ <<
-				"are you sure it is properly registered and that the containing library is built? Exception: " <<
+				" are you sure it is properly registered and that the containing library is built? Exception: " <<
 				ex.what() << "\033[0m");
 
 			return false;
